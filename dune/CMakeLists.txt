@@ -55,6 +55,7 @@ add_subdirectory(TrackPID)
 add_subdirectory(PandoraAnalysis)
 add_subdirectory(InfillChannels)
 add_subdirectory(VLNets)
+add_subdirectory(FDSelections)
 
 # Respect the order specified in lar_build, which is:
 #

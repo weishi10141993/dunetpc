@@ -1,0 +1,8 @@
+BEGIN_PROLOG
+
+standard_NumuCutSelection:
+{ 
+ module_type:                 "dune/FDSelections/NumuCutSelection"
+}
+
+END_PROLOG
