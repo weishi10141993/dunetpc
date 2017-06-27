@@ -17,14 +17,24 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+//STL
 #include <iostream>
+//ROOT
+#include "TTree.h"
+//ART
+#include "art/Framework/Services/Optional/TFileService.h"
 
-namespace FDSelections {
+
+
+constexpr int kDefInt = -9999;
+constexpr int kDefDoub = (double)(kDefInt);
+
+namespace FDSelection {
   class NumuCutSelection;
 }
 
 
-class FDSelections::NumuCutSelection : public art::EDAnalyzer {
+class FDSelection::NumuCutSelection : public art::EDAnalyzer {
 public:
   explicit NumuCutSelection(fhicl::ParameterSet const & p);
   // The compiler-generated destructor is fine for non-base
@@ -46,38 +56,151 @@ public:
 
 private:
 
+  //Delcare private functions
+  void Reset();      //Resets all tree vars
+
+  void GetTruthInfo(art::Event const & evt);  //Grab the truth info from the art record
   // Declare member data here.
 
+  TTree *fTree; //The selection tree
+  //Generic stuff
+  int fRun;
+  int fSubRun;
+  int fEvent;
+  int fIsMC;
+  //Neutrino stuff
+  int fNuPdg; //Interaction PDG
+  int fBeamPdg; //PDG at point of creation
+  int fNC;    // 1=is NC, 0=otherwise
+  int fMode; // 0=QE/El, 1=RES, 2=DIS, 3=Coherent production
+  double fQ2; 
+  double fEnu; 
+  double fW; //X-Sec params
+  double fX;
+  double fY;
+  double fNuMomX; //Neutrino momentums
+  double fNuMomY;
+  double fNuMomZ;
+  double fNuMomT;
+  double fNuX; //Interaction positions
+  double fNuY;
+  double fNuZ;
+  double fNuT;
+  //Outgoing lepton stuff
+  int fLepPDG;
+  double fLepMomX;
+  double fLepMomY;
+  double fLepMomZ;
+  double fLepMomT;
+  double fLepNuAngle;
+
+  //Fhicl pset labels
+  std::string fNuGenModuleLabel;
+
+ 
 };
 
 
-FDSelections::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & p)
+FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset)
   :
-  EDAnalyzer(p)  // ,
- // More initializers here.
+  EDAnalyzer(pset)   ,
+  fNuGenModuleLabel        (pset.get< std::string >("NuGenModuleLabel"))
 {}
 
-void FDSelections::NumuCutSelection::analyze(art::Event const & e)
+void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
 {
-  // Implementation of required member function here.
-  std::cout<<"Running"<<std::endl;
-  std::cout<<"Running"<<std::endl;
+  //Get the generic stuff that can be pulled from the top of the record
+  fRun = evt.run();
+  fSubRun = evt.subRun();
+  fEvent = evt.event();
+  fIsMC = !(evt.isRealData());
 
+  fTree->Fill();
+  Reset(); //Reset at the end of the event
 }
 
-void FDSelections::NumuCutSelection::beginJob()
+void FDSelection::NumuCutSelection::beginJob()
+{
+  // Implementation of optional member function here.
+    art::ServiceHandle<art::TFileService> tfs;
+    fTree = tfs->make<TTree>("numucutsel","Numu cut selection");
+    fTree->Branch("Run",&fRun);
+    fTree->Branch("SubRun",&fSubRun);
+    fTree->Branch("Event",&fEvent);
+    fTree->Branch("IsMC",&fIsMC);
+    fTree->Branch("NuPdg",&fNuPdg);
+    fTree->Branch("BeamPdg",&fBeamPdg);
+    fTree->Branch("NC",&fNC);
+    fTree->Branch("Mode",&fMode);
+    fTree->Branch("Q2",&fQ2);
+    fTree->Branch("Enu",&fEnu);
+    fTree->Branch("W",&fW);
+    fTree->Branch("X",&fX);
+    fTree->Branch("Y",&fY);
+    fTree->Branch("NuMomX",&fNuMomX);
+    fTree->Branch("NuMomY",&fNuMomY);
+    fTree->Branch("NuMomZ",&fNuMomZ);
+    fTree->Branch("NuMomT",&fNuMomT);
+    fTree->Branch("NuX",&fNuX);
+    fTree->Branch("NuY",&fNuY);
+    fTree->Branch("NuZ",&fNuZ);
+    fTree->Branch("NuT",&fNuT);
+    fTree->Branch("LepPDG",&fLepPDG);
+    fTree->Branch("LepMomX",&fLepMomX);
+    fTree->Branch("LepMomY",&fLepMomY);
+    fTree->Branch("LepMomZ",&fLepMomZ);
+    fTree->Branch("LepMomT",&fLepMomT);
+    fTree->Branch("LepNuAngle",&fLepNuAngle);
+
+    Reset();  //Default value all variables now
+}
+
+void FDSelection::NumuCutSelection::beginSubRun(art::SubRun const & sr)
 {
   // Implementation of optional member function here.
 }
 
-void FDSelections::NumuCutSelection::beginSubRun(art::SubRun const & sr)
+void FDSelection::NumuCutSelection::endJob()
 {
   // Implementation of optional member function here.
 }
 
-void FDSelections::NumuCutSelection::endJob()
+void FDSelection::NumuCutSelection::Reset()
 {
-  // Implementation of optional member function here.
+  //Generic stuff
+  fRun = kDefInt;
+  fSubRun = kDefInt;
+  fEvent = kDefInt;
+  fIsMC = kDefInt;
+  //Neutrino stuff
+  fNuPdg = kDefInt; 
+  fBeamPdg = kDefInt; 
+  fNC = kDefInt;    
+  fMode = kDefInt; 
+  fQ2 = kDefDoub; 
+  fEnu = kDefDoub; 
+  fW = kDefDoub; 
+  fX = kDefDoub;
+  fY = kDefDoub;
+  fNuMomX = kDefDoub; 
+  fNuMomY = kDefDoub;
+  fNuMomZ = kDefDoub;
+  fNuMomT = kDefDoub;
+  fNuX = kDefDoub; 
+  fNuY = kDefDoub;
+  fNuZ = kDefDoub;
+  fNuT = kDefDoub;
+  //Outgoing lepton stuff
+  fLepPDG = kDefInt;
+  fLepMomX = kDefDoub;
+  fLepMomY = kDefDoub;
+  fLepMomZ = kDefDoub;
+  fLepMomT = kDefDoub;
+  fLepNuAngle = kDefDoub;
 }
 
-DEFINE_ART_MODULE(FDSelections::NumuCutSelection)
+void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
+  std::cout<<"The run number is " << evt.run() << std::endl;
+}
+
+DEFINE_ART_MODULE(FDSelection::NumuCutSelection)

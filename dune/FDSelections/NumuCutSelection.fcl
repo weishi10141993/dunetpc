@@ -3,6 +3,7 @@ BEGIN_PROLOG
 standard_NumuCutSelection:
 { 
  module_type:                 "dune/FDSelections/NumuCutSelection"
+ NuGenModuleLabel:            "generator"                               
 }
 
 END_PROLOG
