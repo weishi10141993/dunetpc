@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+standard_NueCutSelection:
+{ 
+ module_type:                 "dune/FDSelections/NueCutSelection"
+ NuGenModuleLabel:            "generator"                               
+}
+
+END_PROLOG
