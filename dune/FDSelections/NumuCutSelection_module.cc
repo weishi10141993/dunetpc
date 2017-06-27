@@ -25,6 +25,8 @@
 #include "art/Framework/Services/Optional/TFileService.h"
 //LArSoft
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCFlux.h"
+
 
 
 
@@ -77,7 +79,7 @@ private:
   int fNC;    // 1=is NC, 0=otherwise
   int fMode; // 0=QE/El, 1=RES, 2=DIS, 3=Coherent production
   double fQ2; 
-  double fEnu; 
+  double fENu; 
   double fW; //X-Sec params
   double fX;
   double fY;
@@ -138,7 +140,7 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("NC",&fNC);
     fTree->Branch("Mode",&fMode);
     fTree->Branch("Q2",&fQ2);
-    fTree->Branch("Enu",&fEnu);
+    fTree->Branch("Enu",&fENu);
     fTree->Branch("W",&fW);
     fTree->Branch("X",&fX);
     fTree->Branch("Y",&fY);
@@ -183,7 +185,7 @@ void FDSelection::NumuCutSelection::Reset()
   fNC = kDefInt;    
   fMode = kDefInt; 
   fQ2 = kDefDoub; 
-  fEnu = kDefDoub; 
+  fENu = kDefDoub; 
   fW = kDefDoub; 
   fX = kDefDoub;
   fY = kDefDoub;
@@ -205,18 +207,52 @@ void FDSelection::NumuCutSelection::Reset()
 }
 
 void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
-  //Get the truth record
+  //Get the generator record
   art::Handle< std::vector<simb::MCTruth> > mcTruthListHandle;
   std::vector<art::Ptr<simb::MCTruth> > mcList;
   if (evt.getByLabel(fNuGenModuleLabel, mcTruthListHandle)){
     art::fill_ptr_vector(mcList, mcTruthListHandle);
   }
+  //Get the flux record
+  art::Handle< std::vector<simb::MCFlux> > mcFluxListHandle;
+  std::vector<art::Ptr<simb::MCFlux> > mcFlux;
+  if (evt.getByLabel(fNuGenModuleLabel, mcFluxListHandle)){
+    art::fill_ptr_vector(mcFlux, mcFluxListHandle);
+  }
+
   //Chuck out a warning if there are multiple truths (i.e. multiple neutrinos)
   if (mcList.size() > 1){
     mf::LogWarning("NumuCutSelection") << "There are  " << mcList.size() << " MCTruth in this event.  Only taking the first one!!!!";
   }
   for (unsigned int i_mctruth = 0; i_mctruth < mcList.size(); i_mctruth++){
-    fNuPdg = mcList[i_mctruth]->GetNeutrino().Nu().PdgCode();
+    fNuPdg    = mcList[i_mctruth]->GetNeutrino().Nu().PdgCode();
+    fBeamPdg  = mcFlux[i_mctruth]->fntype;
+    fNC       = mcList[i_mctruth]->GetNeutrino().CCNC();
+    fMode     = mcList[i_mctruth]->GetNeutrino().Mode(); //0=QE/El, 1=RES, 2=DIS, 3=Coherent production
+    fENu      = mcList[i_mctruth]->GetNeutrino().Nu().E();
+    fQ2       = mcList[i_mctruth]->GetNeutrino().QSqr();
+    fW        = mcList[i_mctruth]->GetNeutrino().W();
+    fX        = mcList[i_mctruth]->GetNeutrino().X();
+    fY        = mcList[i_mctruth]->GetNeutrino().Y();
+    fNuMomX   = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().X();
+    fNuMomY   = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().Y();
+    fNuMomZ   = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().Z();
+    fNuMomT   = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().T();
+
+    //Lepton stuff
+    fLepPDG     = mcList[i_mctruth]->GetNeutrino().Lepton().PdgCode();
+    fLepMomX    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().X();
+    fLepMomY    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().Y();
+    fLepMomZ    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().Z();
+    fLepMomT    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().T();
+    fLepNuAngle = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().Vect().Angle(mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().Vect());
+    fNuX = mcList[i_mctruth]->GetNeutrino().Nu().Vx();
+    fNuY = mcList[i_mctruth]->GetNeutrino().Nu().Vy();
+    fNuZ = mcList[i_mctruth]->GetNeutrino().Nu().Vz();
+    fNuT = mcList[i_mctruth]->GetNeutrino().Nu().T();
+
+
+
   }
 
 
