@@ -214,8 +214,12 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
   //Chuck out a warning if there are multiple truths (i.e. multiple neutrinos)
   if (mcList.size() > 1){
     mf::LogWarning("NumuCutSelection") << "There are  " << mcList.size() << " MCTruth in this event.  Only taking the first one!!!!";
-    std::cout<<"nice"<<std::endl;
   }
+  for (unsigned int i_mctruth = 0; i_mctruth < mcList.size(); i_mctruth++){
+    fNuPdg = mcList[i_mctruth]->GetNeutrino().Nu().PdgCode();
+  }
+
+
 }
 
 DEFINE_ART_MODULE(FDSelection::NumuCutSelection)
