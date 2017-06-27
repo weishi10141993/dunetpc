@@ -23,6 +23,9 @@
 #include "TTree.h"
 //ART
 #include "art/Framework/Services/Optional/TFileService.h"
+//LArSoft
+#include "nusimdata/SimulationBase/MCTruth.h"
+
 
 
 
@@ -115,6 +118,8 @@ void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
   fEvent = evt.event();
   fIsMC = !(evt.isRealData());
 
+  if (fIsMC) GetTruthInfo(evt);
+
   fTree->Fill();
   Reset(); //Reset at the end of the event
 }
@@ -200,7 +205,16 @@ void FDSelection::NumuCutSelection::Reset()
 }
 
 void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
-  std::cout<<"The run number is " << evt.run() << std::endl;
+  //Get the truth record
+  art::Handle< std::vector<simb::MCTruth> > mcTruthListHandle;
+  std::vector<art::Ptr<simb::MCTruth> > mcList;
+  if (evt.getByLabel(fNuGenModuleLabel, mcTruthListHandle)){
+    art::fill_ptr_vector(mcList, mcTruthListHandle);
+  }
+  //Chuck out a warning if there are multiple truths (i.e. multiple neutrinos)
+  if (mcList.size() > 1){
+    mf::LogWarning("NumuCutSelection") << "There are  " << mcList.size() << " MCTruth in this event.  Only taking the first one!!!!";
+  }
 }
 
 DEFINE_ART_MODULE(FDSelection::NumuCutSelection)
