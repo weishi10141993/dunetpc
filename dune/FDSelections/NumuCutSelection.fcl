@@ -3,7 +3,10 @@ BEGIN_PROLOG
 standard_NumuCutSelection:
 { 
  module_type:                 "dune/FDSelections/NumuCutSelection"
- NuGenModuleLabel:            "generator"                               
+ NuGenModuleLabel:            "generator" 
+ TrackModuleLabel:            "pandora"
+ ShowerModuleLabel:           "pandora"
+ PIDModuleLabel:              "pid"
  POTModuleLabel:              "generator"
 }
 

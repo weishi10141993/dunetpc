@@ -27,6 +27,7 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
+#include "PIDAnaAlg.h"
 
 
 constexpr int kDefInt = -9999;
@@ -65,6 +66,9 @@ private:
 
   void GetTruthInfo(art::Event const & evt);  //Grab the truth info from the art record
   // Declare member data here.
+
+  //Algs
+  PIDAnaAlg fPIDAnaAlg;
 
   TTree *fTree; //The selection tree
   //Generic stuff
@@ -106,7 +110,6 @@ private:
   std::string fNuGenModuleLabel;
   std::string fPOTModuleLabel;
 
-
  
 
 };
@@ -115,6 +118,7 @@ private:
 FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
+  fPIDAnaAlg(pset)   ,
   fNuGenModuleLabel        (pset.get< std::string >("NuGenModuleLabel")),
   fPOTModuleLabel        (pset.get< std::string >("POTModuleLabel"))
 {}
@@ -128,6 +132,8 @@ void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
   fIsMC = !(evt.isRealData());
 
   if (fIsMC) GetTruthInfo(evt);
+
+  fPIDAnaAlg.Run(evt);
 
   fTree->Fill();
   Reset(); //Reset at the end of the event
