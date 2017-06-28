@@ -18,8 +18,8 @@ void FDSelection::PIDAnaAlg::InitialiseTree() {
 
   fTree = tfs->make<TTree>("PIDAna","PIDAna");
   fTree->Branch("NObjects",    &fNObjects);
-  fTree->Branch("Track",       fTrack,       "fTrack[NObjects]/B");
-  fTree->Branch("Shower",      fShower,      "fShower[NObjects]/B");
+  fTree->Branch("Track",       fTrack,       "fTrack[NObjects]/O");
+  fTree->Branch("Shower",      fShower,      "fShower[NObjects]/O");
   fTree->Branch("TruePDG",     fTruePDG,     "fTruePDG[NObjects]/I");
   fTree->Branch("RecoPDG",     fRecoPDG,     "fRecoPDG[NObjects]/I");
   fTree->Branch("ElectronMVA", fElectronMVA, "fElectronMVA[NObjects]/D");
