@@ -7,7 +7,7 @@ process_name: NumuCutSelection
 services:
 {
   # Load the service that manages root files for histograms.
-  TFileService: { fileName: "anatree.root" }
+  TFileService: { fileName: "numutree.root" }
   TimeTracker:       {}
   RandomNumberGenerator: {}
   MemoryTracker:         { } # default is one

@@ -2,8 +2,11 @@ BEGIN_PROLOG
 
 standard_NueCutSelection:
 { 
- module_type:                 "dune/FDSelections/NueCutSelection"
- NuGenModuleLabel:            "generator"                               
+ module_type:                 "NueCutSelection"
+ NuGenModuleLabel:            "generator"
+ TrackModuleLabel:            "pandora"
+ ShowerModuleLabel:           "pandora"
+ PIDModuleLabel:              "pid"
 }
 
 END_PROLOG
