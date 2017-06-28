@@ -4,6 +4,7 @@ standard_NumuCutSelection:
 { 
  module_type:                 "dune/FDSelections/NumuCutSelection"
  NuGenModuleLabel:            "generator"                               
+ POTModuleLabel:              "generator"
 }
 
 END_PROLOG

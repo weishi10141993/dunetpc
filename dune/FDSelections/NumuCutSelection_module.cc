@@ -26,9 +26,7 @@
 //LArSoft
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
-
-
-
+#include "larcoreobj/SummaryData/POTSummary.h"
 
 
 constexpr int kDefInt = -9999;
@@ -57,6 +55,7 @@ public:
   // Selected optional functions.
   void beginJob() override;
   void beginSubRun(art::SubRun const & sr) override;
+  void endSubRun(art::SubRun const & sr) override;
   void endJob() override;
 
 private:
@@ -99,17 +98,25 @@ private:
   double fLepMomT;
   double fLepNuAngle;
 
+  //POT tree stuff
+  TTree* fPOTTree;
+  double fPOT;
+
   //Fhicl pset labels
   std::string fNuGenModuleLabel;
+  std::string fPOTModuleLabel;
+
 
  
+
 };
 
 
 FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
-  fNuGenModuleLabel        (pset.get< std::string >("NuGenModuleLabel"))
+  fNuGenModuleLabel        (pset.get< std::string >("NuGenModuleLabel")),
+  fPOTModuleLabel        (pset.get< std::string >("POTModuleLabel"))
 {}
 
 void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
@@ -159,12 +166,31 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("LepMomT",&fLepMomT);
     fTree->Branch("LepNuAngle",&fLepNuAngle);
 
+    fPOTTree = tfs->make<TTree>("pottree","pot tree");
+    fPOTTree->Branch("POT",&fPOT);
+    fPOTTree->Branch("Run",&fRun);
+    fPOTTree->Branch("SubRun",&fSubRun);
+
+
     Reset();  //Default value all variables now
 }
 
 void FDSelection::NumuCutSelection::beginSubRun(art::SubRun const & sr)
 {
   // Implementation of optional member function here.
+}
+void FDSelection::NumuCutSelection::endSubRun(const art::SubRun& sr){
+  //Need the run and subrun
+  fRun = sr.run();
+  fSubRun = sr.subRun();
+  //Need the POT (obvs)
+  art::Handle< sumdata::POTSummary > potListHandle;
+
+  if(sr.getByLabel(fPOTModuleLabel,potListHandle))
+    fPOT = potListHandle->totpot;
+  else
+    fPOT = 0.;
+  if (fPOTTree) fPOTTree->Fill();
 }
 
 void FDSelection::NumuCutSelection::endJob()
@@ -238,7 +264,6 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
     fNuMomY   = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().Y();
     fNuMomZ   = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().Z();
     fNuMomT   = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().T();
-
     //Lepton stuff
     fLepPDG     = mcList[i_mctruth]->GetNeutrino().Lepton().PdgCode();
     fLepMomX    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().X();
@@ -250,9 +275,6 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
     fNuY = mcList[i_mctruth]->GetNeutrino().Nu().Vy();
     fNuZ = mcList[i_mctruth]->GetNeutrino().Nu().Vz();
     fNuT = mcList[i_mctruth]->GetNeutrino().Nu().T();
-
-
-
   }
 
 
