@@ -36,9 +36,15 @@ void FDSelection::PIDAnaAlg::InitialiseTree() {
   fTree->Branch("TrueX",       fTrueX,       "fTrueX[NObjects]/D");
   fTree->Branch("TrueY",       fTrueY,       "fTrueY[NObjects]/D");
   fTree->Branch("TrueZ",       fTrueZ,       "fTrueZ[NObjects]/D");
+  fTree->Branch("TrueEndX",       fTrueEndX,       "fTrueEndX[NObjects]/D");
+  fTree->Branch("TrueEndY",       fTrueEndY,       "fTrueEndY[NObjects]/D");
+  fTree->Branch("TrueEndZ",       fTrueEndZ,       "fTrueEndZ[NObjects]/D");
   fTree->Branch("RecoX",       fRecoX,       "fRecoX[NObjects]/D");
   fTree->Branch("RecoY",       fRecoY,       "fRecoY[NObjects]/D");
   fTree->Branch("RecoZ",       fRecoZ,       "fRecoZ[NObjects]/D");
+  fTree->Branch("RecoEndX",       fRecoEndX,       "fRecoEndX[NObjects]/D");
+  fTree->Branch("RecoEndY",       fRecoEndY,       "fRecoEndY[NObjects]/D");
+  fTree->Branch("RecoEndZ",       fRecoEndZ,       "fRecoEndZ[NObjects]/D");
   fTree->Branch("RecoLength",  fRecoLength,  "fRecoLength[NObjects]/D");
   fTree->Branch("RecoPoints",  fRecoPoints,  "fRecoPoints[NObjects]/I");
 
@@ -113,7 +119,7 @@ void FDSelection::PIDAnaAlg::Run(const art::Event& evt) {
     std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
     // fill tree variables
     fTrack[i_obj]       = true;
-    fShower[i_obj]   	= false;
+    fShower[i_obj]   	  = false;
     fTruePDG[i_obj]    	= mcparticle->PdgCode();
     fRecoPDG[i_obj]    	= 13;//tmp
     fElectronMVA[i_obj] = mvaOutMap["electron"];
@@ -128,9 +134,15 @@ void FDSelection::PIDAnaAlg::Run(const art::Event& evt) {
     fTrueX[i_obj]       = mcparticle->Position().X();
     fTrueY[i_obj]       = mcparticle->Position().Y();
     fTrueZ[i_obj]       = mcparticle->Position().Z();
+    fTrueEndX[i_obj]    = mcparticle->Position(mcparticle->NumberTrajectoryPoints()-1).X();
+    fTrueEndY[i_obj]    = mcparticle->Position(mcparticle->NumberTrajectoryPoints()-1).Y();
+    fTrueEndZ[i_obj]    = mcparticle->Position(mcparticle->NumberTrajectoryPoints()-1).Z();
     fRecoX[i_obj]       = (*trackIt)->Vertex().X();
     fRecoY[i_obj]       = (*trackIt)->Vertex().Y();
     fRecoZ[i_obj]       = (*trackIt)->Vertex().Z();
+    fRecoEndX[i_obj]    = (*trackIt)->End().X();
+    fRecoEndY[i_obj]    = (*trackIt)->End().Y();
+    fRecoEndZ[i_obj]    = (*trackIt)->End().Z();
     fRecoLength[i_obj]  = (*trackIt)->Length();
     fRecoPoints[i_obj]  = (*trackIt)->NumberTrajectoryPoints();
     ++i_obj;
@@ -172,6 +184,10 @@ void FDSelection::PIDAnaAlg::Run(const art::Event& evt) {
     fRecoX[i_obj]       = (*showerIt)->ShowerStart().X();
     fRecoY[i_obj]       = (*showerIt)->ShowerStart().Y();
     fRecoZ[i_obj]       = (*showerIt)->ShowerStart().Z();
+    fRecoEndX[i_obj]    = -999.;  //Does not seem to exist for showers right now  
+    fRecoEndY[i_obj]    = -999.;  //Does not seem to exist for showers right now
+    fRecoEndZ[i_obj]    = -999.;  //Does not seem to exist for showers right now
+
     fRecoLength[i_obj]  = -999.;//tmp, this has only just been added to recob::Shower so older code won't have it
     fRecoPoints[i_obj]  = hits.size();
     ++i_obj;

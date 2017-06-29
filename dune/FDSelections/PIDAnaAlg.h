@@ -76,7 +76,9 @@ class FDSelection::PIDAnaAlg {
   bool fPrimary[kMaxObjects];
   double fTrueEnergy[kMaxObjects], fRecoEnergy[kMaxObjects];
   double fTrueX[kMaxObjects], fTrueY[kMaxObjects], fTrueZ[kMaxObjects];
+  double fTrueEndX[kMaxObjects], fTrueEndY[kMaxObjects], fTrueEndZ[kMaxObjects];
   double fRecoX[kMaxObjects], fRecoY[kMaxObjects], fRecoZ[kMaxObjects];
+  double fRecoEndX[kMaxObjects], fRecoEndY[kMaxObjects], fRecoEndZ[kMaxObjects];
   double fRecoLength[kMaxObjects];
   int fRecoPoints[kMaxObjects];
 
