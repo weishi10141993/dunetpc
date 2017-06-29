@@ -66,6 +66,8 @@ class FDSelection::PIDAnaAlg {
 
   // tree
   TTree* fTree;
+  int fRun;
+  int fSubRun;
   int fNObjects;
   bool fTrack[kMaxObjects], fShower[kMaxObjects];
   int fTruePDG[kMaxObjects], fRecoPDG[kMaxObjects];

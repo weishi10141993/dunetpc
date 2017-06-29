@@ -17,6 +17,8 @@ FDSelection::PIDAnaAlg::PIDAnaAlg(const fhicl::ParameterSet& pset) {
 void FDSelection::PIDAnaAlg::InitialiseTree() {
 
   fTree = tfs->make<TTree>("PIDAna","PIDAna");
+  fTree->Branch("Run",         &fRun);
+  fTree->Branch("SubRun",         &fSubRun);
   fTree->Branch("NObjects",    &fNObjects);
   fTree->Branch("Track",       fTrack,       "fTrack[NObjects]/O");
   fTree->Branch("Shower",      fShower,      "fShower[NObjects]/O");
@@ -43,6 +45,10 @@ void FDSelection::PIDAnaAlg::InitialiseTree() {
 }
 
 void FDSelection::PIDAnaAlg::Run(const art::Event& evt) {
+
+  //Grab the run and subrun info before doing anything
+  fRun = evt.run();
+  fSubRun = evt.subRun();
 
   std::cout << std::endl << "Running PIDAna for event " << evt.event() << std::endl;
 
