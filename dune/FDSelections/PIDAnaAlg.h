@@ -1,3 +1,6 @@
+#ifndef PIDANAALG_H_SEEN
+#define PIDANAALG_H_SEEN
+
 ///////////////////////////////////////////////
 // PIDAnaAlg.h
 //
@@ -87,3 +90,5 @@ class FDSelection::PIDAnaAlg {
   art::ServiceHandle<art::TFileService> tfs;
 
 };
+
+#endif
