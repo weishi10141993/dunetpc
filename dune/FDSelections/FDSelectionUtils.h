@@ -25,10 +25,10 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/RecoBase/Hit.h"
-#include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/RecoBase/Shower.h"
+//#include "lardataobj/RecoBase/Track.h"
+//#include "lardataobj/RecoBase/Shower.h"
 //#include "lardataobj/AnalysisBase/MVAPIDResult.h"
-#include "lardataobj/AnalysisBase/ParticleID.h"
+//#include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTracker.h"
 
 // c++
@@ -40,7 +40,8 @@
 
 
 namespace FDSelectionUtils{
-  void Test();
+  int TrueParticleID(const art::Ptr<recob::Hit>& hit);
+  int TrueParticleID(const std::vector<art::Ptr<recob::Hit> >& hits);
 }
 
 #endif
