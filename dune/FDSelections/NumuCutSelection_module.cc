@@ -27,7 +27,10 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
+#include "lardataobj/RecoBase/Track.h"
+//Custom
 #include "PIDAnaAlg.h"
+#include "FDSelectionUtils.h"
 
 
 constexpr int kDefInt = -9999;
@@ -63,8 +66,9 @@ private:
 
   //Delcare private functions
   void Reset();      //Resets all tree vars
-
   void GetTruthInfo(art::Event const & evt);  //Grab the truth info from the art record
+  void RunSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
+
   // Declare member data here.
 
   //Algs
@@ -101,6 +105,51 @@ private:
   double fLepMomZ;
   double fLepMomT;
   double fLepNuAngle;
+  //Selection stuff
+  //true bits
+  int fSelTruePDG;
+  double fSelTrueMomX;
+  double fSelTrueMomY;
+  double fSelTrueMomZ;
+  double fSelTrueMomT;
+  double fSelTrueStartX;
+  double fSelTrueStartY;
+  double fSelTrueStartZ;
+  double fSelTrueStartT;
+  double fSelTrueEndX;
+  double fSelTrueEndY;
+  double fSelTrueEndZ;
+  double fSelTrueEndT;
+  //reco bits
+  double fSelRecoMomX;
+  double fSelRecoMomY;
+  double fSelRecoMomZ;
+  double fSelRecoMomT;
+  double fSelRecoStartX;
+  double fSelRecoStartY;
+  double fSelRecoStartZ;
+  double fSelRecoStartT;
+  double fSelRecoEndX;
+  double fSelRecoEndY;
+  double fSelRecoEndZ;
+  double fSelRecoEndT;
+  double fSelRecoUpstreamX;
+  double fSelRecoUpstreamY;
+  double fSelRecoUpstreamZ;
+  double fSelRecoUpstreamT;
+  double fSelRecoDownstreamX;
+  double fSelRecoDownstreamY;
+  double fSelRecoDownstreamZ;
+  double fSelRecoDownstreamT;
+
+  //MVA bits
+  double fSelMVAElectron;
+  double fSelMVAPion;
+  double fSelMVAMuon;
+  double fSelMVAProton;
+  double fSelMVAPhoton;
+  double fRecoENu; //Reco neutrino energy
+
 
   //POT tree stuff
   TTree* fPOTTree;
@@ -108,6 +157,8 @@ private:
 
   //Fhicl pset labels
   std::string fNuGenModuleLabel;
+  std::string fTrackModuleLabel;
+  std::string fPIDModuleLabel;
   std::string fPOTModuleLabel;
 
  
@@ -120,7 +171,9 @@ FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset
   EDAnalyzer(pset)   ,
   fPIDAnaAlg(pset)   ,
   fNuGenModuleLabel        (pset.get< std::string >("NuGenModuleLabel")),
-  fPOTModuleLabel        (pset.get< std::string >("POTModuleLabel"))
+  fTrackModuleLabel        (pset.get< std::string >("TrackModuleLabel")),
+  fPIDModuleLabel        (pset.get< std::string >("PIDModuleLabel")),
+  fPOTModuleLabel          (pset.get< std::string >("POTModuleLabel"))
 {}
 
 void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
@@ -132,6 +185,7 @@ void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
   fIsMC = !(evt.isRealData());
 
   if (fIsMC) GetTruthInfo(evt);
+  RunSelection(evt);
 
   fPIDAnaAlg.Run(evt);
 
@@ -171,6 +225,50 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("LepMomZ",&fLepMomZ);
     fTree->Branch("LepMomT",&fLepMomT);
     fTree->Branch("LepNuAngle",&fLepNuAngle);
+    fTree->Branch("SelTruePDG",&fSelTruePDG);
+    fTree->Branch("SelTrueMomX",&fSelTrueMomX);
+    fTree->Branch("SelTrueMomY",&fSelTrueMomY);
+    fTree->Branch("SelTrueMomZ",&fSelTrueMomZ);
+    fTree->Branch("SelTrueMomT",&fSelTrueMomT);
+    fTree->Branch("SelTrueStartX",&fSelTrueStartX);
+    fTree->Branch("SelTrueStartY",&fSelTrueStartY);
+    fTree->Branch("SelTrueStartZ",&fSelTrueStartZ);
+    fTree->Branch("SelTrueStartT",&fSelTrueStartT);
+    fTree->Branch("SelTrueEndX",&fSelTrueEndX);
+    fTree->Branch("SelTrueEndY",&fSelTrueEndY);
+    fTree->Branch("SelTrueEndZ",&fSelTrueEndZ);
+    fTree->Branch("SelTrueEndT",&fSelTrueEndT);
+    fTree->Branch("SelRecoMomX",&fSelRecoMomX);
+    fTree->Branch("SelRecoMomY",&fSelRecoMomY);
+    fTree->Branch("SelRecoMomZ",&fSelRecoMomZ);
+    fTree->Branch("SelRecoMomT",&fSelRecoMomT);
+    fTree->Branch("SelRecoStartX",&fSelRecoStartX);
+    fTree->Branch("SelRecoStartY",&fSelRecoStartY);
+    fTree->Branch("SelRecoStartZ",&fSelRecoStartZ);
+    fTree->Branch("SelRecoStartT",&fSelRecoStartT);
+    fTree->Branch("SelRecoEndX",&fSelRecoEndX);
+    fTree->Branch("SelRecoEndY",&fSelRecoEndY);
+    fTree->Branch("SelRecoEndZ",&fSelRecoEndZ);
+    fTree->Branch("SelRecoEndT",&fSelRecoEndT);
+    fTree->Branch("SelRecoUpstreamX",&fSelRecoUpstreamX);
+    fTree->Branch("SelRecoUpstreamY",&fSelRecoUpstreamY);
+    fTree->Branch("SelRecoUpstreamZ",&fSelRecoUpstreamZ);
+    fTree->Branch("SelRecoUpstreamT",&fSelRecoUpstreamT);
+    fTree->Branch("SelRecoDownstreamX",&fSelRecoDownstreamX);
+    fTree->Branch("SelRecoDownstreamY",&fSelRecoDownstreamY);
+    fTree->Branch("SelRecoDownstreamZ",&fSelRecoDownstreamZ);
+    fTree->Branch("SelRecoDownstreamT",&fSelRecoDownstreamT);
+    fTree->Branch("RecoENu",&fRecoENu);
+    fTree->Branch("SelMVAElectron",&fSelMVAElectron);
+    fTree->Branch("SelMVAPion",&fSelMVAPion);
+    fTree->Branch("SelMVAMuon",&fSelMVAMuon);
+    fTree->Branch("SelMVAProton",&fSelMVAProton);
+    fTree->Branch("SelMVAPhoton",&fSelMVAPhoton);
+
+
+
+
+
 
     fPOTTree = tfs->make<TTree>("pottree","pot tree");
     fPOTTree->Branch("POT",&fPOT);
@@ -236,6 +334,49 @@ void FDSelection::NumuCutSelection::Reset()
   fLepMomZ = kDefDoub;
   fLepMomT = kDefDoub;
   fLepNuAngle = kDefDoub;
+  //Selection stuff
+  //true bits
+  fSelTruePDG = kDefInt;
+  fSelTrueMomX = kDefDoub;
+  fSelTrueMomY = kDefDoub;
+  fSelTrueMomZ = kDefDoub;
+  fSelTrueMomT = kDefDoub;
+  fSelTrueStartX = kDefDoub;
+  fSelTrueStartY = kDefDoub;
+  fSelTrueStartZ = kDefDoub;
+  fSelTrueStartT = kDefDoub;
+  fSelTrueEndX = kDefDoub;
+  fSelTrueEndY = kDefDoub;
+  fSelTrueEndZ = kDefDoub;
+  fSelTrueEndT = kDefDoub;
+  //reco bits
+  fSelRecoMomX = kDefDoub;
+  fSelRecoMomY = kDefDoub;
+  fSelRecoMomZ = kDefDoub;
+  fSelRecoMomT = kDefDoub;
+  fSelRecoStartX = kDefDoub;
+  fSelRecoStartY = kDefDoub;
+  fSelRecoStartZ = kDefDoub;
+  fSelRecoStartT = kDefDoub;
+  fSelRecoEndX = kDefDoub;
+  fSelRecoEndY = kDefDoub;
+  fSelRecoEndZ = kDefDoub;
+  fSelRecoEndT = kDefDoub;
+  fSelRecoUpstreamX = kDefDoub;
+  fSelRecoUpstreamY = kDefDoub;
+  fSelRecoUpstreamZ = kDefDoub;
+  fSelRecoUpstreamT = kDefDoub;
+  fSelRecoDownstreamX = kDefDoub;
+  fSelRecoDownstreamY = kDefDoub;
+  fSelRecoDownstreamZ = kDefDoub;
+  fSelRecoDownstreamT = kDefDoub;
+  //MVA bits
+  fSelMVAElectron = kDefDoub;
+  fSelMVAPion = kDefDoub;
+  fSelMVAMuon = kDefDoub;
+  fSelMVAProton = kDefDoub;
+  fSelMVAPhoton = kDefDoub;
+  fRecoENu = kDefDoub; //Neutrino reco energy
 }
 
 void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
@@ -282,8 +423,90 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
     fNuZ = mcList[i_mctruth]->GetNeutrino().Nu().Vz();
     fNuT = mcList[i_mctruth]->GetNeutrino().Nu().T();
   }
+}
 
+void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
+  art::Handle< std::vector<recob::Track> > trackListHandle;
+  std::vector<art::Ptr<recob::Track> > trackList;
+  if (evt.getByLabel(fTrackModuleLabel, trackListHandle)){
+    art::fill_ptr_vector(trackList, trackListHandle);
+  }
+  int i_longest_track = -1;
+  double longest_track_length = -999;
+  //Loop over the tracks to get the longest one NICE
+  for (unsigned int i_track = 0; i_track < trackList.size(); i_track++){
+    double current_track_length = trackList[i_track]->Length();
+    if (current_track_length > longest_track_length){
+      longest_track_length = current_track_length;
+      i_longest_track = i_track;
+    }
+  }
+  //If we didn't find a longest track then what's the point?
+  if (i_longest_track < 0) return;
+  recob::Track::Point_t trackStart, trackEnd;
+  std::tie(trackStart, trackEnd) = trackList[i_longest_track]->Extent(); 
+  fSelRecoMomX = kDefDoub; //temp
+  fSelRecoMomY = kDefDoub; //temp
+  fSelRecoMomZ = kDefDoub; //temp
+  fSelRecoMomT = kDefDoub; //temp
+  fSelRecoStartX = trackStart.X();
+  fSelRecoStartY = trackStart.Y();
+  fSelRecoStartZ = trackStart.Z();
+  fSelRecoEndX = trackEnd.X();
+  fSelRecoEndY = trackEnd.Y();
+  fSelRecoEndZ = trackEnd.Z();
+  if (fSelRecoEndZ > fSelRecoStartZ){
+    fSelRecoUpstreamX = fSelRecoStartX;
+    fSelRecoUpstreamY = fSelRecoStartY;
+    fSelRecoUpstreamZ = fSelRecoStartZ;
+    fSelRecoDownstreamX = fSelRecoEndX;
+    fSelRecoDownstreamY = fSelRecoEndY;
+    fSelRecoDownstreamZ = fSelRecoEndZ;
+  }
+  else{
+    fSelRecoDownstreamX = fSelRecoStartX;
+    fSelRecoDownstreamY = fSelRecoStartY;
+    fSelRecoDownstreamZ = fSelRecoStartZ;
+    fSelRecoUpstreamX = fSelRecoEndX;
+    fSelRecoUpstreamY = fSelRecoEndY;
+    fSelRecoUpstreamZ = fSelRecoEndZ;
+  }
+  //May as well get the neutrino eneryg reco now as well
+  fRecoENu = kDefDoub; //temp
 
+  //Get the hits for said track
+  art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
+  const std::vector<art::Ptr<recob::Hit> > hits = fmht.at(i_longest_track);
+  int g4id = FDSelectionUtils::TrueParticleID(hits);
+  art::ServiceHandle<cheat::BackTracker> bt;
+  const simb::MCParticle* matched_mcparticle = bt->ParticleList().at(g4id);
+  if (matched_mcparticle){
+    //Fill variables
+    fSelTruePDG = matched_mcparticle->PdgCode();
+    fSelTrueMomX = matched_mcparticle->Momentum().X();
+    fSelTrueMomY = matched_mcparticle->Momentum().Y();
+    fSelTrueMomZ = matched_mcparticle->Momentum().Z();
+    fSelTrueMomT = matched_mcparticle->Momentum().T();
+    fSelTrueStartX = matched_mcparticle->Position(0).X();
+    fSelTrueStartY = matched_mcparticle->Position(0).Y();
+    fSelTrueStartZ = matched_mcparticle->Position(0).Z();
+    fSelTrueStartT = matched_mcparticle->Position(0).T();
+    fSelTrueEndX = matched_mcparticle->EndPosition().X();
+    fSelTrueEndY = matched_mcparticle->EndPosition().Y();
+    fSelTrueEndZ = matched_mcparticle->EndPosition().Z();
+    fSelTrueEndT = matched_mcparticle->EndPosition().T();
+  }
+  //Now get the pid stuff
+  art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
+  std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(i_longest_track);
+  std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+  //Get the PIDs
+  fSelMVAElectron = mvaOutMap["electron"];
+  fSelMVAPion = mvaOutMap["pich"];
+  fSelMVAMuon = mvaOutMap["muon"];
+  fSelMVAProton = mvaOutMap["proton"];
+  fSelMVAPhoton = mvaOutMap["photon"];
+  //Get the Reco stuff
 }
 
 DEFINE_ART_MODULE(FDSelection::NumuCutSelection)
