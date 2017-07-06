@@ -108,6 +108,7 @@ private:
   //Selection stuff
   //true bits
   int fSelTruePDG;
+  int fSelTruePrimary;
   double fSelTrueMomX;
   double fSelTrueMomY;
   double fSelTrueMomZ;
@@ -226,6 +227,7 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("LepMomT",&fLepMomT);
     fTree->Branch("LepNuAngle",&fLepNuAngle);
     fTree->Branch("SelTruePDG",&fSelTruePDG);
+    fTree->Branch("SelTruePrimary",&fSelTruePrimary);
     fTree->Branch("SelTrueMomX",&fSelTrueMomX);
     fTree->Branch("SelTrueMomY",&fSelTrueMomY);
     fTree->Branch("SelTrueMomZ",&fSelTrueMomZ);
@@ -337,6 +339,7 @@ void FDSelection::NumuCutSelection::Reset()
   //Selection stuff
   //true bits
   fSelTruePDG = kDefInt;
+  fSelTruePrimary = kDefInt;
   fSelTrueMomX = kDefDoub;
   fSelTrueMomY = kDefDoub;
   fSelTrueMomZ = kDefDoub;
@@ -483,6 +486,8 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
   if (matched_mcparticle){
     //Fill variables
     fSelTruePDG = matched_mcparticle->PdgCode();
+    if (matched_mcparticle->Mother()==0) fSelTruePrimary = 1;
+    else fSelTruePrimary = 0;
     fSelTrueMomX = matched_mcparticle->Momentum().X();
     fSelTrueMomY = matched_mcparticle->Momentum().Y();
     fSelTrueMomZ = matched_mcparticle->Momentum().Z();
