@@ -1,5 +1,5 @@
 art_make( LIBRARY_NAME FDSelection
-	  LIB_LIBRARIES larcore_Geometry
+	  LIB_LIBRARIES larcorealg_Geometry
 	  	        larcore_Geometry_Geometry_service
 		        larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
  	  	        larsim_MCCheater_BackTracker_service
