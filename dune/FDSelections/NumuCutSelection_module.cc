@@ -27,7 +27,10 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
+#include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "larreco/Calorimetry/CalorimetryAlg.h"
+#include "larreco/RecoAlg/TrackMomentumCalculator.h"
 //Custom
 #include "PIDAnaAlg.h"
 #include "FDSelectionUtils.h"
@@ -66,13 +69,17 @@ private:
 
   //Delcare private functions
   void Reset();      //Resets all tree vars
+  void GetEventInfo(art::Event const & evt); //Grab event-level info that is necessary/handy for selecting events but doesn't really fall under the 'selection' banner
   void GetTruthInfo(art::Event const & evt);  //Grab the truth info from the art record
   void RunSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
+  double CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
+  bool IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt); // check if the track is contained in the detector
 
   // Declare member data here.
 
   //Algs
   PIDAnaAlg fPIDAnaAlg;
+  calo::CalorimetryAlg fCalorimetryAlg;
 
   TTree *fTree; //The selection tree
   //Generic stuff
@@ -80,6 +87,8 @@ private:
   int fSubRun;
   int fEvent;
   int fIsMC;
+  //Detector stuff
+  double fT0;
   //Neutrino stuff
   int fNuPdg; //Interaction PDG
   int fBeamPdg; //PDG at point of creation
@@ -100,10 +109,10 @@ private:
   double fNuT;
   //Outgoing lepton stuff
   int fLepPDG;
-  double fLepMomX;
-  double fLepMomY;
-  double fLepMomZ;
-  double fLepMomT;
+  double fMomLepX;
+  double fMomLepY;
+  double fMomLepZ;
+  double fMomLepT;
   double fLepNuAngle;
   //Selection stuff
   //true bits
@@ -142,15 +151,23 @@ private:
   double fSelRecoDownstreamY;
   double fSelRecoDownstreamZ;
   double fSelRecoDownstreamT;
-
+  double fSelRecoLength;
+  bool   fSelRecoContained;
+  double fSelRecoCharge;
+  double fSelRecoMomMCS;
+  double fSelRecoMomContained;
   //MVA bits
   double fSelMVAElectron;
   double fSelMVAPion;
   double fSelMVAMuon;
   double fSelMVAProton;
   double fSelMVAPhoton;
+  //Event-level bits
+  double fRecoEventCharge; //Total collected charge (as measured by the collection planes)
+  //reco energy bits
+  double fRecoMomLep; //Reco lepton momentum
+  double fRecoEHad; //Reco hadronic energy
   double fRecoENu; //Reco neutrino energy
-
 
   //POT tree stuff
   TTree* fPOTTree;
@@ -160,7 +177,16 @@ private:
   std::string fNuGenModuleLabel;
   std::string fTrackModuleLabel;
   std::string fPIDModuleLabel;
+  std::string fHitsModuleLabel;
   std::string fPOTModuleLabel;
+  //Fhicl psel params
+  //Neutrino energy reco
+  double fGradTrkMomRange;
+  double fIntTrkMomRange;
+  double fGradTrkMomMCS;
+  double fIntTrkMomMCS;
+  double fGradNuMuHadEnCorr;
+  double fIntNuMuHadEnCorr;
 
  
 
@@ -171,10 +197,19 @@ FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset
   :
   EDAnalyzer(pset)   ,
   fPIDAnaAlg(pset)   ,
+  fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fNuGenModuleLabel        (pset.get< std::string >("NuGenModuleLabel")),
   fTrackModuleLabel        (pset.get< std::string >("TrackModuleLabel")),
-  fPIDModuleLabel        (pset.get< std::string >("PIDModuleLabel")),
-  fPOTModuleLabel          (pset.get< std::string >("POTModuleLabel"))
+  fPIDModuleLabel          (pset.get< std::string >("PIDModuleLabel")),
+  fHitsModuleLabel         (pset.get< std::string >("HitsModuleLabel")),
+  fPOTModuleLabel          (pset.get< std::string >("POTModuleLabel")),
+  fGradTrkMomRange         (pset.get<double>("GradTrkMomRange")),
+  fIntTrkMomRange          (pset.get<double>("IntTrkMomRange")),
+  fGradTrkMomMCS           (pset.get<double>("GradTrkMomMCS")),
+  fIntTrkMomMCS            (pset.get<double>("IntTrkMomMCS")),
+  fGradNuMuHadEnCorr       (pset.get<double>("GradNuMuHadEnCorr")),
+  fIntNuMuHadEnCorr        (pset.get<double>("IntNuMuHadEnCorr"))
+
 {}
 
 void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
@@ -185,10 +220,11 @@ void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
   fEvent = evt.event();
   fIsMC = !(evt.isRealData());
 
+  GetEventInfo(evt);
   if (fIsMC) GetTruthInfo(evt);
   RunSelection(evt);
 
-  fPIDAnaAlg.Run(evt);
+  //fPIDAnaAlg.Run(evt);
 
   fTree->Fill();
   Reset(); //Reset at the end of the event
@@ -203,6 +239,7 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("SubRun",&fSubRun);
     fTree->Branch("Event",&fEvent);
     fTree->Branch("IsMC",&fIsMC);
+    fTree->Branch("T0",&fT0);
     fTree->Branch("NuPdg",&fNuPdg);
     fTree->Branch("BeamPdg",&fBeamPdg);
     fTree->Branch("NC",&fNC);
@@ -221,10 +258,10 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("NuZ",&fNuZ);
     fTree->Branch("NuT",&fNuT);
     fTree->Branch("LepPDG",&fLepPDG);
-    fTree->Branch("LepMomX",&fLepMomX);
-    fTree->Branch("LepMomY",&fLepMomY);
-    fTree->Branch("LepMomZ",&fLepMomZ);
-    fTree->Branch("LepMomT",&fLepMomT);
+    fTree->Branch("MomLepX",&fMomLepX);
+    fTree->Branch("MomLepY",&fMomLepY);
+    fTree->Branch("MomLepZ",&fMomLepZ);
+    fTree->Branch("MomLepT",&fMomLepT);
     fTree->Branch("LepNuAngle",&fLepNuAngle);
     fTree->Branch("SelTruePDG",&fSelTruePDG);
     fTree->Branch("SelTruePrimary",&fSelTruePrimary);
@@ -260,16 +297,20 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("SelRecoDownstreamY",&fSelRecoDownstreamY);
     fTree->Branch("SelRecoDownstreamZ",&fSelRecoDownstreamZ);
     fTree->Branch("SelRecoDownstreamT",&fSelRecoDownstreamT);
-    fTree->Branch("RecoENu",&fRecoENu);
+    fTree->Branch("SelRecoLength",&fSelRecoLength);
+    fTree->Branch("SelRecoContained",&fSelRecoContained);
+    fTree->Branch("SelRecoCharge",&fSelRecoCharge);
+    fTree->Branch("SelRecoMomMCS",&fSelRecoMomMCS);
+    fTree->Branch("SelRecoMomContained",&fSelRecoMomContained);
     fTree->Branch("SelMVAElectron",&fSelMVAElectron);
     fTree->Branch("SelMVAPion",&fSelMVAPion);
     fTree->Branch("SelMVAMuon",&fSelMVAMuon);
     fTree->Branch("SelMVAProton",&fSelMVAProton);
     fTree->Branch("SelMVAPhoton",&fSelMVAPhoton);
-
-
-
-
+    fTree->Branch("RecoEventCharge",&fRecoEventCharge);
+    fTree->Branch("RecoMomLep",&fRecoMomLep);
+    fTree->Branch("RecoEHad",&fRecoEHad);
+    fTree->Branch("RecoENu",&fRecoENu);
 
 
     fPOTTree = tfs->make<TTree>("pottree","pot tree");
@@ -311,6 +352,8 @@ void FDSelection::NumuCutSelection::Reset()
   fSubRun = kDefInt;
   fEvent = kDefInt;
   fIsMC = kDefInt;
+  //Detector stuff
+  fT0 = kDefDoub;
   //Neutrino stuff
   fNuPdg = kDefInt; 
   fBeamPdg = kDefInt; 
@@ -331,10 +374,10 @@ void FDSelection::NumuCutSelection::Reset()
   fNuT = kDefDoub;
   //Outgoing lepton stuff
   fLepPDG = kDefInt;
-  fLepMomX = kDefDoub;
-  fLepMomY = kDefDoub;
-  fLepMomZ = kDefDoub;
-  fLepMomT = kDefDoub;
+  fMomLepX = kDefDoub;
+  fMomLepY = kDefDoub;
+  fMomLepZ = kDefDoub;
+  fMomLepT = kDefDoub;
   fLepNuAngle = kDefDoub;
   //Selection stuff
   //true bits
@@ -373,13 +416,46 @@ void FDSelection::NumuCutSelection::Reset()
   fSelRecoDownstreamY = kDefDoub;
   fSelRecoDownstreamZ = kDefDoub;
   fSelRecoDownstreamT = kDefDoub;
+  fSelRecoLength = kDefDoub;
+  fSelRecoContained = 0;
+  fSelRecoCharge = kDefDoub;
+  fSelRecoMomMCS = kDefDoub;
+  fSelRecoMomContained = kDefDoub;
+
   //MVA bits
   fSelMVAElectron = kDefDoub;
   fSelMVAPion = kDefDoub;
   fSelMVAMuon = kDefDoub;
   fSelMVAProton = kDefDoub;
   fSelMVAPhoton = kDefDoub;
+  //Event level stuff
+  fRecoEventCharge = kDefDoub;
+  //Reco energy bits
+  fRecoEHad = kDefDoub;
+  fRecoMomLep = kDefDoub;
   fRecoENu = kDefDoub; //Neutrino reco energy
+}
+
+void FDSelection::NumuCutSelection::GetEventInfo(art::Event const & evt){
+  auto const *detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+  fT0 = detprop->TriggerOffset();
+
+  //Get the hit list handle
+  art::Handle< std::vector<recob::Hit> > hitListHandle; 
+  std::vector<art::Ptr<recob::Hit> > hitList; 
+  if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
+    art::fill_ptr_vector(hitList, hitListHandle);
+  }
+
+  //Loop over the hits to get the total charge
+  fRecoEventCharge = 0.;
+  for (unsigned int i_hit = 0; i_hit < hitList.size(); i_hit++){
+    if (hitList[i_hit]->WireID().Plane == 2){
+      fRecoEventCharge += hitList[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(hitList[i_hit]->PeakTime(), fT0);
+    }
+  }
+
+  return;
 }
 
 void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
@@ -416,10 +492,10 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
     fNuMomT   = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().T();
     //Lepton stuff
     fLepPDG     = mcList[i_mctruth]->GetNeutrino().Lepton().PdgCode();
-    fLepMomX    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().X();
-    fLepMomY    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().Y();
-    fLepMomZ    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().Z();
-    fLepMomT    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().T();
+    fMomLepX    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().X();
+    fMomLepY    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().Y();
+    fMomLepZ    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().Z();
+    fMomLepT    = mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().T();
     fLepNuAngle = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().Vect().Angle(mcList[i_mctruth]->GetNeutrino().Lepton().Momentum().Vect());
     fNuX = mcList[i_mctruth]->GetNeutrino().Nu().Vx();
     fNuY = mcList[i_mctruth]->GetNeutrino().Nu().Vy();
@@ -435,17 +511,22 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
     art::fill_ptr_vector(trackList, trackListHandle);
   }
   int i_longest_track = -1;
-  double longest_track_length = -999;
+  fSelRecoLength = -999;
   //Loop over the tracks to get the longest one NICE
   for (unsigned int i_track = 0; i_track < trackList.size(); i_track++){
     double current_track_length = trackList[i_track]->Length();
-    if (current_track_length > longest_track_length){
-      longest_track_length = current_track_length;
+    if (current_track_length > fSelRecoLength){
+      fSelRecoLength = current_track_length;
       i_longest_track = i_track;
     }
   }
   //If we didn't find a longest track then what's the point?
   if (i_longest_track < 0) return;
+  //Get the hits for said track
+  art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
+  const std::vector<art::Ptr<recob::Hit> > sel_track_hits = fmht.at(i_longest_track);
+
+  //Start filling some variables
   recob::Track::Point_t trackStart, trackEnd;
   std::tie(trackStart, trackEnd) = trackList[i_longest_track]->Extent(); 
   fSelRecoMomX = kDefDoub; //temp
@@ -474,13 +555,23 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
     fSelRecoUpstreamY = fSelRecoEndY;
     fSelRecoUpstreamZ = fSelRecoEndZ;
   }
-  //May as well get the neutrino eneryg reco now as well
-  fRecoENu = kDefDoub; //temp
+  fSelRecoContained = IsTrackContained(trackList[i_longest_track], sel_track_hits, evt);
+  fSelRecoCharge = CalculateTrackCharge(trackList[i_longest_track],sel_track_hits);
+  //Now calculate neutrino energy n all that
+  //May as well store both momentum calculations for the track
+  trkf::TrackMomentumCalculator trkMomCalc;
+  fSelRecoMomMCS = trkMomCalc.GetMomentumMultiScatterChi2(trackList[i_longest_track]);
+  fSelRecoMomMCS = (fSelRecoMomMCS-fIntTrkMomMCS)/fGradTrkMomMCS;
+  fSelRecoMomContained = (fSelRecoLength-fIntTrkMomRange)/fGradTrkMomRange;
+  //Define the lepton momentum
+  if (fSelRecoContained) fRecoMomLep = fSelRecoMomContained;
+  else fRecoMomLep = fSelRecoMomMCS;
+  //Get the hadronic energy bit
+  fRecoEHad = ((fRecoEventCharge-fSelRecoCharge)*(1.0 / 0.63)*(23.6e-9 / 4.966e-3) - fIntNuMuHadEnCorr)/fGradNuMuHadEnCorr;
+  //Calculate ENu
+  fRecoENu = fRecoMomLep + fRecoEHad;
 
-  //Get the hits for said track
-  art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
-  const std::vector<art::Ptr<recob::Hit> > hits = fmht.at(i_longest_track);
-  int g4id = FDSelectionUtils::TrueParticleID(hits);
+  int g4id = FDSelectionUtils::TrueParticleID(sel_track_hits);
   art::ServiceHandle<cheat::BackTracker> bt;
   const simb::MCParticle* matched_mcparticle = bt->ParticleList().at(g4id);
   if (matched_mcparticle){
@@ -511,7 +602,40 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
   fSelMVAMuon = mvaOutMap["muon"];
   fSelMVAProton = mvaOutMap["proton"];
   fSelMVAPhoton = mvaOutMap["photon"];
-  //Get the Reco stuff
+}
+  double FDSelection::NumuCutSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
+    double charge = 0;
+    for (unsigned int i_hit = 0; i_hit < track_hits.size(); i_hit++){
+      if (track_hits[i_hit]->WireID().Plane != 2) continue; //Collection only
+      charge += track_hits[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(track_hits[i_hit]->PeakTime(), fT0);
+    }
+    return charge;
+  }
+
+
+  bool FDSelection::NumuCutSelection::IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt){
+    //Get the space points for each of the hits
+    //Annoyingly we have to go from the start of the handle for the hits...
+    art::Handle< std::vector<recob::Hit> > hitListHandle; 
+    std::vector<art::Ptr<recob::Hit> > hitList; 
+    if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
+      art::fill_ptr_vector(hitList, hitListHandle);
+    }
+    art::FindManyP<recob::SpacePoint> fmhs(hitListHandle, evt, fTrackModuleLabel);
+    for (unsigned int i_hit = 0; i_hit < track_hits.size(); i_hit++){
+      if (track_hits[i_hit]->WireID().Plane != 2) continue;
+      std::vector<art::Ptr<recob::SpacePoint> > space_points = fmhs.at(track_hits[i_hit].key());
+      if (space_points.size()){
+        //Make a TVector3
+        TVector3 position(space_points[0]->XYZ()[0],space_points[0]->XYZ()[1],space_points[0]->XYZ()[2]);
+        bool is_in_tpc = FDSelectionUtils::IsInsideTPC(position,20); //20cm buffer from the wall
+        if (!is_in_tpc){
+          return false;
+        }
+      }
+    }
+
+  return true;
 }
 
 DEFINE_ART_MODULE(FDSelection::NumuCutSelection)

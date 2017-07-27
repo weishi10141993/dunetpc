@@ -9,6 +9,7 @@ art_make( LIBRARY_NAME FDSelection
 	  	        lardataobj_RecoBase
 	  	        lardata_RecoObjects larreco_Deprecated
 	  	        larreco_RecoAlg
+         			larreco_Calorimetry
 	  	        larpandora_LArPandoraInterface
 	  	        SignalShapingServiceDUNE10kt_service
 	  	        SignalShapingServiceDUNE35t_service

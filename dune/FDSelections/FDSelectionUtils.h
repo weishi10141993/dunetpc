@@ -30,6 +30,8 @@
 //#include "lardataobj/AnalysisBase/MVAPIDResult.h"
 //#include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTracker.h"
+#include "larcore/Geometry/Geometry.h"
+
 
 // c++
 #include <vector>
@@ -42,6 +44,7 @@
 namespace FDSelectionUtils{
   int TrueParticleID(const art::Ptr<recob::Hit>& hit);
   int TrueParticleID(const std::vector<art::Ptr<recob::Hit> >& hits);
+  bool IsInsideTPC(TVector3 position, double distance_buffer);
 }
 
 #endif
