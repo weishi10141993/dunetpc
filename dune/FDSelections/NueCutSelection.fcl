@@ -1,13 +1,28 @@
+#include "calorimetry_dune10kt.fcl"
+#include "showeralgorithms.fcl"
+
 BEGIN_PROLOG
 
 standard_NueCutSelection:
-{ 
- module_type:                 "NueCutSelection"
- NuGenModuleLabel:            "generator"
- TrackModuleLabel:            "pandora"
- ShowerModuleLabel:           "pandora"
- PIDModuleLabel:              "pid"
- POTModuleLabel:              "generator"
+{
+
+  module_type:                 "NueCutSelection"
+  NuGenModuleLabel:            "generator"
+  HitsModuleLabel:             "linecluster"
+  TrackModuleLabel:            "pandora"
+  ShowerModuleLabel:           "pandora"
+  PIDModuleLabel:              "pid"
+  POTModuleLabel:              "generator"
+
+  GradTrkMomRange:             406
+  IntTrkMomRange:              -34
+  GradTrkMomMCS:               0.90
+  IntTrkMomMCS:                0.21
+  GradNuMuHadEnCorr:           0.60
+  IntNuMuHadEnCorr:            0.09
+  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
+  ShowerEnergyAlg:             @local::dune10kt_showerenergy
+
 }
 
 END_PROLOG

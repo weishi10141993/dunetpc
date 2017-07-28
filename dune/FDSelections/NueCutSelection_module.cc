@@ -20,11 +20,13 @@
 #include "art/Framework/Services/Optional/TFileService.h"
 
 // LArSoft includes
+#include "larcoreobj/SummaryData/POTSummary.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
-#include "larcoreobj/SummaryData/POTSummary.h"
+#include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
+#include "larreco/RecoAlg/ShowerEnergyAlg.h"
 
 // custom
 #include "FDSelectionUtils.h"
@@ -65,14 +67,29 @@ public:
 
 private:
 
-  /// Resets all tree variables
-  void Reset();
+  /// Calculates the total lifetime-corrected charge for all hits in a shower
+  double CalculateShowerCharge(const std::vector<art::Ptr<recob::Hit> >& showerHits);
+
+  /// Get event-level info that is necessary/handy for selecting events but doesn't really fall under the 'selection' banner
+  void GetEventInfo(art::Event const & evt);
 
   /// Get the truth info from the art event record
   void GetTruthInfo(const art::Event& evt);
 
+  /// Resets all tree variables
+  void Reset();
+
   /// Run the selection and dump relevant info to the tree
   void RunSelection(const art::Event& evt);
+
+  // Algs
+  PIDAnaAlg fPIDAnaAlg;
+  calo::CalorimetryAlg fCalorimetryAlg;
+  shower::ShowerEnergyAlg fShowerEnergyAlg;
+
+  // Services
+  art::ServiceHandle<art::TFileService> tfs;
+  art::ServiceHandle<geo::Geometry> geom;
 
   // The selection tree
   TTree *fTree;
@@ -81,6 +98,8 @@ private:
   int fSubRun;
   int fEvent;
   int fIsMC;
+  // Detector stuff
+  double fT0;
   // Neutrino stuff
   int fNuPdg;   // Interaction PDG
   int fBeamPdg; // PDG at point of creation
@@ -133,29 +152,54 @@ private:
   double fSelMVAMuon;
   double fSelMVAProton;
   double fSelMVAPhoton;
-  double fRecoENu; //Reco neutrino energy
+  // event level stuff
+  double fRecoEventCharge;
+  // reco energy stuff
+  double fRecoELep; // Reco lepton energy
+  double fRecoEHad; // Reco hadronic energy
+  double fRecoENu;  // Reco neutrino energy
 
   // POT tree stuff
   TTree* fPOTTree;
   double fPOT;
 
-  // Module fhicl labels
-  std::string fNuGenModuleLabel, fTrackModuleLabel, fShowerModuleLabel, fPIDModuleLabel, fPOTModuleLabel;
-
-  // Algs
-  PIDAnaAlg fPIDAnaAlg;
+  // fhicl parameters
+  // labels
+  std::string fNuGenModuleLabel;
+  std::string fHitsModuleLabel;
+  std::string fTrackModuleLabel;
+  std::string fShowerModuleLabel;
+  std::string fPIDModuleLabel;
+  std::string fPOTModuleLabel;
+  // nu energy reco
+  double fGradTrkMomRange;
+  double fIntTrkMomRange;
+  double fGradTrkMomMCS;
+  double fIntTrkMomMCS;
+  double fGradNuMuHadEnCorr;
+  double fIntNuMuHadEnCorr;
 
 };
 
 DEFINE_ART_MODULE(FDSelection::NueCutSelection)
 
 FDSelection::NueCutSelection::NueCutSelection(const fhicl::ParameterSet& pset) : EDAnalyzer(pset),
-                                                                                 fPIDAnaAlg(pset) {
+                                                                                 fPIDAnaAlg(pset),
+                                                                                 fCalorimetryAlg(pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
+                                                                                 fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")) {
   fNuGenModuleLabel  = pset.get<std::string>("NuGenModuleLabel");
+  fHitsModuleLabel   = pset.get<std::string>("HitsModuleLabel");
   fTrackModuleLabel  = pset.get<std::string>("TrackModuleLabel");
   fShowerModuleLabel = pset.get<std::string>("ShowerModuleLabel");
   fPIDModuleLabel    = pset.get<std::string>("PIDModuleLabel");
   fPOTModuleLabel    = pset.get<std::string>("POTModuleLabel");
+  fGradTrkMomRange   = pset.get<double>("GradTrkMomRange");
+  fIntTrkMomRange    = pset.get<double>("IntTrkMomRange");
+  fGradTrkMomMCS     = pset.get<double>("GradTrkMomMCS");
+  fIntTrkMomMCS      = pset.get<double>("IntTrkMomMCS");
+  fGradNuMuHadEnCorr = pset.get<double>("GradNuMuHadEnCorr");
+  fIntNuMuHadEnCorr  = pset.get<double>("IntNuMuHadEnCorr");
+
 }
 
 void FDSelection::NueCutSelection::analyze(const art::Event& evt) {
@@ -166,11 +210,11 @@ void FDSelection::NueCutSelection::analyze(const art::Event& evt) {
   fEvent = evt.event();
   fIsMC = !(evt.isRealData());
 
+  GetEventInfo(evt);
   if (fIsMC)
     GetTruthInfo(evt);
 
-  //RunSelection(evt);
-
+  RunSelection(evt);
   fPIDAnaAlg.Run(evt);
 
   fTree->Fill();
@@ -182,7 +226,6 @@ void FDSelection::NueCutSelection::analyze(const art::Event& evt) {
 
 void FDSelection::NueCutSelection::beginJob() {
 
-  art::ServiceHandle<art::TFileService> tfs;
   fTree = tfs->make<TTree>("nuecutsel","Nue cut selection");
   fTree->Branch("Run",			&fRun);
   fTree->Branch("SubRun",		&fSubRun);
@@ -229,15 +272,18 @@ void FDSelection::NueCutSelection::beginJob() {
   fTree->Branch("SelRecoStartY",	&fSelRecoStartY);
   fTree->Branch("SelRecoStartZ",	&fSelRecoStartZ);
   fTree->Branch("SelRecoStartT",	&fSelRecodEdx);
-  fTree->Branch("RecoENu",		&fRecoENu);
   fTree->Branch("SelMVAElectron",	&fSelMVAElectron);
   fTree->Branch("SelMVAPion",		&fSelMVAPion);
   fTree->Branch("SelMVAMuon",		&fSelMVAMuon);
   fTree->Branch("SelMVAProton",		&fSelMVAProton);
   fTree->Branch("SelMVAPhoton",		&fSelMVAPhoton);
+  fTree->Branch("RecoEventCharge",      &fRecoEventCharge);
+  fTree->Branch("RecoELep",             &fRecoELep);
+  fTree->Branch("RecoEHad",             &fRecoEHad);
+  fTree->Branch("RecoENu",		&fRecoENu);
 
   fPOTTree = tfs->make<TTree>("pottree","pot tree");
-  fPOTTree->Branch("POT",     &fPOT);
+  fPOTTree->Branch("Pot",     &fPOT);
   fPOTTree->Branch("Run",     &fRun);
   fPOTTree->Branch("SubRun",  &fSubRun);
 
@@ -271,69 +317,40 @@ void FDSelection::NueCutSelection::endJob() {
   // Implementation of optional member function here.
 }
 
-void FDSelection::NueCutSelection::Reset() {
-  // Generic stuff
-  fRun			= kDefInt;
-  fSubRun		= kDefInt;
-  fEvent		= kDefInt;
-  fIsMC			= kDefInt;
-  // Neutrino stuff
-  fNuPdg		= kDefInt; 
-  fBeamPdg		= kDefInt; 
-  fNC			= kDefInt;    
-  fMode			= kDefInt; 
-  fQ2			= kDefDoub;
-  fEnu			= kDefDoub;
-  fW			= kDefDoub;
-  fX			= kDefDoub;
-  fY			= kDefDoub;
-  fNuMomX		= kDefDoub;
-  fNuMomY		= kDefDoub;
-  fNuMomZ		= kDefDoub;
-  fNuMomT		= kDefDoub;
-  fNuX			= kDefDoub;
-  fNuY			= kDefDoub;
-  fNuZ			= kDefDoub;
-  fNuT			= kDefDoub;
-  // Outgoing lepton stuff
-  fLepPDG		= kDefInt;
-  fLepMomX		= kDefDoub;
-  fLepMomY		= kDefDoub;
-  fLepMomZ		= kDefDoub;
-  fLepMomT		= kDefDoub;
-  fLepNuAngle		= kDefDoub;
-  // Selection stuff
-  fRecoENu		= kDefDoub; //Neutrino reco energy
-  // true
-  fSelTruePDG		= kDefInt;
-  fSelTruePrimary	= kDefInt;
-  fSelTrueMomX		= kDefDoub;
-  fSelTrueMomY		= kDefDoub;
-  fSelTrueMomZ		= kDefDoub;
-  fSelTrueMomT		= kDefDoub;
-  fSelTrueStartX	= kDefDoub;
-  fSelTrueStartY	= kDefDoub;
-  fSelTrueStartZ	= kDefDoub;
-  fSelTrueStartT	= kDefDoub;
-  // reco
-  fSelRecoDirX		= kDefDoub;
-  fSelRecoDirY		= kDefDoub;
-  fSelRecoDirZ		= kDefDoub;
-  fSelRecoEnergy	= kDefDoub;
-  fSelRecoStartX	= kDefDoub;
-  fSelRecoStartY	= kDefDoub;
-  fSelRecoStartZ	= kDefDoub;
-  fSelRecodEdx		= kDefDoub;
-  // MVA stuff
-  fSelMVAElectron	= kDefDoub;
-  fSelMVAPion		= kDefDoub;
-  fSelMVAMuon		= kDefDoub;
-  fSelMVAProton		= kDefDoub;
-  fSelMVAPhoton		= kDefDoub;
+double FDSelection::NueCutSelection::CalculateShowerCharge(const std::vector<art::Ptr<recob::Hit> >& showerHits) {
+
+  double charge = 0;
+
+  for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = showerHits.begin(); hitIt != showerHits.end(); ++hitIt)
+    if ((*hitIt)->WireID().Plane == 2)
+      charge += (*hitIt)->Integral() * fCalorimetryAlg.LifetimeCorrection((*hitIt)->PeakTime(), fT0);
+
+  return charge;
 
 }
 
-void FDSelection::NueCutSelection::GetTruthInfo(const art::Event& evt){
+void FDSelection::NueCutSelection::GetEventInfo(const art::Event& evt) {
+
+  auto const *detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+  fT0 = detprop->TriggerOffset();
+
+  // get the hits from the event
+  art::Handle<std::vector<recob::Hit> > hitHandle;
+  std::vector<art::Ptr<recob::Hit> > hits;
+  if (evt.getByLabel(fHitsModuleLabel,hitHandle)) 
+    art::fill_ptr_vector(hits, hitHandle);
+
+  // get total lifetime correct charge
+  fRecoEventCharge = 0.;
+  for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt)
+    if ((*hitIt)->WireID().Plane == 2)
+      fRecoEventCharge += (*hitIt)->Integral() * fCalorimetryAlg.LifetimeCorrection((*hitIt)->PeakTime(), fT0);
+
+  return;
+
+}
+
+void FDSelection::NueCutSelection::GetTruthInfo(const art::Event& evt) {
 
   // Get the truth record
   art::Handle<std::vector<simb::MCTruth> > mcTruthHandle;
@@ -393,6 +410,73 @@ void FDSelection::NueCutSelection::GetTruthInfo(const art::Event& evt){
 
 }
 
+void FDSelection::NueCutSelection::Reset() {
+  // Generic stuff
+  fRun			= kDefInt;
+  fSubRun		= kDefInt;
+  fEvent		= kDefInt;
+  fIsMC			= kDefInt;
+  // Neutrino stuff
+  fNuPdg		= kDefInt; 
+  fBeamPdg		= kDefInt; 
+  fNC			= kDefInt;    
+  fMode			= kDefInt; 
+  fQ2			= kDefDoub;
+  fEnu			= kDefDoub;
+  fW			= kDefDoub;
+  fX			= kDefDoub;
+  fY			= kDefDoub;
+  fNuMomX		= kDefDoub;
+  fNuMomY		= kDefDoub;
+  fNuMomZ		= kDefDoub;
+  fNuMomT		= kDefDoub;
+  fNuX			= kDefDoub;
+  fNuY			= kDefDoub;
+  fNuZ			= kDefDoub;
+  fNuT			= kDefDoub;
+  // Outgoing lepton stuff
+  fLepPDG		= kDefInt;
+  fLepMomX		= kDefDoub;
+  fLepMomY		= kDefDoub;
+  fLepMomZ		= kDefDoub;
+  fLepMomT		= kDefDoub;
+  fLepNuAngle		= kDefDoub;
+  // Selection stuff
+  // true
+  fSelTruePDG		= kDefInt;
+  fSelTruePrimary	= kDefInt;
+  fSelTrueMomX		= kDefDoub;
+  fSelTrueMomY		= kDefDoub;
+  fSelTrueMomZ		= kDefDoub;
+  fSelTrueMomT		= kDefDoub;
+  fSelTrueStartX	= kDefDoub;
+  fSelTrueStartY	= kDefDoub;
+  fSelTrueStartZ	= kDefDoub;
+  fSelTrueStartT	= kDefDoub;
+  // reco
+  fSelRecoDirX		= kDefDoub;
+  fSelRecoDirY		= kDefDoub;
+  fSelRecoDirZ		= kDefDoub;
+  fSelRecoEnergy	= kDefDoub;
+  fSelRecoStartX	= kDefDoub;
+  fSelRecoStartY	= kDefDoub;
+  fSelRecoStartZ	= kDefDoub;
+  fSelRecodEdx		= kDefDoub;
+  // MVA stuff
+  fSelMVAElectron	= kDefDoub;
+  fSelMVAPion		= kDefDoub;
+  fSelMVAMuon		= kDefDoub;
+  fSelMVAProton		= kDefDoub;
+  fSelMVAPhoton		= kDefDoub;
+  // event level stuff
+  fRecoEventCharge      = kDefDoub;
+  // reco energy stuff
+  fRecoEHad             = kDefDoub;
+  fRecoELep             = kDefDoub;
+  fRecoENu              = kDefDoub; // neutrino reco energy
+
+}
+
 void FDSelection::NueCutSelection::RunSelection(art::Event const & evt) {
 
   // Get showers from the event
@@ -400,14 +484,27 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt) {
   std::vector<art::Ptr<recob::Shower> > showers;
   if (evt.getByLabel(fShowerModuleLabel,showerHandle))
     art::fill_ptr_vector(showers,showerHandle);
+  art::FindManyP<recob::Hit> fmhs(showerHandle, evt, fShowerModuleLabel);
 
   // Get the highest energy shower
   int i_energyist_shower = -1;
-  double energy_energyist_shower = -999;
+  double energy_energyist_shower = -999.;
   for (std::vector<art::Ptr<recob::Shower> >::const_iterator showerIt = showers.begin(); showerIt != showers.end(); ++showerIt) {
-    if ((*showerIt)->Energy().size() == 0)
-      continue;
-    double current_energy = (*showerIt)->Energy().at((*showerIt)->best_plane());
+    const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(showerIt->key());
+    std::map<int,double> showerEnergy;
+    for (unsigned int plane = 0; plane < geom->MaxPlanes(); ++plane)
+      showerEnergy[plane] = fShowerEnergyAlg.ShowerEnergy(showerHits, plane);
+    int best_plane = -1;
+    double highest_energy_plane = 0;
+    for (std::map<int,double>::const_iterator showerEnergyIt = showerEnergy.begin(); showerEnergyIt != showerEnergy.end(); ++showerEnergyIt) {
+      if (showerEnergyIt->second > highest_energy_plane) {
+	highest_energy_plane = showerEnergyIt->second;
+	best_plane = showerEnergyIt->first;
+      }
+    }
+    if (best_plane < 0)
+      return;
+    double current_energy = showerEnergy.at(best_plane);
     if (current_energy > energy_energyist_shower) {
       energy_energyist_shower = current_energy;
       i_energyist_shower = showerIt->key();
@@ -416,6 +513,7 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt) {
   if (i_energyist_shower < 0)
     return;
 
+  // fill reco info
   const art::Ptr<recob::Shower> sel_shower = showers.at(i_energyist_shower);
   fSelRecoDirX   = sel_shower->Direction().X();
   fSelRecoDirY   = sel_shower->Direction().Y();
@@ -423,17 +521,15 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt) {
   fSelRecoStartX = sel_shower->ShowerStart().X();
   fSelRecoStartY = sel_shower->ShowerStart().Y();
   fSelRecoStartZ = sel_shower->ShowerStart().Z();
-  if (sel_shower->Energy().size() != 0) {
-    fSelRecoEnergy = sel_shower->Energy().at(sel_shower->best_plane());
-    fSelRecodEdx   = sel_shower->dEdx().at(sel_shower->best_plane());
-  }
+  fSelRecoEnergy = energy_energyist_shower;
+  if (sel_shower->dEdx().size() != 0)
+    fSelRecodEdx = sel_shower->dEdx().at(sel_shower->best_plane());
+  else
+    fSelRecodEdx = 0;
 
-  fRecoENu = kDefDoub; //temp
-
-  // shower hits
-  art::FindManyP<recob::Hit> fmhs(showerHandle, evt, fShowerModuleLabel);
-  const std::vector<art::Ptr<recob::Hit> > hits = fmhs.at(i_energyist_shower);
-  int g4id = FDSelectionUtils::TrueParticleID(hits);
+  // fill truth info
+  const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(i_energyist_shower);
+  int g4id = FDSelectionUtils::TrueParticleID(showerHits);
   art::ServiceHandle<cheat::BackTracker> bt;
   const simb::MCParticle* matched_mcparticle = bt->ParticleList().at(g4id);
   if (matched_mcparticle) {
@@ -451,6 +547,11 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt) {
     fSelTrueStartZ = matched_mcparticle->Position(0).Z();
     fSelTrueStartT = matched_mcparticle->Position(0).T();
   }
+
+  // neutrino energy
+  double lepton_charge = CalculateShowerCharge(showerHits);
+  fRecoEHad = ((fRecoEventCharge-lepton_charge) * (1.0/0.63) * (23.6e-9/4.966e-3) - fIntNuMuHadEnCorr) / fGradNuMuHadEnCorr;
+  fRecoENu = fSelRecoEnergy + fRecoEHad;
 
   // pid stuff
   art::FindManyP<anab::MVAPIDResult> fmpids(showerHandle, evt, fPIDModuleLabel);
