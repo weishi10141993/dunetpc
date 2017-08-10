@@ -39,6 +39,7 @@ add_subdirectory(SpaceChargeServices)
 add_subdirectory(SupernovaAna)
 #add_subdirectory(DataOverlay)
 add_subdirectory(DAQSimAna)
+add_subdirectory(FDSelections)
 add_subdirectory(3x1x1dp)
 add_subdirectory(CVN)
 add_subdirectory(BeamData)
@@ -55,7 +56,6 @@ add_subdirectory(TrackPID)
 add_subdirectory(PandoraAnalysis)
 add_subdirectory(InfillChannels)
 add_subdirectory(VLNets)
-add_subdirectory(FDSelections)
 
 # Respect the order specified in lar_build, which is:
 #
