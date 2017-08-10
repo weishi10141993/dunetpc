@@ -512,14 +512,11 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
 }
 
 void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
-  art::Ptr<recob::Track> myseltrack = fRecoTrackSelector->FindSelectedTrack(evt);
-  if (myseltrack.isAvailable()) std::cout<<"Alright found a track"<<std::endl;
-  else std::cout<<"oh :("<<std::endl;
-  art::Handle< std::vector<recob::Track> > trackListHandle;
-  std::vector<art::Ptr<recob::Track> > trackList;
-  if (evt.getByLabel(fTrackModuleLabel, trackListHandle)){
-    art::fill_ptr_vector(trackList, trackListHandle);
-  }
+  //art::Ptr<recob::Track> myseltrack = fRecoTrackSelector->FindSelectedTrack(evt);
+  //if (myseltrack.isAvailable()) std::cout<<"Alright found a track"<<std::endl;
+  //else std::cout<<"oh :("<<std::endl;
+
+  /*
   int i_longest_track = -1;
   fSelRecoLength = -999;
   //Loop over the tracks to get the longest one NICE
@@ -530,15 +527,25 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
       i_longest_track = i_track;
     }
   }
+  */
+  art::Handle< std::vector<recob::Track> > trackListHandle;
+  if (!(evt.getByLabel(fTrackModuleLabel, trackListHandle))){
+    return;
+  }
+
+  //Get the longest track
+  art::Ptr<recob::Track> sel_track = fRecoTrackSelector->FindSelectedTrack(evt);
+
   //If we didn't find a longest track then what's the point?
-  if (i_longest_track < 0) return;
+  if (!(sel_track.isAvailable())) return;
+
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
-  const std::vector<art::Ptr<recob::Hit> > sel_track_hits = fmht.at(i_longest_track);
+  const std::vector<art::Ptr<recob::Hit> > sel_track_hits = fmht.at(sel_track.key());
 
   //Start filling some variables
   recob::Track::Point_t trackStart, trackEnd;
-  std::tie(trackStart, trackEnd) = trackList[i_longest_track]->Extent(); 
+  std::tie(trackStart, trackEnd) = sel_track->Extent(); 
   fSelRecoMomX = kDefDoub; //temp
   fSelRecoMomY = kDefDoub; //temp
   fSelRecoMomZ = kDefDoub; //temp
@@ -565,12 +572,12 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
     fSelRecoUpstreamY = fSelRecoEndY;
     fSelRecoUpstreamZ = fSelRecoEndZ;
   }
-  fSelRecoContained = IsTrackContained(trackList[i_longest_track], sel_track_hits, evt);
-  fSelRecoCharge = CalculateTrackCharge(trackList[i_longest_track],sel_track_hits);
+  fSelRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
+  fSelRecoCharge = CalculateTrackCharge(sel_track, sel_track_hits);
   //Now calculate neutrino energy n all that
   //May as well store both momentum calculations for the track
   trkf::TrackMomentumCalculator trkMomCalc;
-  fSelRecoMomMCS = trkMomCalc.GetMomentumMultiScatterChi2(trackList[i_longest_track]);
+  fSelRecoMomMCS = trkMomCalc.GetMomentumMultiScatterChi2(sel_track);
   fSelRecoMomMCS = (fSelRecoMomMCS-fIntTrkMomMCS)/fGradTrkMomMCS;
   fSelRecoMomContained = (fSelRecoLength-fIntTrkMomRange)/fGradTrkMomRange;
   //Define the lepton momentum
@@ -604,7 +611,7 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
   }
   //Now get the pid stuff
   art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
-  std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(i_longest_track);
+  std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_track.key());
   std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
   //Get the PIDs
   fSelMVAElectron = mvaOutMap["electron"];
