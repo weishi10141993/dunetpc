@@ -620,38 +620,38 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
   fSelMVAProton = mvaOutMap["proton"];
   fSelMVAPhoton = mvaOutMap["photon"];
 }
-  double FDSelection::NumuCutSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
-    double charge = 0;
-    for (unsigned int i_hit = 0; i_hit < track_hits.size(); i_hit++){
-      if (track_hits[i_hit]->WireID().Plane != 2) continue; //Collection only
-      charge += track_hits[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(track_hits[i_hit]->PeakTime(), fT0);
-    }
-    return charge;
+
+double FDSelection::NumuCutSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
+  double charge = 0;
+  for (unsigned int i_hit = 0; i_hit < track_hits.size(); i_hit++){
+    if (track_hits[i_hit]->WireID().Plane != 2) continue; //Collection only
+    charge += track_hits[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(track_hits[i_hit]->PeakTime(), fT0);
   }
+  return charge;
+}
 
 
-  bool FDSelection::NumuCutSelection::IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt){
-    //Get the space points for each of the hits
-    //Annoyingly we have to go from the start of the handle for the hits...
-    art::Handle< std::vector<recob::Hit> > hitListHandle; 
-    std::vector<art::Ptr<recob::Hit> > hitList; 
-    if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
-      art::fill_ptr_vector(hitList, hitListHandle);
-    }
-    art::FindManyP<recob::SpacePoint> fmhs(hitListHandle, evt, fTrackModuleLabel);
-    for (unsigned int i_hit = 0; i_hit < track_hits.size(); i_hit++){
-      if (track_hits[i_hit]->WireID().Plane != 2) continue;
-      std::vector<art::Ptr<recob::SpacePoint> > space_points = fmhs.at(track_hits[i_hit].key());
-      if (space_points.size()){
-        //Make a TVector3
-        TVector3 position(space_points[0]->XYZ()[0],space_points[0]->XYZ()[1],space_points[0]->XYZ()[2]);
-        bool is_in_tpc = FDSelectionUtils::IsInsideTPC(position,20); //20cm buffer from the wall
-        if (!is_in_tpc){
-          return false;
-        }
+bool FDSelection::NumuCutSelection::IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt){
+  //Get the space points for each of the hits
+  //Annoyingly we have to go from the start of the handle for the hits...
+  art::Handle< std::vector<recob::Hit> > hitListHandle; 
+  std::vector<art::Ptr<recob::Hit> > hitList; 
+  if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
+    art::fill_ptr_vector(hitList, hitListHandle);
+  }
+  art::FindManyP<recob::SpacePoint> fmhs(hitListHandle, evt, fTrackModuleLabel);
+  for (unsigned int i_hit = 0; i_hit < track_hits.size(); i_hit++){
+    if (track_hits[i_hit]->WireID().Plane != 2) continue;
+    std::vector<art::Ptr<recob::SpacePoint> > space_points = fmhs.at(track_hits[i_hit].key());
+    if (space_points.size()){
+      //Make a TVector3
+      TVector3 position(space_points[0]->XYZ()[0],space_points[0]->XYZ()[1],space_points[0]->XYZ()[2]);
+      bool is_in_tpc = FDSelectionUtils::IsInsideTPC(position,20); //20cm buffer from the wall
+      if (!is_in_tpc){
+        return false;
       }
     }
-
+  }
   return true;
 }
 
