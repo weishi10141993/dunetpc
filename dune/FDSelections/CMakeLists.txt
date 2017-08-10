@@ -35,6 +35,8 @@ art_make( LIBRARY_NAME FDSelection
 	  	           art_Utilities canvas
         )
 
+add_subdirectory(tools)
+
 install_headers()
 install_fhicl()
 install_source()

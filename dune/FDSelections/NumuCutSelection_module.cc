@@ -23,6 +23,7 @@
 #include "TTree.h"
 //ART
 #include "art/Framework/Services/Optional/TFileService.h"
+#include "art/Utilities/make_tool.h" 
 //LArSoft
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
@@ -34,6 +35,7 @@
 //Custom
 #include "PIDAnaAlg.h"
 #include "FDSelectionUtils.h"
+#include "tools/RecoTrackSelector.h"
 
 
 constexpr int kDefInt = -9999;
@@ -80,6 +82,9 @@ private:
   //Algs
   PIDAnaAlg fPIDAnaAlg;
   calo::CalorimetryAlg fCalorimetryAlg;
+
+  //Tools
+  std::unique_ptr<FDSelectionTools::RecoTrackSelector> fRecoTrackSelector;
 
   TTree *fTree; //The selection tree
   //Generic stuff
@@ -196,13 +201,14 @@ private:
 FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
-  fPIDAnaAlg(pset)   ,
+  fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
-  fNuGenModuleLabel        (pset.get< std::string >("NuGenModuleLabel")),
-  fTrackModuleLabel        (pset.get< std::string >("TrackModuleLabel")),
-  fPIDModuleLabel          (pset.get< std::string >("PIDModuleLabel")),
-  fHitsModuleLabel         (pset.get< std::string >("HitsModuleLabel")),
-  fPOTModuleLabel          (pset.get< std::string >("POTModuleLabel")),
+  fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
+  fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
+  fTrackModuleLabel        (pset.get< std::string >("ModuleLabels.TrackModuleLabel")),
+  fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
+  fHitsModuleLabel         (pset.get< std::string >("ModuleLabels.HitsModuleLabel")),
+  fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
   fGradTrkMomRange         (pset.get<double>("GradTrkMomRange")),
   fIntTrkMomRange          (pset.get<double>("IntTrkMomRange")),
   fGradTrkMomMCS           (pset.get<double>("GradTrkMomMCS")),
@@ -214,6 +220,7 @@ FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset
 
 void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
 {
+  fRecoTrackSelector->Test();
   //Get the generic stuff that can be pulled from the top of the record
   fRun = evt.run();
   fSubRun = evt.subRun();

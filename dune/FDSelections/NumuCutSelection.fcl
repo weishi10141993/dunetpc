@@ -5,12 +5,14 @@ BEGIN_PROLOG
 standard_NumuCutSelection:
 { 
  module_type:                 "dune/FDSelections/NumuCutSelection"
- NuGenModuleLabel:            "generator" 
- TrackModuleLabel:            "pandora"
- ShowerModuleLabel:           "pandora"
- PIDModuleLabel:              "pid"
- HitsModuleLabel:             "linecluster"
- POTModuleLabel:              "generator"
+ ModuleLabels: {
+   NuGenModuleLabel:            "generator" 
+   TrackModuleLabel:            "pandora"
+   ShowerModuleLabel:           "pandora"
+   PIDModuleLabel:              "pid"
+   HitsModuleLabel:             "linecluster"
+   POTModuleLabel:              "generator"
+ }                                
  GradTrkMomRange:             406
  IntTrkMomRange:              -34
  GradTrkMomMCS:               0.90
@@ -18,7 +20,8 @@ standard_NumuCutSelection:
  GradNuMuHadEnCorr:           0.60
  IntNuMuHadEnCorr:            0.09
  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
-
 }
+standard_NumuCutSelection.RecoTrackSelectorTool.tool_type: "LongestRecoTrackSelector"
+standard_NumuCutSelection.RecoTrackSelectorTool.ModuleLabels: @local::standard_NumuCutSelection.ModuleLabels
 
 END_PROLOG
