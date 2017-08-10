@@ -512,6 +512,9 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
 }
 
 void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
+  art::Ptr<recob::Track> myseltrack = fRecoTrackSelector->FindSelectedTrack(evt);
+  if (myseltrack.isAvailable()) std::cout<<"Alright found a track"<<std::endl;
+  else std::cout<<"oh :("<<std::endl;
   art::Handle< std::vector<recob::Track> > trackListHandle;
   std::vector<art::Ptr<recob::Track> > trackList;
   if (evt.getByLabel(fTrackModuleLabel, trackListHandle)){

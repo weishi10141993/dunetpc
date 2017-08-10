@@ -3,7 +3,11 @@
 //STL
 #include <iostream>
 //ROOT
+//ART
+#include "art/Framework/Principal/Handle.h"
+#include "art/Framework/Principal/Event.h"
 //LARSOFT
+#include "lardataobj/RecoBase/Track.h"
 
 //Base class for selecting reconstructed tracks in the DUNE far detector
 
@@ -11,7 +15,12 @@ namespace FDSelectionTools{
   class RecoTrackSelector {
     public:
       virtual ~RecoTrackSelector() noexcept = default;
+      art::Ptr<recob::Track> FindSelectedTrack(art::Event const & evt) { return SelectTrack(evt); };
       void Test() { std::cout<< "it runs!"<<std::endl; };
+    private:
+      virtual art::Ptr<recob::Track> SelectTrack(art::Event const & evt) = 0;
+
+
   };
 }
 #endif

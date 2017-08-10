@@ -12,8 +12,12 @@
 namespace FDSelectionTools{
   class LongestRecoTrackSelector : public RecoTrackSelector{
     public:
-      explicit LongestRecoTrackSelector(fhicl::ParameterSet const& ps) {};
-      void Test();
+      explicit LongestRecoTrackSelector(fhicl::ParameterSet const& ps) 
+        :
+        fTrackModuleLabel(ps.get< std::string> ("ModuleLabels.TrackModuleLabel")) {};
+    private:
+      art::Ptr<recob::Track> SelectTrack(art::Event const & evt) override;
+      std::string fTrackModuleLabel;
   };
 }
 
