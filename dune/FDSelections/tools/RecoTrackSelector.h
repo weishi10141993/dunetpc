@@ -16,7 +16,6 @@ namespace FDSelectionTools{
     public:
       virtual ~RecoTrackSelector() noexcept = default;
       art::Ptr<recob::Track> FindSelectedTrack(art::Event const & evt) { return SelectTrack(evt); };
-      void Test() { std::cout<< "it runs!"<<std::endl; };
     private:
       virtual art::Ptr<recob::Track> SelectTrack(art::Event const & evt) = 0;
 

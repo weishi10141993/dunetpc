@@ -220,7 +220,6 @@ FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset
 
 void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
 {
-  fRecoTrackSelector->Test();
   //Get the generic stuff that can be pulled from the top of the record
   fRun = evt.run();
   fSubRun = evt.subRun();
