@@ -572,6 +572,7 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
     fSelRecoUpstreamY = fSelRecoEndY;
     fSelRecoUpstreamZ = fSelRecoEndZ;
   }
+  fSelRecoLength = sel_track->Length();
   fSelRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
   fSelRecoCharge = CalculateTrackCharge(sel_track, sel_track_hits);
   //Now calculate neutrino energy n all that
