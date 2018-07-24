@@ -530,8 +530,8 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt) {
   // fill truth info
   const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(i_energyist_shower);
   int g4id = FDSelectionUtils::TrueParticleID(showerHits);
-  art::ServiceHandle<cheat::BackTracker> bt;
-  const simb::MCParticle* matched_mcparticle = bt->ParticleList().at(g4id);
+  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+  const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
   if (matched_mcparticle) {
     fSelTruePDG = matched_mcparticle->PdgCode();
     if (matched_mcparticle->Mother() == 0)

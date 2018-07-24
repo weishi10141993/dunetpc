@@ -83,7 +83,7 @@ void FDSelection::PIDAnaAlg::Run(const art::Event& evt) {
   art::FindManyP<anab::MVAPIDResult> fmpids(showerHandle, evt, fPIDModuleLabel);
 
   // true particles
-  const sim::ParticleList& trueParticleList = bt->ParticleList();
+  const sim::ParticleList& trueParticleList = pi_serv->ParticleList();
 
   // reco
   //fNObjects = (int)tracks.size() + (int)showers.size(); // for the moment, don't assume all objects have associated pid
@@ -239,7 +239,7 @@ int FDSelection::PIDAnaAlg::ParticleID(const art::Ptr<recob::Hit>& hit) {
 
   double particleEnergy = 0;
   int likelyTrackID = 0;
-  std::vector<sim::TrackIDE> trackIDs = bt->HitToTrackID(hit);
+  std::vector<sim::TrackIDE> trackIDs = bt_serv->HitToTrackIDEs(hit);
   for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
     if (trackIDs.at(idIt).energy > particleEnergy) {
       particleEnergy = trackIDs.at(idIt).energy;

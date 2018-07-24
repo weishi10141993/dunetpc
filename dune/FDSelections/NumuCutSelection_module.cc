@@ -589,8 +589,8 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
   fRecoENu = fRecoMomLep + fRecoEHad;
 
   int g4id = FDSelectionUtils::TrueParticleID(sel_track_hits);
-  art::ServiceHandle<cheat::BackTracker> bt;
-  const simb::MCParticle* matched_mcparticle = bt->ParticleList().at(g4id);
+  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+  const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
   if (matched_mcparticle){
     //Fill variables
     fSelTruePDG = matched_mcparticle->PdgCode();

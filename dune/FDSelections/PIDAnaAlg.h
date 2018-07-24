@@ -28,7 +28,8 @@
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/AnalysisBase/MVAPIDResult.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
-#include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 
 // c++
 #include <vector>
@@ -86,7 +87,8 @@ class FDSelection::PIDAnaAlg {
   int fRecoPoints[kMaxObjects];
 
   // services
-  art::ServiceHandle<cheat::BackTracker> bt;
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<art::TFileService> tfs;
 
 };

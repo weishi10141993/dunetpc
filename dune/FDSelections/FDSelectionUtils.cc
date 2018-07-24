@@ -3,8 +3,8 @@
 int FDSelectionUtils::TrueParticleID(const art::Ptr<recob::Hit>& hit) {
   double particleEnergy = 0;
   int likelyTrackID = 0;
-  art::ServiceHandle<cheat::BackTracker> bt;
-  std::vector<sim::TrackIDE> trackIDs = bt->HitToTrackID(hit);
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+  std::vector<sim::TrackIDE> trackIDs = bt_serv->HitToTrackIDEs(hit);
   for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
     if (trackIDs.at(idIt).energy > particleEnergy) {
       particleEnergy = trackIDs.at(idIt).energy;

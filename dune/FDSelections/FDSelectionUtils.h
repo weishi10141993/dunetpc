@@ -29,7 +29,8 @@
 //#include "lardataobj/RecoBase/Shower.h"
 //#include "lardataobj/AnalysisBase/MVAPIDResult.h"
 //#include "lardataobj/AnalysisBase/ParticleID.h"
-#include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+
 #include "larcore/Geometry/Geometry.h"
 
 
