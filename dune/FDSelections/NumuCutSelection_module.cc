@@ -32,6 +32,9 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "larreco/RecoAlg/TrackMomentumCalculator.h"
+//DUNE
+#include "dune/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
+
 //Custom
 #include "PIDAnaAlg.h"
 #include "FDSelectionUtils.h"
@@ -184,6 +187,7 @@ private:
   std::string fPIDModuleLabel;
   std::string fHitsModuleLabel;
   std::string fPOTModuleLabel;
+  std::string fEnergyRecoModuleLabel;
   //Fhicl psel params
   //Neutrino energy reco
   double fGradTrkMomRange;
@@ -209,6 +213,7 @@ FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
   fHitsModuleLabel         (pset.get< std::string >("ModuleLabels.HitsModuleLabel")),
   fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
+  fEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.EnergyRecoModuleLabel")),
   fGradTrkMomRange         (pset.get<double>("GradTrkMomRange")),
   fIntTrkMomRange          (pset.get<double>("IntTrkMomRange")),
   fGradTrkMomMCS           (pset.get<double>("GradTrkMomMCS")),
@@ -529,14 +534,20 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
   */
   art::Handle< std::vector<recob::Track> > trackListHandle;
   if (!(evt.getByLabel(fTrackModuleLabel, trackListHandle))){
+    std::cout<<"Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel << std::endl;
     return;
   }
 
-  //Get the longest track
+  //Get the selected track
   art::Ptr<recob::Track> sel_track = fRecoTrackSelector->FindSelectedTrack(evt);
 
-  //If we didn't find a longest track then what's the point?
+  //If we didn't find a selected track then what's the point?
   if (!(sel_track.isAvailable())) return;
+
+
+  //24/07/18 DBrailsford Get the reco energy data product for neutrinos
+  art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
+  if (!evt.getByLabel(fEnergyRecoModuleLabel, energyRecoHandle)) return;
 
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
@@ -572,21 +583,36 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
     fSelRecoUpstreamZ = fSelRecoEndZ;
   }
   fSelRecoLength = sel_track->Length();
-  fSelRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
   fSelRecoCharge = CalculateTrackCharge(sel_track, sel_track_hits);
-  //Now calculate neutrino energy n all that
-  //May as well store both momentum calculations for the track
-  trkf::TrackMomentumCalculator trkMomCalc;
-  fSelRecoMomMCS = trkMomCalc.GetMomentumMultiScatterChi2(sel_track);
-  fSelRecoMomMCS = (fSelRecoMomMCS-fIntTrkMomMCS)/fGradTrkMomMCS;
-  fSelRecoMomContained = (fSelRecoLength-fIntTrkMomRange)/fGradTrkMomRange;
-  //Define the lepton momentum
-  if (fSelRecoContained) fRecoMomLep = fSelRecoMomContained;
-  else fRecoMomLep = fSelRecoMomMCS;
-  //Get the hadronic energy bit
-  fRecoEHad = ((fRecoEventCharge-fSelRecoCharge)*(1.0 / 0.63)*(23.6e-9 / 4.966e-3) - fIntNuMuHadEnCorr)/fGradNuMuHadEnCorr;
-  //Calculate ENu
-  fRecoENu = fRecoMomLep + fRecoEHad;
+  //24/07/18 DBrailsford Use the data product to get the neutrino energy
+  //fSelRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
+  fRecoENu = energyRecoHandle->fNuLorentzVector.E();
+  fRecoEHad = energyRecoHandle->fHadLorentzVector.E();
+
+  fSelRecoContained = energyRecoHandle->longestTrackContained; 
+  if (energyRecoHandle->trackMomMethod==1){ //momentum by range was used to calculate ENu
+    fSelRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+    fRecoMomLep = fSelRecoMomContained;
+  }
+  else if (energyRecoHandle->trackMomMethod==0){//momentum by MCS
+    fSelRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+    fRecoMomLep = fSelRecoMomMCS;
+  }
+  ////Now calculate neutrino energy n all that
+  ////May as well store both momentum calculations for the track
+  //trkf::TrackMomentumCalculator trkMomCalc;
+  //fSelRecoMomMCS = trkMomCalc.GetMomentumMultiScatterChi2(sel_track);
+  //fSelRecoMomMCS = (fSelRecoMomMCS-fIntTrkMomMCS)/fGradTrkMomMCS;
+  //fSelRecoMomContained = (fSelRecoLength-fIntTrkMomRange)/fGradTrkMomRange;
+  ////Define the lepton momentum
+  //if (fSelRecoContained) fRecoMomLep = fSelRecoMomContained;
+  //else fRecoMomLep = fSelRecoMomMCS;
+  ////Get the hadronic energy bit
+  //fRecoEHad = ((fRecoEventCharge-fSelRecoCharge)*(1.0 / 0.63)*(23.6e-9 / 4.966e-3) - fIntNuMuHadEnCorr)/fGradNuMuHadEnCorr;
+  ////Calculate ENu
+  //fRecoENu = fRecoMomLep + fRecoEHad;
+
+ //}
 
   int g4id = FDSelectionUtils::TrueParticleID(sel_track_hits);
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;

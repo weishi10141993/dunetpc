@@ -7,11 +7,12 @@ standard_NumuCutSelection:
  module_type:                 "dune/FDSelections/NumuCutSelection"
  ModuleLabels: {
    NuGenModuleLabel:            "generator" 
-   TrackModuleLabel:            "pandora"
-   ShowerModuleLabel:           "pandora"
+   TrackModuleLabel:            "pandoraTrack"
+   ShowerModuleLabel:           "pandoraTrack"
    PIDModuleLabel:              "pid"
    HitsModuleLabel:             "linecluster"
    POTModuleLabel:              "generator"
+   EnergyRecoModuleLabel:       "energyreconumu"
  }                                
  GradTrkMomRange:             406
  IntTrkMomRange:              -34
