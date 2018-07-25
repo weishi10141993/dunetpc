@@ -188,15 +188,6 @@ private:
   std::string fHitsModuleLabel;
   std::string fPOTModuleLabel;
   std::string fEnergyRecoModuleLabel;
-  //Fhicl psel params
-  //Neutrino energy reco
-  double fGradTrkMomRange;
-  double fIntTrkMomRange;
-  double fGradTrkMomMCS;
-  double fIntTrkMomMCS;
-  double fGradNuMuHadEnCorr;
-  double fIntNuMuHadEnCorr;
-
  
 
 };
@@ -213,14 +204,7 @@ FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
   fHitsModuleLabel         (pset.get< std::string >("ModuleLabels.HitsModuleLabel")),
   fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
-  fEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.EnergyRecoModuleLabel")),
-  fGradTrkMomRange         (pset.get<double>("GradTrkMomRange")),
-  fIntTrkMomRange          (pset.get<double>("IntTrkMomRange")),
-  fGradTrkMomMCS           (pset.get<double>("GradTrkMomMCS")),
-  fIntTrkMomMCS            (pset.get<double>("IntTrkMomMCS")),
-  fGradNuMuHadEnCorr       (pset.get<double>("GradNuMuHadEnCorr")),
-  fIntNuMuHadEnCorr        (pset.get<double>("IntNuMuHadEnCorr"))
-
+  fEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.EnergyRecoModuleLabel"))
 {}
 
 void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
@@ -598,21 +582,6 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
     fSelRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
     fRecoMomLep = fSelRecoMomMCS;
   }
-  ////Now calculate neutrino energy n all that
-  ////May as well store both momentum calculations for the track
-  //trkf::TrackMomentumCalculator trkMomCalc;
-  //fSelRecoMomMCS = trkMomCalc.GetMomentumMultiScatterChi2(sel_track);
-  //fSelRecoMomMCS = (fSelRecoMomMCS-fIntTrkMomMCS)/fGradTrkMomMCS;
-  //fSelRecoMomContained = (fSelRecoLength-fIntTrkMomRange)/fGradTrkMomRange;
-  ////Define the lepton momentum
-  //if (fSelRecoContained) fRecoMomLep = fSelRecoMomContained;
-  //else fRecoMomLep = fSelRecoMomMCS;
-  ////Get the hadronic energy bit
-  //fRecoEHad = ((fRecoEventCharge-fSelRecoCharge)*(1.0 / 0.63)*(23.6e-9 / 4.966e-3) - fIntNuMuHadEnCorr)/fGradNuMuHadEnCorr;
-  ////Calculate ENu
-  //fRecoENu = fRecoMomLep + fRecoEHad;
-
- //}
 
   int g4id = FDSelectionUtils::TrueParticleID(sel_track_hits);
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;

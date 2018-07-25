@@ -14,12 +14,6 @@ standard_NumuCutSelection:
    POTModuleLabel:              "generator"
    EnergyRecoModuleLabel:       "energyreconumu"
  }                                
- GradTrkMomRange:             406
- IntTrkMomRange:              -34
- GradTrkMomMCS:               0.90
- IntTrkMomMCS:                0.21
- GradNuMuHadEnCorr:           0.60
- IntNuMuHadEnCorr:            0.09
  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
 }
 standard_NumuCutSelection.RecoTrackSelectorTool.tool_type: "LongestRecoTrackSelector"
