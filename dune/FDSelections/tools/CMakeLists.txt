@@ -17,3 +17,15 @@ simple_plugin(MuonMVARecoTrackSelector "tool"
  	  	           art_Utilities canvas
 
              )
+
+simple_plugin(HighestEnergyRecoShowerSelector "tool"
+    	  	        lardataobj_RecoBase
+                larcorealg_Geometry
+                larcore_Geometry_Geometry_service
+                larreco_RecoAlg
+                ${ROOT_BASIC_LIB_LIST}
+                ${ART_FRAMEWORK_PRINCIPAL}
+                ${ART_FRAMEWORK_SERVICES_REGISTRY}
+ 	  	           art_Utilities canvas
+
+             )

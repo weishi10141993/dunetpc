@@ -39,7 +39,7 @@
 //Custom
 #include "PIDAnaAlg.h"
 #include "FDSelectionUtils.h"
-//#include "tools/RecoTrackSelector.h"
+#include "tools/RecoShowerSelector.h"
 
 
 constexpr int kDefInt = -9999;
@@ -89,7 +89,7 @@ private:
 
 
   //Tools
-  //std::unique_ptr<FDSelectionTools::RecoTrackSelector> fRecoTrackSelector;
+  std::unique_ptr<FDSelectionTools::RecoShowerSelector> fRecoShowerSelector;
 
   TTree *fTree; //The selection tree
   //Generic stuff
@@ -148,7 +148,6 @@ private:
   double fSelRecoDirX;
   double fSelRecoDirY;
   double fSelRecoDirZ;
-  double fSelRecoEnergy;
   double fSelRecoStartX;
   double fSelRecoStartY;
   double fSelRecoStartZ;
@@ -190,7 +189,7 @@ FDSelection::NueCutSelection::NueCutSelection(fhicl::ParameterSet const & pset)
   fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")),
-  //fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
+  fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
   fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
   fShowerModuleLabel        (pset.get< std::string >("ModuleLabels.ShowerModuleLabel")),
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
@@ -271,7 +270,6 @@ void FDSelection::NueCutSelection::beginJob()
     fTree->Branch("SelRecoDirX",		&fSelRecoDirX);
     fTree->Branch("SelRecoDirY",		&fSelRecoDirY);
     fTree->Branch("SelRecoDirZ",		&fSelRecoDirZ);
-    fTree->Branch("SelRecoEnergy",		&fSelRecoEnergy);
     fTree->Branch("SelRecoStartX",	&fSelRecoStartX);
     fTree->Branch("SelRecoStartY",	&fSelRecoStartY);
     fTree->Branch("SelRecoStartZ",	&fSelRecoStartZ);
@@ -378,7 +376,6 @@ void FDSelection::NueCutSelection::Reset()
   fSelRecoDirX		= kDefDoub;
   fSelRecoDirY		= kDefDoub;
   fSelRecoDirZ		= kDefDoub;
-  fSelRecoEnergy	= kDefDoub;
   fSelRecoStartX	= kDefDoub;
   fSelRecoStartY	= kDefDoub;
   fSelRecoStartZ	= kDefDoub;
@@ -470,45 +467,15 @@ void FDSelection::NueCutSelection::GetTruthInfo(art::Event const & evt){
 void FDSelection::NueCutSelection::RunSelection(art::Event const & evt){
   art::Handle< std::vector<recob::Shower> > showerListHandle;
   if (!(evt.getByLabel(fShowerModuleLabel, showerListHandle))){
-    std::cout<<"Unable to find std::vector<recob::Track> with module label: " << fShowerModuleLabel << std::endl;
+    std::cout<<"Unable to find std::vector<recob::Shower> with module label: " << fShowerModuleLabel << std::endl;
     return;
   }
-  std::vector<art::Ptr<recob::Shower> > showers;
-  art::fill_ptr_vector(showers,showerListHandle);
-  art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
-
-  // Get the highest energy shower
-  int i_energyist_shower = -1;
-  double energy_energyist_shower = -999.;
-  art::ServiceHandle<geo::Geometry> geom;
-
-  for (std::vector<art::Ptr<recob::Shower> >::const_iterator showerIt = showers.begin(); showerIt != showers.end(); ++showerIt) {
-    const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(showerIt->key());
-    std::map<int,double> showerEnergy;
-    for (unsigned int plane = 0; plane < geom->MaxPlanes(); ++plane)
-      showerEnergy[plane] = fShowerEnergyAlg.ShowerEnergy(showerHits, plane);
-    int best_plane = -1;
-    double highest_energy_plane = 0;
-    for (std::map<int,double>::const_iterator showerEnergyIt = showerEnergy.begin(); showerEnergyIt != showerEnergy.end(); ++showerEnergyIt) {
-      if (showerEnergyIt->second > highest_energy_plane) {
-	highest_energy_plane = showerEnergyIt->second;
-	best_plane = showerEnergyIt->first;
-      }
-    }
-    if (best_plane < 0)
-      return;
-    double current_energy = showerEnergy.at(best_plane);
-    if (current_energy > energy_energyist_shower) {
-      energy_energyist_shower = current_energy;
-      i_energyist_shower = showerIt->key();
-    }
-  }
-  if (i_energyist_shower < 0)
-    return;
+  //std::vector<art::Ptr<recob::Shower> > showers;
+  //art::fill_ptr_vector(showers,showerListHandle);
 
 
   //Get the selected shower
-  art::Ptr<recob::Shower> sel_shower = showers.at(i_energyist_shower); 
+  art::Ptr<recob::Shower> sel_shower = fRecoShowerSelector->FindSelectedShower(evt);
 
   //If we didn't find a selected track then what's the point?
   if (!(sel_shower.isAvailable())) return;
@@ -519,7 +486,7 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt){
   if (!evt.getByLabel(fEnergyRecoModuleLabel, energyRecoHandle)) return;
 
   //Get the hits for said track
-  //art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
+  art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
   const std::vector<art::Ptr<recob::Hit> > sel_shower_hits = fmhs.at(sel_shower.key());
 
   fSelRecoDirX   = sel_shower->Direction().X();
@@ -528,7 +495,6 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt){
   fSelRecoStartX = sel_shower->ShowerStart().X();
   fSelRecoStartY = sel_shower->ShowerStart().Y();
   fSelRecoStartZ = sel_shower->ShowerStart().Z();
-  fSelRecoEnergy = energy_energyist_shower;
 
   fSelRecoCharge = CalculateShowerCharge(sel_shower, sel_shower_hits);
   //24/07/18 DBrailsford Use the data product to get the neutrino energy

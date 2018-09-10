@@ -19,5 +19,9 @@ standard_NueCutSelection:
  ShowerEnergyAlg:             @local::dune10kt_showerenergy
 
 }
+standard_NueCutSelection.RecoShowerSelectorTool.tool_type: "HighestEnergyRecoShowerSelector"
+standard_NueCutSelection.RecoShowerSelectorTool.ModuleLabels: @local::standard_NueCutSelection.ModuleLabels
+standard_NueCutSelection.RecoShowerSelectorTool.ShowerEnergyAlg: @local::standard_NueCutSelection.ShowerEnergyAlg
+
 
 END_PROLOG
