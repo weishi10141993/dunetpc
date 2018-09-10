@@ -121,6 +121,10 @@ private:
   double fMomLepY;
   double fMomLepZ;
   double fMomLepT;
+  double fLepEndX;
+  double fLepEndY;
+  double fLepEndZ;
+  double fLepEndT;
   double fLepNuAngle;
   //Selection stuff
   //true bits
@@ -257,6 +261,10 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("MomLepY",&fMomLepY);
     fTree->Branch("MomLepZ",&fMomLepZ);
     fTree->Branch("MomLepT",&fMomLepT);
+    fTree->Branch("LepEndX",&fLepEndX);
+    fTree->Branch("LepEndY",&fLepEndY);
+    fTree->Branch("LepEndZ",&fLepEndZ);
+    fTree->Branch("LepEndT",&fLepEndT);
     fTree->Branch("LepNuAngle",&fLepNuAngle);
     fTree->Branch("SelTruePDG",&fSelTruePDG);
     fTree->Branch("SelTruePrimary",&fSelTruePrimary);
@@ -373,6 +381,10 @@ void FDSelection::NumuCutSelection::Reset()
   fMomLepY = kDefDoub;
   fMomLepZ = kDefDoub;
   fMomLepT = kDefDoub;
+  fLepEndX = kDefDoub;
+  fLepEndY = kDefDoub;
+  fLepEndZ = kDefDoub;
+  fLepEndT = kDefDoub;
   fLepNuAngle = kDefDoub;
   //Selection stuff
   //true bits

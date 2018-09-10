@@ -5,23 +5,18 @@ BEGIN_PROLOG
 
 standard_NueCutSelection:
 {
-
-  module_type:                 "NueCutSelection"
-  NuGenModuleLabel:            "generator"
-  HitsModuleLabel:             "linecluster"
-  TrackModuleLabel:            "pandora"
-  ShowerModuleLabel:           "pandora"
-  PIDModuleLabel:              "pid"
-  POTModuleLabel:              "generator"
-
-  GradTrkMomRange:             406
-  IntTrkMomRange:              -34
-  GradTrkMomMCS:               0.90
-  IntTrkMomMCS:                0.21
-  GradNuMuHadEnCorr:           0.60
-  IntNuMuHadEnCorr:            0.09
-  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
-  ShowerEnergyAlg:             @local::dune10kt_showerenergy
+ module_type:                 "dune/FDSelections/NueCutSelection"
+ ModuleLabels: {
+   NuGenModuleLabel:            "generator" 
+   TrackModuleLabel:            "pandoraShower"
+   ShowerModuleLabel:           "pandoraShower"
+   PIDModuleLabel:              "pid"
+   HitsModuleLabel:             "linecluster"
+   POTModuleLabel:              "generator"
+   EnergyRecoModuleLabel:       "energyreconue"
+ }
+ CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
+ ShowerEnergyAlg:             @local::dune10kt_showerenergy
 
 }
 
