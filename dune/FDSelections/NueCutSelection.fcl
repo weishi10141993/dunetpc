@@ -10,6 +10,7 @@ standard_NueCutSelection:
    NuGenModuleLabel:            "generator" 
    TrackModuleLabel:            "pandoraShower"
    ShowerModuleLabel:           "pandoraShower"
+   PFParticleModuleLabel:       "pandora"
    PIDModuleLabel:              "pid"
    HitsModuleLabel:             "linecluster"
    POTModuleLabel:              "generator"

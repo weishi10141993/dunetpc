@@ -31,6 +31,9 @@
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "lardataobj/RecoBase/Shower.h"
+#include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/Vertex.h"
+#include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "larreco/RecoAlg/ShowerEnergyAlg.h"
 
 //DUNE
@@ -79,6 +82,7 @@ private:
   void GetTruthInfo(art::Event const & evt);  //Grab the truth info from the art record
   void RunSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
   double CalculateShowerCharge(art::Ptr<recob::Shower> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
+  bool IsPFParticlePrimaryDaughter(art::Ptr<recob::PFParticle> const & pfparticle, std::vector<art::Ptr<recob::PFParticle > > const & pfparticles);
 
   // Declare member data here.
 
@@ -153,6 +157,7 @@ private:
   double fSelRecoStartZ;
   double fSelRecodEdx;
   double fSelRecoCharge;
+  bool fSelRecoIsPrimaryPFPDaughter;
 
   //MVA bits
   double fSelMVAElectron;
@@ -160,6 +165,12 @@ private:
   double fSelMVAMuon;
   double fSelMVAProton;
   double fSelMVAPhoton;
+
+  //Reco neutrino bits
+  double fRecoNuVtxX;
+  double fRecoNuVtxY;
+  double fRecoNuVtxZ;
+
   //Event-level bits
   double fRecoEventCharge; //Total collected charge (as measured by the collection planes)
   //reco energy bits
@@ -174,6 +185,7 @@ private:
   //Fhicl pset labels
   std::string fNuGenModuleLabel;
   std::string fShowerModuleLabel;
+  std::string fPFParticleModuleLabel;
   std::string fPIDModuleLabel;
   std::string fHitsModuleLabel;
   std::string fPOTModuleLabel;
@@ -192,6 +204,7 @@ FDSelection::NueCutSelection::NueCutSelection(fhicl::ParameterSet const & pset)
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
   fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
   fShowerModuleLabel        (pset.get< std::string >("ModuleLabels.ShowerModuleLabel")),
+  fPFParticleModuleLabel        (pset.get< std::string >("ModuleLabels.PFParticleModuleLabel")),
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
   fHitsModuleLabel         (pset.get< std::string >("ModuleLabels.HitsModuleLabel")),
   fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
@@ -275,11 +288,15 @@ void FDSelection::NueCutSelection::beginJob()
     fTree->Branch("SelRecoStartZ",	&fSelRecoStartZ);
     fTree->Branch("SelRecodEdx",	&fSelRecodEdx);
     fTree->Branch("SelRecoCharge",&fSelRecoCharge);
+    fTree->Branch("SelRecoIsPrimaryPFPDaughter",&fSelRecoIsPrimaryPFPDaughter);
     fTree->Branch("SelMVAElectron",&fSelMVAElectron);
     fTree->Branch("SelMVAPion",&fSelMVAPion);
     fTree->Branch("SelMVAMuon",&fSelMVAMuon);
     fTree->Branch("SelMVAProton",&fSelMVAProton);
     fTree->Branch("SelMVAPhoton",&fSelMVAPhoton);
+    fTree->Branch("RecoNuVtxX",&fRecoNuVtxX);
+    fTree->Branch("RecoNuVtxY",&fRecoNuVtxY);
+    fTree->Branch("RecoNuVtxZ",&fRecoNuVtxZ);
     fTree->Branch("RecoEventCharge",&fRecoEventCharge);
     fTree->Branch("RecoMomLep",&fRecoMomLep);
     fTree->Branch("RecoEHad",&fRecoEHad);
@@ -381,6 +398,7 @@ void FDSelection::NueCutSelection::Reset()
   fSelRecoStartZ	= kDefDoub;
   fSelRecodEdx		= kDefDoub;
   fSelRecoCharge = kDefDoub;
+  fSelRecoIsPrimaryPFPDaughter = false;
 
   //MVA bits
   fSelMVAElectron = kDefDoub;
@@ -388,6 +406,12 @@ void FDSelection::NueCutSelection::Reset()
   fSelMVAMuon = kDefDoub;
   fSelMVAProton = kDefDoub;
   fSelMVAPhoton = kDefDoub;
+
+  //Nu reco bits
+  fRecoNuVtxX = kDefDoub;
+  fRecoNuVtxY = kDefDoub;
+  fRecoNuVtxZ = kDefDoub;
+
   //Event level stuff
   fRecoEventCharge = kDefDoub;
   //Reco energy bits
@@ -480,6 +504,38 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt){
   //If we didn't find a selected track then what's the point?
   if (!(sel_shower.isAvailable())) return;
 
+  //10/10/18 DBrailsford start assessing PFParticle stuff
+  //Now get the PFParticles
+  art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+  std::vector<art::Ptr<recob::PFParticle > > pfparticleList;
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+    std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
+    return;
+  }
+  else art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
+
+  //Get the PFParticle associated with the selected shower
+  art::FindOneP<recob::PFParticle> fospfp(showerListHandle, evt, fShowerModuleLabel);
+  const art::Ptr<recob::PFParticle> sel_pfp = fospfp.at(sel_shower.key());
+  if (!(sel_pfp.isAvailable())){
+    std::cout<<"Did not find a matched PFPArticle for this shower.  I don't think this should ever happen"<<std::endl;
+    return;
+  }
+  //Get the neutrino parent PFParticle.  To do this we have to build the LArPandoraHelper PFParticle map
+  lar_pandora::PFParticleMap pfparticleMap;
+  lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
+  art::Ptr<recob::PFParticle> nu_pfp = lar_pandora::LArPandoraHelper::GetParentPFParticle(pfparticleMap, sel_pfp);
+  if (!(nu_pfp.isAvailable())){
+    std::cout<<"Was not able to find the primary neutrino PFP after selecting a shower.  I don't think this should ever happen"<<std::endl;
+  }
+  //Now get the associated vertex
+  art::FindOneP<recob::Vertex> fopfpv(pfparticleListHandle, evt, fPFParticleModuleLabel);
+  const art::Ptr<recob::Vertex> nu_vertex = fopfpv.at(nu_pfp.key());
+  if (!(nu_vertex.isAvailable())){
+    std::cout<<"Was not able to find the reco vertex after finding the neutrino PFP.  I don't think this should ever happen"<<std::endl;
+  }
+
+
 
   //24/07/18 DBrailsford Get the reco energy data product for neutrinos
   art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
@@ -488,6 +544,17 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt){
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
   const std::vector<art::Ptr<recob::Hit> > sel_shower_hits = fmhs.at(sel_shower.key());
+
+  //Start filling
+  //Get the reconstructed neutrino vertex position
+  fRecoNuVtxX = nu_vertex->position().X();
+  fRecoNuVtxY = nu_vertex->position().Y();
+  fRecoNuVtxZ = nu_vertex->position().Z();
+
+  //Is this PFParticle a primary daughter of the neutrino
+  fSelRecoIsPrimaryPFPDaughter = IsPFParticlePrimaryDaughter(sel_pfp, pfparticleList);
+
+
 
   fSelRecoDirX   = sel_shower->Direction().X();
   fSelRecoDirY   = sel_shower->Direction().Y();
@@ -543,6 +610,17 @@ double FDSelection::NueCutSelection::CalculateShowerCharge(art::Ptr<recob::Showe
     charge += shower_hits[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(shower_hits[i_hit]->PeakTime(), fT0);
   }
   return charge;
+}
+
+bool FDSelection::NueCutSelection::IsPFParticlePrimaryDaughter(art::Ptr<recob::PFParticle> const & pfparticle, std::vector<art::Ptr<recob::PFParticle > > const & pfparticles){
+  size_t parent_id = pfparticle->Parent();
+  for (unsigned int i_pfp = 0; i_pfp < pfparticles.size(); i_pfp++){
+    art::Ptr<recob::PFParticle> parent_candidate = pfparticles[i_pfp];
+    if (parent_candidate->Self() == parent_id && parent_candidate->IsPrimary()){
+      return true;
+    }
+  }
+  return false;
 }
 
 
