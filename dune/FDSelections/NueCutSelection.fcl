@@ -8,6 +8,7 @@ standard_NueCutSelection:
  module_type:                 "dune/FDSelections/NueCutSelection"
  ModuleLabels: {
    NuGenModuleLabel:            "generator" 
+   LargeantModuleLabel:         "largeant"                               
    TrackModuleLabel:            "pandoraShower"
    ShowerModuleLabel:           "pandoraShower"
    PFParticleModuleLabel:       "pandora"

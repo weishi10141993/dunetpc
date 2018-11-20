@@ -102,6 +102,7 @@ private:
   int fBeamPdg; //PDG at point of creation
   int fNC;    // 1=is NC, 0=otherwise
   int fMode; // 0=QE/El, 1=RES, 2=DIS, 3=Coherent production
+  int fTargetZ; //Atomic number of scattering target
   double fQ2; 
   double fENu; 
   double fW; //X-Sec params
@@ -187,6 +188,7 @@ private:
 
   //Fhicl pset labels
   std::string fNuGenModuleLabel;
+  std::string fLargeantModuleLabel;
   std::string fTrackModuleLabel;
   std::string fPIDModuleLabel;
   std::string fHitsModuleLabel;
@@ -204,6 +206,7 @@ FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
+  fLargeantModuleLabel     (pset.get< std::string >("ModuleLabels.LargeantModuleLabel")),
   fTrackModuleLabel        (pset.get< std::string >("ModuleLabels.TrackModuleLabel")),
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
   fHitsModuleLabel         (pset.get< std::string >("ModuleLabels.HitsModuleLabel")),
@@ -243,6 +246,7 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("BeamPdg",&fBeamPdg);
     fTree->Branch("NC",&fNC);
     fTree->Branch("Mode",&fMode);
+    fTree->Branch("TargetZ",&fTargetZ);
     fTree->Branch("Q2",&fQ2);
     fTree->Branch("Enu",&fENu);
     fTree->Branch("W",&fW);
@@ -362,6 +366,7 @@ void FDSelection::NumuCutSelection::Reset()
   fBeamPdg = kDefInt; 
   fNC = kDefInt;    
   fMode = kDefInt; 
+  fTargetZ = kDefInt;
   fQ2 = kDefDoub; 
   fENu = kDefDoub; 
   fW = kDefDoub; 
@@ -488,6 +493,7 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
     fBeamPdg  = mcFlux[i_mctruth]->fntype;
     fNC       = mcList[i_mctruth]->GetNeutrino().CCNC();
     fMode     = mcList[i_mctruth]->GetNeutrino().Mode(); //0=QE/El, 1=RES, 2=DIS, 3=Coherent production
+    fTargetZ  = mcList[i_mctruth]->GetNeutrino().Target()%100000000/10000;
     fENu      = mcList[i_mctruth]->GetNeutrino().Nu().E();
     fQ2       = mcList[i_mctruth]->GetNeutrino().QSqr();
     fW        = mcList[i_mctruth]->GetNeutrino().W();
@@ -508,6 +514,24 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
     fNuY = mcList[i_mctruth]->GetNeutrino().Nu().Vy();
     fNuZ = mcList[i_mctruth]->GetNeutrino().Nu().Vz();
     fNuT = mcList[i_mctruth]->GetNeutrino().Nu().T();
+
+    //20/11/18 DBrailsford
+    //Get the associated g4 particles so that we can find the stop position of the lepton
+    art::FindManyP<simb::MCParticle> fmpt(mcTruthListHandle, evt, fLargeantModuleLabel);
+    const std::vector<art::Ptr<simb::MCParticle> > associated_particles = fmpt.at(mcList[i_mctruth].key());
+    //Also get the MCParticle according to the MCTruth object so we can match
+    for (unsigned int i_part = 0; i_part < associated_particles.size(); i_part++){
+      art::Ptr<simb::MCParticle> particle = associated_particles[i_part];
+      if (particle->PdgCode() == fLepPDG && particle->Mother()==0){
+        //We should have found the primary lepton so let's get its end position
+        fLepEndX = particle->EndPosition().X();
+        fLepEndY = particle->EndPosition().Y();
+        fLepEndZ = particle->EndPosition().Z();
+        fLepEndT = particle->EndPosition().T();
+      }
+//      if (particle->PdgCode = fLepPDG)
+    }
+
   }
 }
 
