@@ -11,8 +11,9 @@ art::Ptr<recob::Track> FDSelectionTools::LongestRecoVertexTrackSelector::SelectT
   }
   for (unsigned int i_pfp = 0; i_pfp <pfparticleList.size(); i_pfp++){
     art::Ptr<recob::PFParticle> pfparticle = pfparticleList[i_pfp];
-    int pdgcode = pfparticle->PdgCode();
-    if ((std::abs(pdgcode)==14 || std::abs(pdgcode)==12)){
+    //int pdgcode = pfparticle->PdgCode();
+    //if ((std::abs(pdgcode)==14 || std::abs(pdgcode)==12)){
+    if (pfparticle->IsPrimary()){
       art::FindManyP<recob::Track> fmtpfp(pfparticleListHandle, evt, fTrackModuleLabel);
       const std::vector<art::Ptr<recob::Track> > primary_tracks = fmtpfp.at(pfparticle.key());
 
