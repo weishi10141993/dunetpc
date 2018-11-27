@@ -536,22 +536,6 @@ void FDSelection::NumuCutSelection::GetTruthInfo(art::Event const & evt){
 }
 
 void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
-  //art::Ptr<recob::Track> myseltrack = fRecoTrackSelector->FindSelectedTrack(evt);
-  //if (myseltrack.isAvailable()) std::cout<<"Alright found a track"<<std::endl;
-  //else std::cout<<"oh :("<<std::endl;
-
-  /*
-  int i_longest_track = -1;
-  fSelRecoLength = -999;
-  //Loop over the tracks to get the longest one NICE
-  for (unsigned int i_track = 0; i_track < trackList.size(); i_track++){
-    double current_track_length = trackList[i_track]->Length();
-    if (current_track_length > fSelRecoLength){
-      fSelRecoLength = current_track_length;
-      i_longest_track = i_track;
-    }
-  }
-  */
   art::Handle< std::vector<recob::Track> > trackListHandle;
   if (!(evt.getByLabel(fTrackModuleLabel, trackListHandle))){
     std::cout<<"Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel << std::endl;

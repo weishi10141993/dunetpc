@@ -1,0 +1,4 @@
+#include "standard_numucutselection.fcl"
+
+physics.analyzers.numucutselection.RecoTrackSelectorTool.tool_type: "LongestRecoVertexTrackSelector"
+

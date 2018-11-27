@@ -7,9 +7,9 @@ standard_NumuCutSelection:
  module_type:                 "dune/FDSelections/NumuCutSelection"
  ModuleLabels: {
    NuGenModuleLabel:            "generator" 
-   LargeantModuleLabel:         "largeant"                               
-   TrackModuleLabel:            "pandoraTrack"
+   LargeantModuleLabel:         "largeant"                TrackModuleLabel:            "pandoraTrack"
    ShowerModuleLabel:           "pandoraTrack"
+   PFParticleModuleLabel:       "pandora"
    PIDModuleLabel:              "pid"
    HitsModuleLabel:             "linecluster"
    POTModuleLabel:              "generator"
