@@ -86,6 +86,8 @@ private:
   bool IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt); // check if the track is contained in the detector
   art::Ptr<recob::PFParticle> GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt);
   void FillVertexInformation(art::Ptr<recob::Track> const track, art::Event const & evt); //Grab the vertex parameters associated with this track
+  void FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt); //Grab the vertex parameters associated with this track
+
 
   // Declare member data here.
 
@@ -733,8 +735,8 @@ void FDSelection::NumuCutSelection::FillVertexInformation(art::Ptr<recob::Track>
     art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
 
 
-    lar_pandora::PFParticleMap pfparticleMap;
-    lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
+    //lar_pandora::PFParticleMap pfparticleMap;
+    //lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
 
     lar_pandora::PFParticleVector nu_pfps;
     lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(pfparticleList, nu_pfps);
@@ -798,6 +800,12 @@ void FDSelection::NumuCutSelection::FillVertexInformation(art::Ptr<recob::Track>
   }
   return;
 }
+
+void FDSelection::NumuCutSelection::FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt){
+  //art::Ptr<recob::PFParticle> matched_pfp = GetPFParticleMatchedToTrack(track, evt);
+  return;
+}
+
 
 art::Ptr<recob::PFParticle> FDSelection::NumuCutSelection::GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt){
   art::Ptr<recob::PFParticle> matched_pfp;
