@@ -813,7 +813,6 @@ art::Ptr<recob::PFParticle> FDSelection::NumuCutSelection::GetPFParticleMatchedT
     return matched_pfp;
   }
   matched_pfp = sel_track_pfps[0];
-
   return matched_pfp;
 }
 
