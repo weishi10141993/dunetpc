@@ -32,6 +32,11 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "larreco/RecoAlg/TrackMomentumCalculator.h"
+#include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/Vertex.h"
+#include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+
+
 //DUNE
 #include "dune/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
 
@@ -79,6 +84,8 @@ private:
   void RunSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
   double CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
   bool IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt); // check if the track is contained in the detector
+  art::Ptr<recob::PFParticle> GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt);
+  void FillVertexInformation(art::Ptr<recob::Track> const track, art::Event const & evt); //Grab the vertex parameters associated with this track
 
   // Declare member data here.
 
@@ -164,11 +171,18 @@ private:
   double fSelRecoDownstreamY;
   double fSelRecoDownstreamZ;
   double fSelRecoDownstreamT;
+  double fSelRecoEndClosestToVertexX;
+  double fSelRecoEndClosestToVertexY;
+  double fSelRecoEndClosestToVertexZ;
   double fSelRecoLength;
   bool   fSelRecoContained;
   double fSelRecoCharge;
   double fSelRecoMomMCS;
   double fSelRecoMomContained;
+  int fSelRecoNMatchedVertices;
+  double fSelRecoVertexX;
+  double fSelRecoVertexY;
+  double fSelRecoVertexZ;
   //MVA bits
   double fSelMVAElectron;
   double fSelMVAPion;
@@ -190,11 +204,15 @@ private:
   std::string fNuGenModuleLabel;
   std::string fLargeantModuleLabel;
   std::string fTrackModuleLabel;
+  std::string fPFParticleModuleLabel;
+  std::string fVertexModuleLabel;
   std::string fPIDModuleLabel;
   std::string fHitsModuleLabel;
   std::string fPOTModuleLabel;
   std::string fEnergyRecoModuleLabel;
  
+  //Processing flags
+  bool fUsePandoraVertex;
 
 };
 
@@ -208,11 +226,13 @@ FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset
   fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
   fLargeantModuleLabel     (pset.get< std::string >("ModuleLabels.LargeantModuleLabel")),
   fTrackModuleLabel        (pset.get< std::string >("ModuleLabels.TrackModuleLabel")),
+  fPFParticleModuleLabel   (pset.get< std::string >("ModuleLabels.PFParticleModuleLabel")),
+  fVertexModuleLabel   (pset.get< std::string >("ModuleLabels.VertexModuleLabel")),
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
   fHitsModuleLabel         (pset.get< std::string >("ModuleLabels.HitsModuleLabel")),
   fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
-  fEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.EnergyRecoModuleLabel"))
-{}
+  fEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.EnergyRecoModuleLabel")),
+  fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")) {}
 
 void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
 {
@@ -304,11 +324,18 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("SelRecoDownstreamY",&fSelRecoDownstreamY);
     fTree->Branch("SelRecoDownstreamZ",&fSelRecoDownstreamZ);
     fTree->Branch("SelRecoDownstreamT",&fSelRecoDownstreamT);
+    fTree->Branch("SelRecoEndClosestToVertexX",&fSelRecoEndClosestToVertexX);
+    fTree->Branch("SelRecoEndClosestToVertexY",&fSelRecoEndClosestToVertexY);
+    fTree->Branch("SelRecoEndClosestToVertexZ",&fSelRecoEndClosestToVertexZ);
     fTree->Branch("SelRecoLength",&fSelRecoLength);
     fTree->Branch("SelRecoContained",&fSelRecoContained);
     fTree->Branch("SelRecoCharge",&fSelRecoCharge);
     fTree->Branch("SelRecoMomMCS",&fSelRecoMomMCS);
     fTree->Branch("SelRecoMomContained",&fSelRecoMomContained);
+    fTree->Branch("SelRecoNMatchedVertices",&fSelRecoNMatchedVertices);
+    fTree->Branch("SelRecoVertexX",&fSelRecoVertexX);
+    fTree->Branch("SelRecoVertexY",&fSelRecoVertexY);
+    fTree->Branch("SelRecoVertexZ",&fSelRecoVertexZ);
     fTree->Branch("SelMVAElectron",&fSelMVAElectron);
     fTree->Branch("SelMVAPion",&fSelMVAPion);
     fTree->Branch("SelMVAMuon",&fSelMVAMuon);
@@ -428,11 +455,18 @@ void FDSelection::NumuCutSelection::Reset()
   fSelRecoDownstreamY = kDefDoub;
   fSelRecoDownstreamZ = kDefDoub;
   fSelRecoDownstreamT = kDefDoub;
+  fSelRecoEndClosestToVertexX = kDefDoub;
+  fSelRecoEndClosestToVertexY = kDefDoub;
+  fSelRecoEndClosestToVertexZ = kDefDoub;
   fSelRecoLength = kDefDoub;
   fSelRecoContained = 0;
   fSelRecoCharge = kDefDoub;
   fSelRecoMomMCS = kDefDoub;
   fSelRecoMomContained = kDefDoub;
+  fSelRecoNMatchedVertices = kDefInt;
+  fSelRecoVertexX = kDefDoub;
+  fSelRecoVertexY = kDefDoub;
+  fSelRecoVertexZ = kDefDoub;
 
   //MVA bits
   fSelMVAElectron = kDefDoub;
@@ -548,7 +582,6 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
   //If we didn't find a selected track then what's the point?
   if (!(sel_track.isAvailable())) return;
 
-
   //24/07/18 DBrailsford Get the reco energy data product for neutrinos
   art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
   if (!evt.getByLabel(fEnergyRecoModuleLabel, energyRecoHandle)) return;
@@ -588,6 +621,22 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
   }
   fSelRecoLength = sel_track->Length();
   fSelRecoCharge = CalculateTrackCharge(sel_track, sel_track_hits);
+  //27/11/18 DBrailsford Fill vertex information
+  FillVertexInformation(sel_track, evt);
+  //Now that the vertex information has been filled.  Calculate which end of th etrack is closest
+  TVector3 upstream_end(fSelRecoUpstreamX,fSelRecoUpstreamY,fSelRecoUpstreamZ);
+  TVector3 downstream_end(fSelRecoDownstreamX,fSelRecoDownstreamY,fSelRecoDownstreamZ);
+  TVector3 vertex_pos(fSelRecoVertexX,fSelRecoVertexY,fSelRecoVertexZ);
+  if ((vertex_pos-upstream_end).Mag() < (vertex_pos-downstream_end).Mag()){
+    fSelRecoEndClosestToVertexX = fSelRecoUpstreamX;
+    fSelRecoEndClosestToVertexY = fSelRecoUpstreamY;
+    fSelRecoEndClosestToVertexZ = fSelRecoUpstreamZ;
+  }
+  else{
+    fSelRecoEndClosestToVertexX = fSelRecoDownstreamX;
+    fSelRecoEndClosestToVertexY = fSelRecoDownstreamY;
+    fSelRecoEndClosestToVertexZ = fSelRecoDownstreamZ;
+  }
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
   //fSelRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
   fRecoENu = energyRecoHandle->fNuLorentzVector.E();
@@ -668,6 +717,104 @@ bool FDSelection::NumuCutSelection::IsTrackContained(art::Ptr<recob::Track> cons
     }
   }
   return true;
+}
+
+void FDSelection::NumuCutSelection::FillVertexInformation(art::Ptr<recob::Track> const track, art::Event const & evt){
+  if (fUsePandoraVertex){
+    //Have to get the PFP and then get the VTX
+    //Need the PFP vector handle
+    art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+    if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+      std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
+      return;
+    }
+
+    std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
+    art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
+
+
+    lar_pandora::PFParticleMap pfparticleMap;
+    lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
+
+    lar_pandora::PFParticleVector nu_pfps;
+    lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(pfparticleList, nu_pfps);
+    //Loop over the neutrinos
+    if (nu_pfps.size() != 1){
+      std::cout<<"FDSelection::NumuCutSelection: Number of Nu PFPs does not equal 1: " << nu_pfps.size() << std::endl;
+      return; //do nothing
+    }
+    art::Ptr<recob::PFParticle> nu_pfp = nu_pfps[0];
+    art::FindManyP<recob::Vertex> fmvpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
+    const std::vector<art::Ptr<recob::Vertex> > sel_pfp_vertices = fmvpfp.at(nu_pfp.key());
+    fSelRecoNMatchedVertices = sel_pfp_vertices.size();
+    if (fSelRecoNMatchedVertices == 0){ //Nothing to do
+      return;
+    }
+    else if (fSelRecoNMatchedVertices > 1){
+      std::cout<< "NumuCutSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelRecoNMatchedVertices << std::endl;
+    }
+    //always take the first vertex, even if there's more than one
+    art::Ptr<recob::Vertex> matched_vertex = sel_pfp_vertices[0];
+    fSelRecoVertexX = matched_vertex->position().X();
+    fSelRecoVertexY = matched_vertex->position().Y();
+    fSelRecoVertexZ = matched_vertex->position().Z();
+
+    /*
+    art::Ptr<recob::PFParticle> matched_pfp =GetPFParticleMatchedToTrack(track, evt);
+
+    art::FindManyP<recob::Vertex> fmvpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
+    const std::vector<art::Ptr<recob::Vertex> > sel_pfp_vertices = fmvpfp.at(matched_pfp.key());
+    fSelRecoNMatchedVertices = sel_pfp_vertices.size();
+    if (fSelRecoNMatchedVertices == 0){ //Nothing to do
+      return;
+    }
+    else if (fSelRecoNMatchedVertices > 1){
+      std::cout<< "NumuCutSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelRecoNMatchedVertices << std::endl;
+    }
+    //always take the first vertex, even if there's more than one
+    art::Ptr<recob::Vertex> matched_vertex = sel_pfp_vertices[0];
+    fSelRecoVertexX = matched_vertex->position().X();
+    fSelRecoVertexY = matched_vertex->position().Y();
+    fSelRecoVertexZ = matched_vertex->position().Z();
+    //Count how many PFPs are matched to this vertex
+    art::Handle< std::vector<recob::Vertex> > vertexListHandle;
+    if (!(evt.getByLabel(fVertexModuleLabel, vertexListHandle))){
+      std::cout<<"NumuCutSelection::FillVertexInformation Unable to find std::vector<recob::Vertex> with module label: " << fVertexModuleLabel << std::endl;
+      return;
+    }
+
+    std::vector<art::Ptr<recob::Vertex> > vertexList;
+    art::fill_ptr_vector(vertexList, vertexListHandle);
+
+    art::FindManyP<recob::PFParticle> fmpfpv(vertexListHandle, evt, fVertexModuleLabel);
+    const std::vector<art::Ptr<recob::PFParticle> > sel_vertex_pfps = fmpfpv.at(matched_vertex.key());
+    */
+
+  }
+  else{
+    fSelRecoVertexX = track->Start().X();
+    fSelRecoVertexY = track->Start().Y();
+    fSelRecoVertexZ = track->Start().Z();
+  }
+  return;
+}
+
+art::Ptr<recob::PFParticle> FDSelection::NumuCutSelection::GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt){
+  art::Ptr<recob::PFParticle> matched_pfp;
+  art::Handle< std::vector<recob::Track> > trackListHandle;
+  if (!(evt.getByLabel(fTrackModuleLabel, trackListHandle))){
+    std::cout<<"NumuCutSelection::GetPFParticleMatchedToTrack Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel << std::endl;
+    return matched_pfp;
+  }
+  art::FindManyP<recob::PFParticle> fmpfpt(trackListHandle, evt, fTrackModuleLabel);
+  const std::vector<art::Ptr<recob::PFParticle> > sel_track_pfps = fmpfpt.at(track.key());
+  if (sel_track_pfps.size() != 1){
+    std::cout<<"NumuCutSelection::GetPFParticleMatchedToTrack NUMBER OF PFP MATCHED TO A TRACK DOES NOT EQUAL 1: " << sel_track_pfps.size() << std::endl;
+    return matched_pfp;
+  }
+  matched_pfp = sel_track_pfps[0];
+
+  return matched_pfp;
 }
 
 DEFINE_ART_MODULE(FDSelection::NumuCutSelection)

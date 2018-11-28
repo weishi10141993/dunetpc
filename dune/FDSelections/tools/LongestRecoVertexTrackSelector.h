@@ -9,8 +9,11 @@
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/FindOneP.h"
+
 
 //LArSoft
+#include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 //CUSTOM
 #include "RecoTrackSelector.h"

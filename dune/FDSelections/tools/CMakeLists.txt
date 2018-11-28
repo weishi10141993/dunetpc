@@ -12,10 +12,10 @@ ${ART_FRAMEWORK_PRINCIPAL}
 
 simple_plugin(LongestRecoVertexTrackSelector "tool"
     	  	        lardataobj_RecoBase
+    	  	        larpandora_LArPandoraInterface
                 ${ROOT_BASIC_LIB_LIST}
                 ${ART_FRAMEWORK_PRINCIPAL}
  	  	           art_Utilities canvas
-
              )
 
 
