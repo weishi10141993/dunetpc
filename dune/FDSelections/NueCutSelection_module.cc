@@ -32,15 +32,18 @@
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/AnalysisBase/MVAPIDResult.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "larreco/RecoAlg/ShowerEnergyAlg.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 
 //DUNE
 #include "dune/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
 
 //Custom
-#include "PIDAnaAlg.h"
+//#include "PIDAnaAlg.h"
 #include "FDSelectionUtils.h"
 #include "tools/RecoShowerSelector.h"
 
@@ -87,7 +90,7 @@ private:
   // Declare member data here.
 
   //Algs
-  PIDAnaAlg fPIDAnaAlg;
+  //PIDAnaAlg fPIDAnaAlg;
   calo::CalorimetryAlg fCalorimetryAlg;
   shower::ShowerEnergyAlg fShowerEnergyAlg;
 
@@ -198,7 +201,7 @@ private:
 FDSelection::NueCutSelection::NueCutSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
-  fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
+  //fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")),
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},

@@ -1,11 +1,9 @@
-#ifndef PIDANAALG_H_SEEN
-#define PIDANAALG_H_SEEN
+#ifndef PANDIZZLEALG_H_SEEN
+#define PANDIZZLEALG_H_SEEN
 
 ///////////////////////////////////////////////
-// PIDAnaAlg.h
+// PandizzleAlg.h
 //
-// Reco and true PID stuff up
-// D Brailsford & M Wallbank, June 2017
 ///////////////////////////////////////////////
 
 // framework
@@ -38,21 +36,22 @@
 // ROOT
 #include "TTree.h"
 
-constexpr int kMaxObjects = 999;
+//constexpr int kMaxObjects = 999;
 
 namespace FDSelection {
-  class PIDAnaAlg;
+  class PandizzleAlg;
 }
 
-class FDSelection::PIDAnaAlg {
+class FDSelection::PandizzleAlg {
  public:
 
-  PIDAnaAlg(const fhicl::ParameterSet& pset);
+  PandizzleAlg(const fhicl::ParameterSet& pset);
 
   void Run(const art::Event& evt);
 
  private:
 
+  /*
   /// Returns the true track ID associated with this hit (if more than one, returns the one with highest energy)
   int ParticleID(const art::Ptr<recob::Hit>& hit);
 
@@ -61,17 +60,24 @@ class FDSelection::PIDAnaAlg {
 
   /// Returns the true particle most likely associated with this object
   int TrueParticle(const std::vector<art::Ptr<recob::Hit> >& hits);
+  */
 
   /// Initialise the tree
-  void InitialiseTree();
+  void InitialiseTrees();
 
   // module labels
-  std::string fTrackModuleLabel, fShowerModuleLabel, fPIDModuleLabel;
+  std::string fTrackModuleLabel;
+  std::string fShowerModuleLabel;
+  std::string fPIDModuleLabel;
+  std::string fPFParticleModuleLabel;
 
   // tree
-  TTree* fTree;
+  TTree* fSignalTree;
+  TTree *fBackgroundTree;
   int fRun;
   int fSubRun;
+  int fEvent;
+  /*
   int fNObjects;
   bool fTrack[kMaxObjects], fShower[kMaxObjects];
   int fTruePDG[kMaxObjects], fRecoPDG[kMaxObjects];
@@ -85,6 +91,7 @@ class FDSelection::PIDAnaAlg {
   double fRecoEndX[kMaxObjects], fRecoEndY[kMaxObjects], fRecoEndZ[kMaxObjects];
   double fRecoLength[kMaxObjects];
   int fRecoPoints[kMaxObjects];
+  */
 
   // services
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;

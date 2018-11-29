@@ -30,18 +30,22 @@
 #include "larcoreobj/SummaryData/POTSummary.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/AnalysisBase/MVAPIDResult.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "larreco/RecoAlg/TrackMomentumCalculator.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 
 
 //DUNE
 #include "dune/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
 
 //Custom
-#include "PIDAnaAlg.h"
+//#include "PIDAnaAlg.h"
+#include "PandizzleAlg.h"
 #include "FDSelectionUtils.h"
 #include "tools/RecoTrackSelector.h"
 
@@ -85,6 +89,8 @@ private:
   double CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
   bool IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt); // check if the track is contained in the detector
   art::Ptr<recob::PFParticle> GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt);
+  art::Ptr<recob::Track> GetTrackMatchedPFParticle(art::Ptr<recob::PFParticle> const pfparticle, art::Event const & evt);
+
   void FillVertexInformation(art::Ptr<recob::Track> const track, art::Event const & evt); //Grab the vertex parameters associated with this track
   void FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt); //Grab the vertex parameters associated with this track
 
@@ -92,7 +98,8 @@ private:
   // Declare member data here.
 
   //Algs
-  PIDAnaAlg fPIDAnaAlg;
+  //PIDAnaAlg fPIDAnaAlg;
+  PandizzleAlg fPandizzleAlg;
   calo::CalorimetryAlg fCalorimetryAlg;
 
   //Tools
@@ -185,6 +192,9 @@ private:
   double fSelRecoVertexX;
   double fSelRecoVertexY;
   double fSelRecoVertexZ;
+  int fSelRecoNChildPFP;
+  int fSelRecoNChildTrackPFP;
+  int fSelRecoNChildShowerPFP;
   //MVA bits
   double fSelMVAElectron;
   double fSelMVAPion;
@@ -222,7 +232,8 @@ private:
 FDSelection::NumuCutSelection::NumuCutSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
-  fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
+  //fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
+  fPandizzleAlg(pset.get<fhicl::ParameterSet>("ModuleLabels")) ,
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
@@ -249,6 +260,7 @@ void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
   RunSelection(evt);
 
   //fPIDAnaAlg.Run(evt);
+  fPandizzleAlg.Run(evt);
 
   fTree->Fill();
   Reset(); //Reset at the end of the event
@@ -338,6 +350,9 @@ void FDSelection::NumuCutSelection::beginJob()
     fTree->Branch("SelRecoVertexX",&fSelRecoVertexX);
     fTree->Branch("SelRecoVertexY",&fSelRecoVertexY);
     fTree->Branch("SelRecoVertexZ",&fSelRecoVertexZ);
+    fTree->Branch("SelRecoNChildPFP",&fSelRecoNChildPFP);
+    fTree->Branch("SelRecoNChildTrackPFP",&fSelRecoNChildTrackPFP);
+    fTree->Branch("SelRecoNChildShowerPFP",&fSelRecoNChildShowerPFP);
     fTree->Branch("SelMVAElectron",&fSelMVAElectron);
     fTree->Branch("SelMVAPion",&fSelMVAPion);
     fTree->Branch("SelMVAMuon",&fSelMVAMuon);
@@ -469,6 +484,9 @@ void FDSelection::NumuCutSelection::Reset()
   fSelRecoVertexX = kDefDoub;
   fSelRecoVertexY = kDefDoub;
   fSelRecoVertexZ = kDefDoub;
+  fSelRecoNChildPFP = kDefInt;
+  fSelRecoNChildTrackPFP = kDefInt;
+  fSelRecoNChildShowerPFP = kDefInt;
 
   //MVA bits
   fSelMVAElectron = kDefDoub;
@@ -639,6 +657,8 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
     fSelRecoEndClosestToVertexY = fSelRecoDownstreamY;
     fSelRecoEndClosestToVertexZ = fSelRecoDownstreamZ;
   }
+  //28/11/18 DBrailsford Fill child PFP info
+  FillChildPFPInformation(sel_track, evt);
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
   //fSelRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
   fRecoENu = energyRecoHandle->fNuLorentzVector.E();
@@ -730,13 +750,10 @@ void FDSelection::NumuCutSelection::FillVertexInformation(art::Ptr<recob::Track>
       std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
       return;
     }
-
     std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
     art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
 
 
-    //lar_pandora::PFParticleMap pfparticleMap;
-    //lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
 
     lar_pandora::PFParticleVector nu_pfps;
     lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(pfparticleList, nu_pfps);
@@ -802,7 +819,34 @@ void FDSelection::NumuCutSelection::FillVertexInformation(art::Ptr<recob::Track>
 }
 
 void FDSelection::NumuCutSelection::FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt){
-  //art::Ptr<recob::PFParticle> matched_pfp = GetPFParticleMatchedToTrack(track, evt);
+  //Get the PFP from the track
+  art::Ptr<recob::PFParticle> matched_pfp = GetPFParticleMatchedToTrack(track, evt);
+  if (!(matched_pfp.isAvailable())) return;
+
+  //Now make the entire PFPPArticleMap
+  art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+    std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
+    return;
+  }
+  std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
+  art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
+
+  lar_pandora::PFParticleMap pfparticleMap;
+  lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
+
+  fSelRecoNChildPFP = matched_pfp->NumDaughters();
+  fSelRecoNChildTrackPFP = 0;
+  fSelRecoNChildShowerPFP = 0;
+  for (int i_child = 0; i_child < matched_pfp->NumDaughters(); i_child++){
+    int child_id = matched_pfp->Daughter(i_child);
+    art::Ptr<recob::PFParticle> child_pfp = pfparticleMap[child_id];
+    int pdg = child_pfp->PdgCode();
+    if (pdg==13) fSelRecoNChildTrackPFP++;
+    else if (pdg==11) fSelRecoNChildShowerPFP++;
+    else std::cout<<"FillChildPFPInformation: found a child PFP with an unexpected pdg code: " << pdg << std::endl;
+  }
+
   return;
 }
 
@@ -823,5 +867,23 @@ art::Ptr<recob::PFParticle> FDSelection::NumuCutSelection::GetPFParticleMatchedT
   matched_pfp = sel_track_pfps[0];
   return matched_pfp;
 }
+
+art::Ptr<recob::Track> FDSelection::NumuCutSelection::GetTrackMatchedPFParticle(art::Ptr<recob::PFParticle> const pfparticle, art::Event const & evt){
+  art::Ptr<recob::Track> matched_track;
+  art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+    std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
+    return matched_track; //empty
+  }
+  art::FindManyP<recob::Track> fmtpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
+  const std::vector<art::Ptr<recob::Track> > sel_pfp_tracks = fmtpfp.at(pfparticle.key());
+  if (sel_pfp_tracks.size() != 1){
+    std::cout<<"NumuCutSelection::GetTrackMatchedPFParticle number of tracks matched to PFP does not equal 1: " << sel_pfp_tracks.size() << std::endl;
+    return matched_track; //empty
+  }
+  matched_track = sel_pfp_tracks[0];
+  return matched_track;
+}
+
 
 DEFINE_ART_MODULE(FDSelection::NumuCutSelection)
