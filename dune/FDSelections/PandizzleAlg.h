@@ -24,10 +24,12 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
+#include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/AnalysisBase/MVAPIDResult.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
+#include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 
 // c++
 #include <vector>
@@ -35,6 +37,9 @@
 
 // ROOT
 #include "TTree.h"
+
+//Custom
+#include "FDSelectionUtils.h"
 
 //constexpr int kMaxObjects = 999;
 
@@ -51,46 +56,55 @@ class FDSelection::PandizzleAlg {
 
  private:
 
-  /*
-  /// Returns the true track ID associated with this hit (if more than one, returns the one with highest energy)
-  int ParticleID(const art::Ptr<recob::Hit>& hit);
-
-  /// Returns the true particles associated with this object
-  std::map<int,double> TrueParticles(const std::vector<art::Ptr<recob::Hit> >& hits);
-
-  /// Returns the true particle most likely associated with this object
-  int TrueParticle(const std::vector<art::Ptr<recob::Hit> >& hits);
-  */
-
   /// Initialise the tree
   void InitialiseTrees();
+
+  std::vector<art::Ptr<recob::PFParticle> > SelectChildPFParticles(const art::Ptr<recob::PFParticle> parent_pfp, const lar_pandora::PFParticleMap & pfp_map);
+
+  void ProcessPFParticle(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
+  int CountPFPWithPDG(const std::vector<art::Ptr<recob::PFParticle> > & pfps, int pdg);
+
+  std::vector<art::Ptr<recob::Hit> > GetPFPHits(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
+
+  void ResetTreeVariables();
+
+  void BookTreeInt(TTree *tree, std::string branch_name);
+
+  void BookTreeFloat(TTree *tree, std::string branch_name);
+
+  void FillTree();
+
+  void FillMichelElectronVariables(const art::Ptr<recob::PFParticle> mu_pfp, const std::vector<art::Ptr<recob::PFParticle> > & child_pfps, const art::Event& evt);
+
 
   // module labels
   std::string fTrackModuleLabel;
   std::string fShowerModuleLabel;
   std::string fPIDModuleLabel;
   std::string fPFParticleModuleLabel;
+  std::string fSpacePointModuleLabel;
 
   // tree
-  TTree* fSignalTree;
-  TTree *fBackgroundTree;
+  TTree* fSignalTrackTree;
+  TTree* fSignalShowerTree;
+  TTree *fBackgroundTrackTree;
+  TTree *fBackgroundShowerTree;
+
+  struct VarHolder{ //This thing holds all variables to be handed to the trees
+    std::map<std::string, int> IntVars;
+    std::map<std::string, float> FloatVars;
+  };
+
+  VarHolder fVarHolder;
+  /*
   int fRun;
   int fSubRun;
   int fEvent;
-  /*
-  int fNObjects;
-  bool fTrack[kMaxObjects], fShower[kMaxObjects];
-  int fTruePDG[kMaxObjects], fRecoPDG[kMaxObjects];
-  double fElectronMVA[kMaxObjects], fMuonMVA[kMaxObjects], fPhotonMVA[kMaxObjects], fProtonMVA[kMaxObjects], fPionMVA[kMaxObjects];
-  double fObjPurity[kMaxObjects];
-  bool fPrimary[kMaxObjects];
-  double fTrueEnergy[kMaxObjects], fRecoEnergy[kMaxObjects];
-  double fTrueX[kMaxObjects], fTrueY[kMaxObjects], fTrueZ[kMaxObjects];
-  double fTrueEndX[kMaxObjects], fTrueEndY[kMaxObjects], fTrueEndZ[kMaxObjects];
-  double fRecoX[kMaxObjects], fRecoY[kMaxObjects], fRecoZ[kMaxObjects];
-  double fRecoEndX[kMaxObjects], fRecoEndY[kMaxObjects], fRecoEndZ[kMaxObjects];
-  double fRecoLength[kMaxObjects];
-  int fRecoPoints[kMaxObjects];
+  int fPFPPDG;
+  int fPFPNChildren;
+  int fPFPNShowerChildren;
+  int fPFPNTrackChildren;
+  int fPFPNHits;
   */
 
   // services
