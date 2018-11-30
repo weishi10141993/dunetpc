@@ -674,7 +674,7 @@ void FDSelection::NumuCutSelection::RunSelection(art::Event const & evt){
     fRecoMomLep = fSelRecoMomMCS;
   }
 
-  int g4id = FDSelectionUtils::TrueParticleID(sel_track_hits);
+  int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(sel_track_hits);
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
   if (matched_mcparticle){

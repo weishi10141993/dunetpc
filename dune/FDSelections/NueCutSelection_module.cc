@@ -573,7 +573,7 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt){
   fRecoEHad = energyRecoHandle->fHadLorentzVector.E();
   fRecoMomLep = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
 
-  int g4id = FDSelectionUtils::TrueParticleID(sel_shower_hits);
+  int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(sel_shower_hits);
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
   if (matched_mcparticle){

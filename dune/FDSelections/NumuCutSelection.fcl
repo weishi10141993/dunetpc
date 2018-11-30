@@ -12,6 +12,7 @@ standard_NumuCutSelection:
    ShowerModuleLabel:           "pandoraShower"
    PFParticleModuleLabel:       "pandora"
    VertexModuleLabel:           "pandora"
+   SpacePointModuleLabel:       "pandora"
    PIDModuleLabel:              "pid"
    HitsModuleLabel:             "linecluster"
    POTModuleLabel:              "generator"
