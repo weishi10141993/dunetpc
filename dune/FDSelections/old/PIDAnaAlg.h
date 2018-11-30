@@ -26,7 +26,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
-//#include "lardataobj/AnalysisBase/MVAPIDResult.h"
+#include "lardataobj/AnalysisBase/MVAPIDResult.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
