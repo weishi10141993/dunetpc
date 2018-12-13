@@ -575,7 +575,8 @@ void FDSelection::NueCutSelection::RunSelection(art::Event const & evt){
 
   int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(sel_shower_hits);
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
-  const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
+  //const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
+  const simb::MCParticle* matched_mcparticle = pi_serv->TrackIdToParticle_P(g4id);
   if (matched_mcparticle){
     //Fill variables
     fSelTruePDG = matched_mcparticle->PdgCode();
