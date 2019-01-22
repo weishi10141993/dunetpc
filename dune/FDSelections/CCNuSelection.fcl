@@ -1,0 +1,27 @@
+#include "calorimetry_dune10kt.fcl"
+
+BEGIN_PROLOG
+
+CCNuSelection:
+{ 
+ module_type:                 "dune/FDSelections/CCNuSelection"
+ ModuleLabels: {
+   NuGenModuleLabel:            "generator" 
+   LargeantModuleLabel:         "largeant"
+   TrackModuleLabel:            "pandoraTrack"
+   ShowerModuleLabel:           "pandoraShower"
+   PFParticleModuleLabel:       "pandora"
+   VertexModuleLabel:           "pandora"
+   SpacePointModuleLabel:       "pandora"
+   PIDModuleLabel:              "pid"
+   HitsModuleLabel:             "linecluster"
+   POTModuleLabel:              "generator"
+   EnergyRecoModuleLabel:       "energyreconumu"
+ }                                
+ CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
+ UsePandoraVertex: true
+}
+CCNuSelection.RecoTrackSelectorTool.tool_type: "LongestRecoVertexTrackSelector"
+CCNuSelection.RecoTrackSelectorTool.ModuleLabels: @local::CCNuSelection.ModuleLabels
+
+END_PROLOG
