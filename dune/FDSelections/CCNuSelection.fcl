@@ -16,7 +16,7 @@ CCNuSelection:
    PIDModuleLabel:              "pid"
    HitsModuleLabel:             "linecluster"
    POTModuleLabel:              "generator"
-   EnergyRecoModuleLabel:       "energyreconumu"
+   NumuEnergyRecoModuleLabel:   "energyreconumu"
  }                                
  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
  UsePandoraVertex: true

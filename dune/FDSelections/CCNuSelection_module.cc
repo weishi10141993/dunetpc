@@ -85,7 +85,7 @@ private:
   void Reset();      //Resets all tree vars
   void GetEventInfo(art::Event const & evt); //Grab event-level info that is necessary/handy for selecting events but doesn't really fall under the 'selection' banner
   void GetTruthInfo(art::Event const & evt);  //Grab the truth info from the art record
-  void RunSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
+  void RunTrackSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
   double CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
   bool IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt); // check if the track is contained in the detector
   art::Ptr<recob::PFParticle> GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt);
@@ -221,7 +221,7 @@ private:
   std::string fPIDModuleLabel;
   std::string fHitsModuleLabel;
   std::string fPOTModuleLabel;
-  std::string fEnergyRecoModuleLabel;
+  std::string fNumuEnergyRecoModuleLabel;
  
   //Processing flags
   bool fUsePandoraVertex;
@@ -244,7 +244,7 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
   fHitsModuleLabel         (pset.get< std::string >("ModuleLabels.HitsModuleLabel")),
   fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
-  fEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.EnergyRecoModuleLabel")),
+  fNumuEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NumuEnergyRecoModuleLabel")),
   fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")) {}
 
 void FDSelection::CCNuSelection::analyze(art::Event const & evt)
@@ -257,7 +257,7 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
   GetEventInfo(evt);
   if (fIsMC) GetTruthInfo(evt);
-  RunSelection(evt);
+  RunTrackSelection(evt);
 
   //fPIDAnaAlg.Run(evt);
   //fPandizzleAlg.Run(evt);
@@ -589,7 +589,7 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
   }
 }
 
-void FDSelection::CCNuSelection::RunSelection(art::Event const & evt){
+void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   art::Handle< std::vector<recob::Track> > trackListHandle;
   if (!(evt.getByLabel(fTrackModuleLabel, trackListHandle))){
     std::cout<<"Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel << std::endl;
@@ -604,7 +604,7 @@ void FDSelection::CCNuSelection::RunSelection(art::Event const & evt){
 
   //24/07/18 DBrailsford Get the reco energy data product for neutrinos
   art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
-  if (!evt.getByLabel(fEnergyRecoModuleLabel, energyRecoHandle)) return;
+  if (!evt.getByLabel(fNumuEnergyRecoModuleLabel, energyRecoHandle)) return;
 
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
