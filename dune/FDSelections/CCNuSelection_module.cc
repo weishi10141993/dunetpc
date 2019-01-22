@@ -145,68 +145,68 @@ private:
   double fLepNuAngle;
   //Selection stuff
   //true bits
-  int fSelTruePDG;
-  int fSelTruePrimary;
-  double fSelTrueMomX;
-  double fSelTrueMomY;
-  double fSelTrueMomZ;
-  double fSelTrueMomT;
-  double fSelTrueStartX;
-  double fSelTrueStartY;
-  double fSelTrueStartZ;
-  double fSelTrueStartT;
-  double fSelTrueEndX;
-  double fSelTrueEndY;
-  double fSelTrueEndZ;
-  double fSelTrueEndT;
+  int fSelTrackTruePDG;
+  int fSelTrackTruePrimary;
+  double fSelTrackTrueMomX;
+  double fSelTrackTrueMomY;
+  double fSelTrackTrueMomZ;
+  double fSelTrackTrueMomT;
+  double fSelTrackTrueStartX;
+  double fSelTrackTrueStartY;
+  double fSelTrackTrueStartZ;
+  double fSelTrackTrueStartT;
+  double fSelTrackTrueEndX;
+  double fSelTrackTrueEndY;
+  double fSelTrackTrueEndZ;
+  double fSelTrackTrueEndT;
   //reco bits
-  double fSelRecoMomX;
-  double fSelRecoMomY;
-  double fSelRecoMomZ;
-  double fSelRecoMomT;
-  double fSelRecoStartX;
-  double fSelRecoStartY;
-  double fSelRecoStartZ;
-  double fSelRecoStartT;
-  double fSelRecoEndX;
-  double fSelRecoEndY;
-  double fSelRecoEndZ;
-  double fSelRecoEndT;
-  double fSelRecoUpstreamX;
-  double fSelRecoUpstreamY;
-  double fSelRecoUpstreamZ;
-  double fSelRecoUpstreamT;
-  double fSelRecoDownstreamX;
-  double fSelRecoDownstreamY;
-  double fSelRecoDownstreamZ;
-  double fSelRecoDownstreamT;
-  double fSelRecoEndClosestToVertexX;
-  double fSelRecoEndClosestToVertexY;
-  double fSelRecoEndClosestToVertexZ;
-  double fSelRecoLength;
-  bool   fSelRecoContained;
-  double fSelRecoCharge;
-  double fSelRecoMomMCS;
-  double fSelRecoMomContained;
-  int fSelRecoNMatchedVertices;
-  double fSelRecoVertexX;
-  double fSelRecoVertexY;
-  double fSelRecoVertexZ;
-  int fSelRecoNChildPFP;
-  int fSelRecoNChildTrackPFP;
-  int fSelRecoNChildShowerPFP;
+  double fSelTrackRecoMomX;
+  double fSelTrackRecoMomY;
+  double fSelTrackRecoMomZ;
+  double fSelTrackRecoMomT;
+  double fSelTrackRecoStartX;
+  double fSelTrackRecoStartY;
+  double fSelTrackRecoStartZ;
+  double fSelTrackRecoStartT;
+  double fSelTrackRecoEndX;
+  double fSelTrackRecoEndY;
+  double fSelTrackRecoEndZ;
+  double fSelTrackRecoEndT;
+  double fSelTrackRecoUpstreamX;
+  double fSelTrackRecoUpstreamY;
+  double fSelTrackRecoUpstreamZ;
+  double fSelTrackRecoUpstreamT;
+  double fSelTrackRecoDownstreamX;
+  double fSelTrackRecoDownstreamY;
+  double fSelTrackRecoDownstreamZ;
+  double fSelTrackRecoDownstreamT;
+  double fSelTrackRecoEndClosestToVertexX;
+  double fSelTrackRecoEndClosestToVertexY;
+  double fSelTrackRecoEndClosestToVertexZ;
+  double fSelTrackRecoLength;
+  bool   fSelTrackRecoContained;
+  double fSelTrackRecoCharge;
+  double fSelTrackRecoMomMCS;
+  double fSelTrackRecoMomContained;
+  int fSelTrackRecoNMatchedVertices;
+  double fSelTrackRecoVertexX;
+  double fSelTrackRecoVertexY;
+  double fSelTrackRecoVertexZ;
+  int fSelTrackRecoNChildPFP;
+  int fSelTrackRecoNChildTrackPFP;
+  int fSelTrackRecoNChildShowerPFP;
   //MVA bits
-  double fSelMVAElectron;
-  double fSelMVAPion;
-  double fSelMVAMuon;
-  double fSelMVAProton;
-  double fSelMVAPhoton;
+  double fSelTrackMVAElectron;
+  double fSelTrackMVAPion;
+  double fSelTrackMVAMuon;
+  double fSelTrackMVAProton;
+  double fSelTrackMVAPhoton;
   //Event-level bits
   double fRecoEventCharge; //Total collected charge (as measured by the collection planes)
   //reco energy bits
-  double fRecoMomLep; //Reco lepton momentum
-  double fRecoEHad; //Reco hadronic energy
-  double fRecoENu; //Reco neutrino energy
+  double fNumuRecoMomLep; //Reco lepton momentum
+  double fNumuRecoEHad; //Reco hadronic energy
+  double fNumuRecoENu; //Reco neutrino energy
 
   //POT tree stuff
   TTree* fPOTTree;
@@ -270,7 +270,7 @@ void FDSelection::CCNuSelection::beginJob()
 {
   // Implementation of optional member function here.
     art::ServiceHandle<art::TFileService> tfs;
-    fTree = tfs->make<TTree>("numucutsel","Numu cut selection");
+    fTree = tfs->make<TTree>("ccnusel","CC nu selection");
     fTree->Branch("Run",&fRun);
     fTree->Branch("SubRun",&fSubRun);
     fTree->Branch("Event",&fEvent);
@@ -304,64 +304,64 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("LepEndZ",&fLepEndZ);
     fTree->Branch("LepEndT",&fLepEndT);
     fTree->Branch("LepNuAngle",&fLepNuAngle);
-    fTree->Branch("SelTruePDG",&fSelTruePDG);
-    fTree->Branch("SelTruePrimary",&fSelTruePrimary);
-    fTree->Branch("SelTrueMomX",&fSelTrueMomX);
-    fTree->Branch("SelTrueMomY",&fSelTrueMomY);
-    fTree->Branch("SelTrueMomZ",&fSelTrueMomZ);
-    fTree->Branch("SelTrueMomT",&fSelTrueMomT);
-    fTree->Branch("SelTrueStartX",&fSelTrueStartX);
-    fTree->Branch("SelTrueStartY",&fSelTrueStartY);
-    fTree->Branch("SelTrueStartZ",&fSelTrueStartZ);
-    fTree->Branch("SelTrueStartT",&fSelTrueStartT);
-    fTree->Branch("SelTrueEndX",&fSelTrueEndX);
-    fTree->Branch("SelTrueEndY",&fSelTrueEndY);
-    fTree->Branch("SelTrueEndZ",&fSelTrueEndZ);
-    fTree->Branch("SelTrueEndT",&fSelTrueEndT);
-    fTree->Branch("SelRecoMomX",&fSelRecoMomX);
-    fTree->Branch("SelRecoMomY",&fSelRecoMomY);
-    fTree->Branch("SelRecoMomZ",&fSelRecoMomZ);
-    fTree->Branch("SelRecoMomT",&fSelRecoMomT);
-    fTree->Branch("SelRecoStartX",&fSelRecoStartX);
-    fTree->Branch("SelRecoStartY",&fSelRecoStartY);
-    fTree->Branch("SelRecoStartZ",&fSelRecoStartZ);
-    fTree->Branch("SelRecoStartT",&fSelRecoStartT);
-    fTree->Branch("SelRecoEndX",&fSelRecoEndX);
-    fTree->Branch("SelRecoEndY",&fSelRecoEndY);
-    fTree->Branch("SelRecoEndZ",&fSelRecoEndZ);
-    fTree->Branch("SelRecoEndT",&fSelRecoEndT);
-    fTree->Branch("SelRecoUpstreamX",&fSelRecoUpstreamX);
-    fTree->Branch("SelRecoUpstreamY",&fSelRecoUpstreamY);
-    fTree->Branch("SelRecoUpstreamZ",&fSelRecoUpstreamZ);
-    fTree->Branch("SelRecoUpstreamT",&fSelRecoUpstreamT);
-    fTree->Branch("SelRecoDownstreamX",&fSelRecoDownstreamX);
-    fTree->Branch("SelRecoDownstreamY",&fSelRecoDownstreamY);
-    fTree->Branch("SelRecoDownstreamZ",&fSelRecoDownstreamZ);
-    fTree->Branch("SelRecoDownstreamT",&fSelRecoDownstreamT);
-    fTree->Branch("SelRecoEndClosestToVertexX",&fSelRecoEndClosestToVertexX);
-    fTree->Branch("SelRecoEndClosestToVertexY",&fSelRecoEndClosestToVertexY);
-    fTree->Branch("SelRecoEndClosestToVertexZ",&fSelRecoEndClosestToVertexZ);
-    fTree->Branch("SelRecoLength",&fSelRecoLength);
-    fTree->Branch("SelRecoContained",&fSelRecoContained);
-    fTree->Branch("SelRecoCharge",&fSelRecoCharge);
-    fTree->Branch("SelRecoMomMCS",&fSelRecoMomMCS);
-    fTree->Branch("SelRecoMomContained",&fSelRecoMomContained);
-    fTree->Branch("SelRecoNMatchedVertices",&fSelRecoNMatchedVertices);
-    fTree->Branch("SelRecoVertexX",&fSelRecoVertexX);
-    fTree->Branch("SelRecoVertexY",&fSelRecoVertexY);
-    fTree->Branch("SelRecoVertexZ",&fSelRecoVertexZ);
-    fTree->Branch("SelRecoNChildPFP",&fSelRecoNChildPFP);
-    fTree->Branch("SelRecoNChildTrackPFP",&fSelRecoNChildTrackPFP);
-    fTree->Branch("SelRecoNChildShowerPFP",&fSelRecoNChildShowerPFP);
-    fTree->Branch("SelMVAElectron",&fSelMVAElectron);
-    fTree->Branch("SelMVAPion",&fSelMVAPion);
-    fTree->Branch("SelMVAMuon",&fSelMVAMuon);
-    fTree->Branch("SelMVAProton",&fSelMVAProton);
-    fTree->Branch("SelMVAPhoton",&fSelMVAPhoton);
+    fTree->Branch("SelTrackTruePDG",&fSelTrackTruePDG);
+    fTree->Branch("SelTrackTruePrimary",&fSelTrackTruePrimary);
+    fTree->Branch("SelTrackTrueMomX",&fSelTrackTrueMomX);
+    fTree->Branch("SelTrackTrueMomY",&fSelTrackTrueMomY);
+    fTree->Branch("SelTrackTrueMomZ",&fSelTrackTrueMomZ);
+    fTree->Branch("SelTrackTrueMomT",&fSelTrackTrueMomT);
+    fTree->Branch("SelTrackTrueStartX",&fSelTrackTrueStartX);
+    fTree->Branch("SelTrackTrueStartY",&fSelTrackTrueStartY);
+    fTree->Branch("SelTrackTrueStartZ",&fSelTrackTrueStartZ);
+    fTree->Branch("SelTrackTrueStartT",&fSelTrackTrueStartT);
+    fTree->Branch("SelTrackTrueEndX",&fSelTrackTrueEndX);
+    fTree->Branch("SelTrackTrueEndY",&fSelTrackTrueEndY);
+    fTree->Branch("SelTrackTrueEndZ",&fSelTrackTrueEndZ);
+    fTree->Branch("SelTrackTrueEndT",&fSelTrackTrueEndT);
+    fTree->Branch("SelTrackRecoMomX",&fSelTrackRecoMomX);
+    fTree->Branch("SelTrackRecoMomY",&fSelTrackRecoMomY);
+    fTree->Branch("SelTrackRecoMomZ",&fSelTrackRecoMomZ);
+    fTree->Branch("SelTrackRecoMomT",&fSelTrackRecoMomT);
+    fTree->Branch("SelTrackRecoStartX",&fSelTrackRecoStartX);
+    fTree->Branch("SelTrackRecoStartY",&fSelTrackRecoStartY);
+    fTree->Branch("SelTrackRecoStartZ",&fSelTrackRecoStartZ);
+    fTree->Branch("SelTrackRecoStartT",&fSelTrackRecoStartT);
+    fTree->Branch("SelTrackRecoEndX",&fSelTrackRecoEndX);
+    fTree->Branch("SelTrackRecoEndY",&fSelTrackRecoEndY);
+    fTree->Branch("SelTrackRecoEndZ",&fSelTrackRecoEndZ);
+    fTree->Branch("SelTrackRecoEndT",&fSelTrackRecoEndT);
+    fTree->Branch("SelTrackRecoUpstreamX",&fSelTrackRecoUpstreamX);
+    fTree->Branch("SelTrackRecoUpstreamY",&fSelTrackRecoUpstreamY);
+    fTree->Branch("SelTrackRecoUpstreamZ",&fSelTrackRecoUpstreamZ);
+    fTree->Branch("SelTrackRecoUpstreamT",&fSelTrackRecoUpstreamT);
+    fTree->Branch("SelTrackRecoDownstreamX",&fSelTrackRecoDownstreamX);
+    fTree->Branch("SelTrackRecoDownstreamY",&fSelTrackRecoDownstreamY);
+    fTree->Branch("SelTrackRecoDownstreamZ",&fSelTrackRecoDownstreamZ);
+    fTree->Branch("SelTrackRecoDownstreamT",&fSelTrackRecoDownstreamT);
+    fTree->Branch("SelTrackRecoEndClosestToVertexX",&fSelTrackRecoEndClosestToVertexX);
+    fTree->Branch("SelTrackRecoEndClosestToVertexY",&fSelTrackRecoEndClosestToVertexY);
+    fTree->Branch("SelTrackRecoEndClosestToVertexZ",&fSelTrackRecoEndClosestToVertexZ);
+    fTree->Branch("SelTrackRecoLength",&fSelTrackRecoLength);
+    fTree->Branch("SelTrackRecoContained",&fSelTrackRecoContained);
+    fTree->Branch("SelTrackRecoCharge",&fSelTrackRecoCharge);
+    fTree->Branch("SelTrackRecoMomMCS",&fSelTrackRecoMomMCS);
+    fTree->Branch("SelTrackRecoMomContained",&fSelTrackRecoMomContained);
+    fTree->Branch("SelTrackRecoNMatchedVertices",&fSelTrackRecoNMatchedVertices);
+    fTree->Branch("SelTrackRecoVertexX",&fSelTrackRecoVertexX);
+    fTree->Branch("SelTrackRecoVertexY",&fSelTrackRecoVertexY);
+    fTree->Branch("SelTrackRecoVertexZ",&fSelTrackRecoVertexZ);
+    fTree->Branch("SelTrackRecoNChildPFP",&fSelTrackRecoNChildPFP);
+    fTree->Branch("SelTrackRecoNChildTrackPFP",&fSelTrackRecoNChildTrackPFP);
+    fTree->Branch("SelTrackRecoNChildShowerPFP",&fSelTrackRecoNChildShowerPFP);
+    fTree->Branch("SelTrackMVAElectron",&fSelTrackMVAElectron);
+    fTree->Branch("SelTrackMVAPion",&fSelTrackMVAPion);
+    fTree->Branch("SelTrackMVAMuon",&fSelTrackMVAMuon);
+    fTree->Branch("SelTrackMVAProton",&fSelTrackMVAProton);
+    fTree->Branch("SelTrackMVAPhoton",&fSelTrackMVAPhoton);
     fTree->Branch("RecoEventCharge",&fRecoEventCharge);
-    fTree->Branch("RecoMomLep",&fRecoMomLep);
-    fTree->Branch("RecoEHad",&fRecoEHad);
-    fTree->Branch("RecoENu",&fRecoENu);
+    fTree->Branch("NumuRecoMomLep",&fNumuRecoMomLep);
+    fTree->Branch("NumuRecoEHad",&fNumuRecoEHad);
+    fTree->Branch("NumuRecoENu",&fNumuRecoENu);
 
 
     fPOTTree = tfs->make<TTree>("pottree","pot tree");
@@ -437,69 +437,69 @@ void FDSelection::CCNuSelection::Reset()
   fLepNuAngle = kDefDoub;
   //Selection stuff
   //true bits
-  fSelTruePDG = kDefInt;
-  fSelTruePrimary = kDefInt;
-  fSelTrueMomX = kDefDoub;
-  fSelTrueMomY = kDefDoub;
-  fSelTrueMomZ = kDefDoub;
-  fSelTrueMomT = kDefDoub;
-  fSelTrueStartX = kDefDoub;
-  fSelTrueStartY = kDefDoub;
-  fSelTrueStartZ = kDefDoub;
-  fSelTrueStartT = kDefDoub;
-  fSelTrueEndX = kDefDoub;
-  fSelTrueEndY = kDefDoub;
-  fSelTrueEndZ = kDefDoub;
-  fSelTrueEndT = kDefDoub;
+  fSelTrackTruePDG = kDefInt;
+  fSelTrackTruePrimary = kDefInt;
+  fSelTrackTrueMomX = kDefDoub;
+  fSelTrackTrueMomY = kDefDoub;
+  fSelTrackTrueMomZ = kDefDoub;
+  fSelTrackTrueMomT = kDefDoub;
+  fSelTrackTrueStartX = kDefDoub;
+  fSelTrackTrueStartY = kDefDoub;
+  fSelTrackTrueStartZ = kDefDoub;
+  fSelTrackTrueStartT = kDefDoub;
+  fSelTrackTrueEndX = kDefDoub;
+  fSelTrackTrueEndY = kDefDoub;
+  fSelTrackTrueEndZ = kDefDoub;
+  fSelTrackTrueEndT = kDefDoub;
   //reco bits
-  fSelRecoMomX = kDefDoub;
-  fSelRecoMomY = kDefDoub;
-  fSelRecoMomZ = kDefDoub;
-  fSelRecoMomT = kDefDoub;
-  fSelRecoStartX = kDefDoub;
-  fSelRecoStartY = kDefDoub;
-  fSelRecoStartZ = kDefDoub;
-  fSelRecoStartT = kDefDoub;
-  fSelRecoEndX = kDefDoub;
-  fSelRecoEndY = kDefDoub;
-  fSelRecoEndZ = kDefDoub;
-  fSelRecoEndT = kDefDoub;
-  fSelRecoUpstreamX = kDefDoub;
-  fSelRecoUpstreamY = kDefDoub;
-  fSelRecoUpstreamZ = kDefDoub;
-  fSelRecoUpstreamT = kDefDoub;
-  fSelRecoDownstreamX = kDefDoub;
-  fSelRecoDownstreamY = kDefDoub;
-  fSelRecoDownstreamZ = kDefDoub;
-  fSelRecoDownstreamT = kDefDoub;
-  fSelRecoEndClosestToVertexX = kDefDoub;
-  fSelRecoEndClosestToVertexY = kDefDoub;
-  fSelRecoEndClosestToVertexZ = kDefDoub;
-  fSelRecoLength = kDefDoub;
-  fSelRecoContained = 0;
-  fSelRecoCharge = kDefDoub;
-  fSelRecoMomMCS = kDefDoub;
-  fSelRecoMomContained = kDefDoub;
-  fSelRecoNMatchedVertices = kDefInt;
-  fSelRecoVertexX = kDefDoub;
-  fSelRecoVertexY = kDefDoub;
-  fSelRecoVertexZ = kDefDoub;
-  fSelRecoNChildPFP = kDefInt;
-  fSelRecoNChildTrackPFP = kDefInt;
-  fSelRecoNChildShowerPFP = kDefInt;
+  fSelTrackRecoMomX = kDefDoub;
+  fSelTrackRecoMomY = kDefDoub;
+  fSelTrackRecoMomZ = kDefDoub;
+  fSelTrackRecoMomT = kDefDoub;
+  fSelTrackRecoStartX = kDefDoub;
+  fSelTrackRecoStartY = kDefDoub;
+  fSelTrackRecoStartZ = kDefDoub;
+  fSelTrackRecoStartT = kDefDoub;
+  fSelTrackRecoEndX = kDefDoub;
+  fSelTrackRecoEndY = kDefDoub;
+  fSelTrackRecoEndZ = kDefDoub;
+  fSelTrackRecoEndT = kDefDoub;
+  fSelTrackRecoUpstreamX = kDefDoub;
+  fSelTrackRecoUpstreamY = kDefDoub;
+  fSelTrackRecoUpstreamZ = kDefDoub;
+  fSelTrackRecoUpstreamT = kDefDoub;
+  fSelTrackRecoDownstreamX = kDefDoub;
+  fSelTrackRecoDownstreamY = kDefDoub;
+  fSelTrackRecoDownstreamZ = kDefDoub;
+  fSelTrackRecoDownstreamT = kDefDoub;
+  fSelTrackRecoEndClosestToVertexX = kDefDoub;
+  fSelTrackRecoEndClosestToVertexY = kDefDoub;
+  fSelTrackRecoEndClosestToVertexZ = kDefDoub;
+  fSelTrackRecoLength = kDefDoub;
+  fSelTrackRecoContained = 0;
+  fSelTrackRecoCharge = kDefDoub;
+  fSelTrackRecoMomMCS = kDefDoub;
+  fSelTrackRecoMomContained = kDefDoub;
+  fSelTrackRecoNMatchedVertices = kDefInt;
+  fSelTrackRecoVertexX = kDefDoub;
+  fSelTrackRecoVertexY = kDefDoub;
+  fSelTrackRecoVertexZ = kDefDoub;
+  fSelTrackRecoNChildPFP = kDefInt;
+  fSelTrackRecoNChildTrackPFP = kDefInt;
+  fSelTrackRecoNChildShowerPFP = kDefInt;
 
   //MVA bits
-  fSelMVAElectron = kDefDoub;
-  fSelMVAPion = kDefDoub;
-  fSelMVAMuon = kDefDoub;
-  fSelMVAProton = kDefDoub;
-  fSelMVAPhoton = kDefDoub;
+  fSelTrackMVAElectron = kDefDoub;
+  fSelTrackMVAPion = kDefDoub;
+  fSelTrackMVAMuon = kDefDoub;
+  fSelTrackMVAProton = kDefDoub;
+  fSelTrackMVAPhoton = kDefDoub;
   //Event level stuff
   fRecoEventCharge = kDefDoub;
   //Reco energy bits
-  fRecoEHad = kDefDoub;
-  fRecoMomLep = kDefDoub;
-  fRecoENu = kDefDoub; //Neutrino reco energy
+  fNumuRecoEHad = kDefDoub;
+  fNumuRecoMomLep = kDefDoub;
+  fNumuRecoENu = kDefDoub; //Neutrino reco energy
 }
 
 void FDSelection::CCNuSelection::GetEventInfo(art::Event const & evt){
@@ -613,65 +613,65 @@ void FDSelection::CCNuSelection::RunSelection(art::Event const & evt){
   //Start filling some variables
   recob::Track::Point_t trackStart, trackEnd;
   std::tie(trackStart, trackEnd) = sel_track->Extent(); 
-  fSelRecoMomX = kDefDoub; //temp
-  fSelRecoMomY = kDefDoub; //temp
-  fSelRecoMomZ = kDefDoub; //temp
-  fSelRecoMomT = kDefDoub; //temp
-  fSelRecoStartX = trackStart.X();
-  fSelRecoStartY = trackStart.Y();
-  fSelRecoStartZ = trackStart.Z();
-  fSelRecoEndX = trackEnd.X();
-  fSelRecoEndY = trackEnd.Y();
-  fSelRecoEndZ = trackEnd.Z();
-  if (fSelRecoEndZ > fSelRecoStartZ){
-    fSelRecoUpstreamX = fSelRecoStartX;
-    fSelRecoUpstreamY = fSelRecoStartY;
-    fSelRecoUpstreamZ = fSelRecoStartZ;
-    fSelRecoDownstreamX = fSelRecoEndX;
-    fSelRecoDownstreamY = fSelRecoEndY;
-    fSelRecoDownstreamZ = fSelRecoEndZ;
+  fSelTrackRecoMomX = kDefDoub; //temp
+  fSelTrackRecoMomY = kDefDoub; //temp
+  fSelTrackRecoMomZ = kDefDoub; //temp
+  fSelTrackRecoMomT = kDefDoub; //temp
+  fSelTrackRecoStartX = trackStart.X();
+  fSelTrackRecoStartY = trackStart.Y();
+  fSelTrackRecoStartZ = trackStart.Z();
+  fSelTrackRecoEndX = trackEnd.X();
+  fSelTrackRecoEndY = trackEnd.Y();
+  fSelTrackRecoEndZ = trackEnd.Z();
+  if (fSelTrackRecoEndZ > fSelTrackRecoStartZ){
+    fSelTrackRecoUpstreamX = fSelTrackRecoStartX;
+    fSelTrackRecoUpstreamY = fSelTrackRecoStartY;
+    fSelTrackRecoUpstreamZ = fSelTrackRecoStartZ;
+    fSelTrackRecoDownstreamX = fSelTrackRecoEndX;
+    fSelTrackRecoDownstreamY = fSelTrackRecoEndY;
+    fSelTrackRecoDownstreamZ = fSelTrackRecoEndZ;
   }
   else{
-    fSelRecoDownstreamX = fSelRecoStartX;
-    fSelRecoDownstreamY = fSelRecoStartY;
-    fSelRecoDownstreamZ = fSelRecoStartZ;
-    fSelRecoUpstreamX = fSelRecoEndX;
-    fSelRecoUpstreamY = fSelRecoEndY;
-    fSelRecoUpstreamZ = fSelRecoEndZ;
+    fSelTrackRecoDownstreamX = fSelTrackRecoStartX;
+    fSelTrackRecoDownstreamY = fSelTrackRecoStartY;
+    fSelTrackRecoDownstreamZ = fSelTrackRecoStartZ;
+    fSelTrackRecoUpstreamX = fSelTrackRecoEndX;
+    fSelTrackRecoUpstreamY = fSelTrackRecoEndY;
+    fSelTrackRecoUpstreamZ = fSelTrackRecoEndZ;
   }
-  fSelRecoLength = sel_track->Length();
-  fSelRecoCharge = CalculateTrackCharge(sel_track, sel_track_hits);
+  fSelTrackRecoLength = sel_track->Length();
+  fSelTrackRecoCharge = CalculateTrackCharge(sel_track, sel_track_hits);
   //27/11/18 DBrailsford Fill vertex information
   FillVertexInformation(sel_track, evt);
   //Now that the vertex information has been filled.  Calculate which end of th etrack is closest
-  TVector3 upstream_end(fSelRecoUpstreamX,fSelRecoUpstreamY,fSelRecoUpstreamZ);
-  TVector3 downstream_end(fSelRecoDownstreamX,fSelRecoDownstreamY,fSelRecoDownstreamZ);
-  TVector3 vertex_pos(fSelRecoVertexX,fSelRecoVertexY,fSelRecoVertexZ);
+  TVector3 upstream_end(fSelTrackRecoUpstreamX,fSelTrackRecoUpstreamY,fSelTrackRecoUpstreamZ);
+  TVector3 downstream_end(fSelTrackRecoDownstreamX,fSelTrackRecoDownstreamY,fSelTrackRecoDownstreamZ);
+  TVector3 vertex_pos(fSelTrackRecoVertexX,fSelTrackRecoVertexY,fSelTrackRecoVertexZ);
   if ((vertex_pos-upstream_end).Mag() < (vertex_pos-downstream_end).Mag()){
-    fSelRecoEndClosestToVertexX = fSelRecoUpstreamX;
-    fSelRecoEndClosestToVertexY = fSelRecoUpstreamY;
-    fSelRecoEndClosestToVertexZ = fSelRecoUpstreamZ;
+    fSelTrackRecoEndClosestToVertexX = fSelTrackRecoUpstreamX;
+    fSelTrackRecoEndClosestToVertexY = fSelTrackRecoUpstreamY;
+    fSelTrackRecoEndClosestToVertexZ = fSelTrackRecoUpstreamZ;
   }
   else{
-    fSelRecoEndClosestToVertexX = fSelRecoDownstreamX;
-    fSelRecoEndClosestToVertexY = fSelRecoDownstreamY;
-    fSelRecoEndClosestToVertexZ = fSelRecoDownstreamZ;
+    fSelTrackRecoEndClosestToVertexX = fSelTrackRecoDownstreamX;
+    fSelTrackRecoEndClosestToVertexY = fSelTrackRecoDownstreamY;
+    fSelTrackRecoEndClosestToVertexZ = fSelTrackRecoDownstreamZ;
   }
   //28/11/18 DBrailsford Fill child PFP info
   FillChildPFPInformation(sel_track, evt);
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
-  //fSelRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
-  fRecoENu = energyRecoHandle->fNuLorentzVector.E();
-  fRecoEHad = energyRecoHandle->fHadLorentzVector.E();
+  //fSelTrackRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
+  fNumuRecoENu = energyRecoHandle->fNuLorentzVector.E();
+  fNumuRecoEHad = energyRecoHandle->fHadLorentzVector.E();
 
-  fSelRecoContained = energyRecoHandle->longestTrackContained; 
+  fSelTrackRecoContained = energyRecoHandle->longestTrackContained; 
   if (energyRecoHandle->trackMomMethod==1){ //momentum by range was used to calculate ENu
-    fSelRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
-    fRecoMomLep = fSelRecoMomContained;
+    fSelTrackRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+    fNumuRecoMomLep = fSelTrackRecoMomContained;
   }
   else if (energyRecoHandle->trackMomMethod==0){//momentum by MCS
-    fSelRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
-    fRecoMomLep = fSelRecoMomMCS;
+    fSelTrackRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+    fNumuRecoMomLep = fSelTrackRecoMomMCS;
   }
 
   int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(sel_track_hits);
@@ -679,32 +679,32 @@ void FDSelection::CCNuSelection::RunSelection(art::Event const & evt){
   const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
   if (matched_mcparticle){
     //Fill variables
-    fSelTruePDG = matched_mcparticle->PdgCode();
-    if (matched_mcparticle->Mother()==0) fSelTruePrimary = 1;
-    else fSelTruePrimary = 0;
-    fSelTrueMomX = matched_mcparticle->Momentum().X();
-    fSelTrueMomY = matched_mcparticle->Momentum().Y();
-    fSelTrueMomZ = matched_mcparticle->Momentum().Z();
-    fSelTrueMomT = matched_mcparticle->Momentum().T();
-    fSelTrueStartX = matched_mcparticle->Position(0).X();
-    fSelTrueStartY = matched_mcparticle->Position(0).Y();
-    fSelTrueStartZ = matched_mcparticle->Position(0).Z();
-    fSelTrueStartT = matched_mcparticle->Position(0).T();
-    fSelTrueEndX = matched_mcparticle->EndPosition().X();
-    fSelTrueEndY = matched_mcparticle->EndPosition().Y();
-    fSelTrueEndZ = matched_mcparticle->EndPosition().Z();
-    fSelTrueEndT = matched_mcparticle->EndPosition().T();
+    fSelTrackTruePDG = matched_mcparticle->PdgCode();
+    if (matched_mcparticle->Mother()==0) fSelTrackTruePrimary = 1;
+    else fSelTrackTruePrimary = 0;
+    fSelTrackTrueMomX = matched_mcparticle->Momentum().X();
+    fSelTrackTrueMomY = matched_mcparticle->Momentum().Y();
+    fSelTrackTrueMomZ = matched_mcparticle->Momentum().Z();
+    fSelTrackTrueMomT = matched_mcparticle->Momentum().T();
+    fSelTrackTrueStartX = matched_mcparticle->Position(0).X();
+    fSelTrackTrueStartY = matched_mcparticle->Position(0).Y();
+    fSelTrackTrueStartZ = matched_mcparticle->Position(0).Z();
+    fSelTrackTrueStartT = matched_mcparticle->Position(0).T();
+    fSelTrackTrueEndX = matched_mcparticle->EndPosition().X();
+    fSelTrackTrueEndY = matched_mcparticle->EndPosition().Y();
+    fSelTrackTrueEndZ = matched_mcparticle->EndPosition().Z();
+    fSelTrackTrueEndT = matched_mcparticle->EndPosition().T();
   }
   //Now get the pid stuff
   art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
   std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_track.key());
   std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
   //Get the PIDs
-  fSelMVAElectron = mvaOutMap["electron"];
-  fSelMVAPion = mvaOutMap["pich"];
-  fSelMVAMuon = mvaOutMap["muon"];
-  fSelMVAProton = mvaOutMap["proton"];
-  fSelMVAPhoton = mvaOutMap["photon"];
+  fSelTrackMVAElectron = mvaOutMap["electron"];
+  fSelTrackMVAPion = mvaOutMap["pich"];
+  fSelTrackMVAMuon = mvaOutMap["muon"];
+  fSelTrackMVAProton = mvaOutMap["proton"];
+  fSelTrackMVAPhoton = mvaOutMap["photon"];
 }
 
 double FDSelection::CCNuSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
@@ -765,36 +765,36 @@ void FDSelection::CCNuSelection::FillVertexInformation(art::Ptr<recob::Track> co
     art::Ptr<recob::PFParticle> nu_pfp = nu_pfps[0];
     art::FindManyP<recob::Vertex> fmvpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
     const std::vector<art::Ptr<recob::Vertex> > sel_pfp_vertices = fmvpfp.at(nu_pfp.key());
-    fSelRecoNMatchedVertices = sel_pfp_vertices.size();
-    if (fSelRecoNMatchedVertices == 0){ //Nothing to do
+    fSelTrackRecoNMatchedVertices = sel_pfp_vertices.size();
+    if (fSelTrackRecoNMatchedVertices == 0){ //Nothing to do
       return;
     }
-    else if (fSelRecoNMatchedVertices > 1){
-      std::cout<< "CCNuSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelRecoNMatchedVertices << std::endl;
+    else if (fSelTrackRecoNMatchedVertices > 1){
+      std::cout<< "CCNuSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelTrackRecoNMatchedVertices << std::endl;
     }
     //always take the first vertex, even if there's more than one
     art::Ptr<recob::Vertex> matched_vertex = sel_pfp_vertices[0];
-    fSelRecoVertexX = matched_vertex->position().X();
-    fSelRecoVertexY = matched_vertex->position().Y();
-    fSelRecoVertexZ = matched_vertex->position().Z();
+    fSelTrackRecoVertexX = matched_vertex->position().X();
+    fSelTrackRecoVertexY = matched_vertex->position().Y();
+    fSelTrackRecoVertexZ = matched_vertex->position().Z();
 
     /*
     art::Ptr<recob::PFParticle> matched_pfp =GetPFParticleMatchedToTrack(track, evt);
 
     art::FindManyP<recob::Vertex> fmvpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
     const std::vector<art::Ptr<recob::Vertex> > sel_pfp_vertices = fmvpfp.at(matched_pfp.key());
-    fSelRecoNMatchedVertices = sel_pfp_vertices.size();
-    if (fSelRecoNMatchedVertices == 0){ //Nothing to do
+    fSelTrackRecoNMatchedVertices = sel_pfp_vertices.size();
+    if (fSelTrackRecoNMatchedVertices == 0){ //Nothing to do
       return;
     }
-    else if (fSelRecoNMatchedVertices > 1){
-      std::cout<< "CCNuSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelRecoNMatchedVertices << std::endl;
+    else if (fSelTrackRecoNMatchedVertices > 1){
+      std::cout<< "CCNuSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelTrackRecoNMatchedVertices << std::endl;
     }
     //always take the first vertex, even if there's more than one
     art::Ptr<recob::Vertex> matched_vertex = sel_pfp_vertices[0];
-    fSelRecoVertexX = matched_vertex->position().X();
-    fSelRecoVertexY = matched_vertex->position().Y();
-    fSelRecoVertexZ = matched_vertex->position().Z();
+    fSelTrackRecoVertexX = matched_vertex->position().X();
+    fSelTrackRecoVertexY = matched_vertex->position().Y();
+    fSelTrackRecoVertexZ = matched_vertex->position().Z();
     //Count how many PFPs are matched to this vertex
     art::Handle< std::vector<recob::Vertex> > vertexListHandle;
     if (!(evt.getByLabel(fVertexModuleLabel, vertexListHandle))){
@@ -811,9 +811,9 @@ void FDSelection::CCNuSelection::FillVertexInformation(art::Ptr<recob::Track> co
 
   }
   else{
-    fSelRecoVertexX = track->Start().X();
-    fSelRecoVertexY = track->Start().Y();
-    fSelRecoVertexZ = track->Start().Z();
+    fSelTrackRecoVertexX = track->Start().X();
+    fSelTrackRecoVertexY = track->Start().Y();
+    fSelTrackRecoVertexZ = track->Start().Z();
   }
   return;
 }
@@ -835,15 +835,15 @@ void FDSelection::CCNuSelection::FillChildPFPInformation(art::Ptr<recob::Track> 
   lar_pandora::PFParticleMap pfparticleMap;
   lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
 
-  fSelRecoNChildPFP = matched_pfp->NumDaughters();
-  fSelRecoNChildTrackPFP = 0;
-  fSelRecoNChildShowerPFP = 0;
+  fSelTrackRecoNChildPFP = matched_pfp->NumDaughters();
+  fSelTrackRecoNChildTrackPFP = 0;
+  fSelTrackRecoNChildShowerPFP = 0;
   for (int i_child = 0; i_child < matched_pfp->NumDaughters(); i_child++){
     int child_id = matched_pfp->Daughter(i_child);
     art::Ptr<recob::PFParticle> child_pfp = pfparticleMap[child_id];
     int pdg = child_pfp->PdgCode();
-    if (pdg==13) fSelRecoNChildTrackPFP++;
-    else if (pdg==11) fSelRecoNChildShowerPFP++;
+    if (pdg==13) fSelTrackRecoNChildTrackPFP++;
+    else if (pdg==11) fSelTrackRecoNChildShowerPFP++;
     else std::cout<<"FillChildPFPInformation: found a child PFP with an unexpected pdg code: " << pdg << std::endl;
   }
 
