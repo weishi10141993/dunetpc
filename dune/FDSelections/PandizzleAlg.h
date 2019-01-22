@@ -37,6 +37,8 @@
 
 // ROOT
 #include "TTree.h"
+#include "TH1F.h"
+//#include "TCanvas.h"
 
 //Custom
 #include "FDSelectionUtils.h"
@@ -75,6 +77,9 @@ class FDSelection::PandizzleAlg {
   void FillTree();
 
   void FillMichelElectronVariables(const art::Ptr<recob::PFParticle> mu_pfp, const std::vector<art::Ptr<recob::PFParticle> > & child_pfps, const art::Event& evt);
+
+  void FillTrackVariables(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
+  void CalculateTrackDeflection(const art::Ptr<recob::Track> track);
 
 
   // module labels

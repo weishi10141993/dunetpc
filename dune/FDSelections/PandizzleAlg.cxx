@@ -51,6 +51,8 @@ void FDSelection::PandizzleAlg::InitialiseTrees() {
     BookTreeInt(tree, "PFPMichelTrueID");
     BookTreeInt(tree, "PFPMichelTrueMotherID");
     BookTreeInt(tree, "PFPMichelTruePDG");
+    BookTreeFloat(tree, "PFPMichelElectronMVA");
+    BookTreeFloat(tree, "PFPMichelRecoEnergy");
 
 
 
@@ -157,24 +159,9 @@ void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFPartic
   fVarHolder.IntVars["PFPNTrackChildren"] = CountPFPWithPDG(child_pfps, 13);
   
   FillMichelElectronVariables(pfp, child_pfps, evt);
-  /*
-  if (fVarHolder.IntVars["PFPTruePDG"] == 13 && fVarHolder.IntVars["PFPPDG"] ==13){
-    for (unsigned int i_child = 0; i_child < child_pfps.size(); i_child++){
-      art::Ptr<recob::PFParticle> child_pfp = child_pfps[i_child];
-      std::vector<art::Ptr<recob::Hit> > child_pfp_hits = GetPFPHits(child_pfp, evt); 
-      int child_g4id = FDSelectionUtils::TrueParticleIDFromTotalTrueEnergy(child_pfp_hits);
-      if (child_g4id <= 0) {
-        std::cout<<"child PFP has no true ID"<<std::endl;
-        continue;
-      }
-      const simb::MCParticle* matched_childmcparticle = pi_serv->ParticleList().at(child_g4id);
+  FillTrackVariables(pfp, evt);
 
-      if (matched_childmcparticle){
-        std::cout<<"child " << i_child << "  True PDG: " << matched_childmcparticle->PdgCode() << "   PFP PDG: " << child_pfp->PdgCode() << std::endl;
-      }
-    }
-  } 
-  */
+
   FillTree();
   ResetTreeVariables();
   return;
@@ -276,6 +263,8 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
   //Assign the branch value to a new default value to indicate that we have a track, but don't necessarily have a Michel candidate (rather than a global default value)
   fVarHolder.FloatVars["PFPMichelDist"] = -100.;
   fVarHolder.IntVars["PFPMichelNHits"] = -100;
+  fVarHolder.FloatVars["PFPMichelElectronMVA"] = -100.;
+  fVarHolder.FloatVars["PFPMichelRecoEnergy"] = -100.;
 
   //If no child PFPs, sack everything off
   if (child_pfps.size() == 0){
@@ -288,8 +277,26 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
     return;
   }
 
+  //Get the shower handle
+  art::Handle< std::vector<recob::Shower> > showerListHandle;
+  if (!(evt.getByLabel(fShowerModuleLabel, showerListHandle))){
+    mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::Shower> with module label: " << fShowerModuleLabel;
+    return;
+  }
+
+  //Get the track handle
+  art::Handle< std::vector<recob::Track> > trackListHandle;
+  if (!(evt.getByLabel(fTrackModuleLabel, trackListHandle))){
+    mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel;
+    return;
+  }
+
+
+
   art::FindManyP<recob::Track> fmtpfp(pfparticleListHandle, evt, fTrackModuleLabel);
   art::FindManyP<recob::Shower> fmspfp(pfparticleListHandle, evt, fShowerModuleLabel);
+  art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
+  art::FindManyP<anab::MVAPIDResult> fmpids(showerListHandle, evt, fPIDModuleLabel);
 
   const std::vector<art::Ptr<recob::Track> > sel_pfp_tracks = fmtpfp.at(mu_pfp.key());
   if (sel_pfp_tracks.size() != 1){
@@ -299,15 +306,19 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
   TVector3 mu_end_position = mu_track->End();
 
   art::Ptr<recob::PFParticle> closest_child_pfp;
+  art::Ptr<anab::MVAPIDResult> closest_child_pfp_mva_pid_result;
   double closest_distance = 99999999999;
   for (unsigned int i_child = 0; i_child < child_pfps.size(); i_child++){
     art::Ptr<recob::PFParticle> child_pfp = child_pfps[i_child];
+    art::Ptr<anab::MVAPIDResult> child_pfp_mva_pid_result;
     TVector3 child_start_pos;
     if (child_pfp->PdgCode()==13){
       const std::vector<art::Ptr<recob::Track> > child_pfp_tracks = fmtpfp.at(child_pfp.key());
       if (child_pfp_tracks.size() != 1) return;
       art::Ptr<recob::Track> child_track = child_pfp_tracks[0];
       child_start_pos.SetXYZ(child_track->Start().X(),child_track->Start().Y(),child_track->Start().Z());
+    std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(child_track.key());
+    child_pfp_mva_pid_result = pids.at(0);
 
     }
     else if (child_pfp->PdgCode()==11){
@@ -315,6 +326,9 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
       if (child_pfp_showers.size() != 1) return;
       art::Ptr<recob::Shower> child_shower = child_pfp_showers[0];
       child_start_pos.SetXYZ(child_shower->ShowerStart().X(),child_shower->ShowerStart().Y(),child_shower->ShowerStart().Z());
+      std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpids.at(child_shower.key());
+      child_pfp_mva_pid_result = pids.at(0);
+
     }
     else {
       mf::LogWarning("PandizzleAlg") << "Unknown PFP PDG when finding Michel candidate"<< child_pfp->PdgCode();
@@ -324,6 +338,7 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
     if (curr_distance < closest_distance){
       closest_distance = curr_distance;
       closest_child_pfp = child_pfp;
+      closest_child_pfp_mva_pid_result = child_pfp_mva_pid_result;
     }
   }
 
@@ -342,6 +357,64 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
     }
   }
 
+  std::map<std::string,double> mvaOutMap = closest_child_pfp_mva_pid_result->mvaOutput;
+  fVarHolder.FloatVars["PFPMichelElectronMVA"] = mvaOutMap["electron"];
+
   return;
 }
 
+void FDSelection::PandizzleAlg::FillTrackVariables(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt){
+  if (pfp->PdgCode() != 13) return;
+
+  //Get the PFP handle
+  art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+    mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel;
+    return;
+  }
+
+  art::FindManyP<recob::Track> fmtpfp(pfparticleListHandle, evt, fTrackModuleLabel);
+  std::vector<art::Ptr<recob::Track> > pfp_tracks = fmtpfp.at(pfp.key());
+  if (pfp_tracks.size() > 1){
+    mf::LogWarning("PandizzleAlg") << "Found more than one recob::Track matched to PFP: " << pfp_tracks.size();
+    return;
+  }
+  if (pfp_tracks.size() == 0){
+    return; //Nothing to do
+  }
+
+  art::Ptr<recob::Track> pfp_track = pfp_tracks.at(0);
+  CalculateTrackDeflection(pfp_track);
+
+  return;
+}
+
+void FDSelection::PandizzleAlg::CalculateTrackDeflection(const art::Ptr<recob::Track> track){
+  //Loop over the trajectory points in a track and compare adjacent pairs
+  //Get the number of points
+  size_t NPoints = track->NumberTrajectoryPoints();
+  //Store the directions between adjacent points on a vector
+  std::vector<TVector3> directions;
+  for (size_t i_point = 0; i_point < NPoints-1; i_point++){
+    TVector3 position_i(track->TrajectoryPoint(i_point).position.X(), track->TrajectoryPoint(i_point).position.Y(), track->TrajectoryPoint(i_point).position.Z());
+    TVector3 position_iplus1(track->TrajectoryPoint(i_point+1).position.X(), track->TrajectoryPoint(i_point+1).position.Y(), track->TrajectoryPoint(i_point+1).position.Z());
+    TVector3 direction = (position_iplus1-position_i).Unit();
+    directions.push_back(direction);
+  }
+
+  TH1F *hist = new TH1F("hist","",100,-5,5);
+  TString title = Form("event_%i_trueID_%i_truePDG_%i",fVarHolder.IntVars["event"], fVarHolder.IntVars["PFPTrueID"],fVarHolder.IntVars["PFPTruePDG"]);
+  hist->SetTitle(title);
+  //TCanvas *can = new TCanvas("can","can");
+  //Now let's loop through the direction and compare adjacent elements (wow!)
+  for (size_t i_dir = 0; i_dir < directions.size()-1; i_dir++){
+    double angle = directions[i_dir].Angle(directions[i_dir+1]) * 180 / 3.142;
+    hist->Fill(angle);
+  }
+
+  hist->Draw();
+  //can->SaveAs(title+(TString)(".png"));
+  delete hist;
+  //delete can;
+  return;
+}

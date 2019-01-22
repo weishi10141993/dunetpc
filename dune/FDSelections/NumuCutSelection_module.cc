@@ -260,7 +260,7 @@ void FDSelection::NumuCutSelection::analyze(art::Event const & evt)
   RunSelection(evt);
 
   //fPIDAnaAlg.Run(evt);
-  fPandizzleAlg.Run(evt);
+  //fPandizzleAlg.Run(evt);
 
   fTree->Fill();
   Reset(); //Reset at the end of the event
