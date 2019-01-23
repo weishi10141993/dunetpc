@@ -36,5 +36,16 @@ simple_plugin(HighestEnergyRecoShowerSelector "tool"
                 ${ART_FRAMEWORK_PRINCIPAL}
                 ${ART_FRAMEWORK_SERVICES_REGISTRY}
  	  	           art_Utilities canvas
+             )
 
+simple_plugin(HighestEnergyRecoVertexShowerSelector "tool"
+    	  	        lardataobj_RecoBase
+                larcorealg_Geometry
+                larcore_Geometry_Geometry_service
+                larreco_RecoAlg
+    	  	        larpandora_LArPandoraInterface
+                ${ROOT_BASIC_LIB_LIST}
+                ${ART_FRAMEWORK_PRINCIPAL}
+                ${ART_FRAMEWORK_SERVICES_REGISTRY}
+ 	  	           art_Utilities canvas
              )

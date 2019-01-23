@@ -26,10 +26,10 @@ CCNuSelection:
  UsePandoraVertex: true
 
 }
-CCNuSelection.RecoTrackSelectorTool.tool_type: "LongestRecoTrackSelector"
+CCNuSelection.RecoTrackSelectorTool.tool_type: "LongestRecoVertexTrackSelector"
 CCNuSelection.RecoTrackSelectorTool.ModuleLabels: @local::CCNuSelection.ModuleLabels
 
-CCNuSelection.RecoShowerSelectorTool.tool_type: "HighestEnergyRecoShowerSelector"
+CCNuSelection.RecoShowerSelectorTool.tool_type: "HighestEnergyRecoVertexShowerSelector"
 CCNuSelection.RecoShowerSelectorTool.ModuleLabels: @local::CCNuSelection.ModuleLabels
 CCNuSelection.RecoShowerSelectorTool.ShowerEnergyAlg: @local::CCNuSelection.ShowerEnergyAlg
 
