@@ -1,4 +1,5 @@
 #include "calorimetry_dune10kt.fcl"
+#include "showeralgorithms.fcl"
 
 BEGIN_PROLOG
 
@@ -17,11 +18,21 @@ CCNuSelection:
    HitsModuleLabel:             "linecluster"
    POTModuleLabel:              "generator"
    NumuEnergyRecoModuleLabel:   "energyreconumu"
+   NueEnergyRecoModuleLabel:    "energyreconue"
+
  }                                
  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
+ ShowerEnergyAlg:             @local::dune10kt_showerenergy
  UsePandoraVertex: true
+
 }
-CCNuSelection.RecoTrackSelectorTool.tool_type: "LongestRecoVertexTrackSelector"
+CCNuSelection.RecoTrackSelectorTool.tool_type: "LongestRecoTrackSelector"
 CCNuSelection.RecoTrackSelectorTool.ModuleLabels: @local::CCNuSelection.ModuleLabels
+
+CCNuSelection.RecoShowerSelectorTool.tool_type: "HighestEnergyRecoShowerSelector"
+CCNuSelection.RecoShowerSelectorTool.ModuleLabels: @local::CCNuSelection.ModuleLabels
+CCNuSelection.RecoShowerSelectorTool.ShowerEnergyAlg: @local::CCNuSelection.ShowerEnergyAlg
+
+
 
 END_PROLOG

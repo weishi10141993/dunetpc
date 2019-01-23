@@ -107,7 +107,7 @@ private:
 
   //Algs
   //PIDAnaAlg fPIDAnaAlg;
-  PandizzleAlg fPandizzleAlg;
+  //PandizzleAlg fPandizzleAlg;
   calo::CalorimetryAlg fCalorimetryAlg;
   shower::ShowerEnergyAlg fShowerEnergyAlg;
 
@@ -303,9 +303,9 @@ private:
 
   //Fhicl pset labels
   std::string fNuGenModuleLabel;
-  std::string fShowerModuleLabel;
   std::string fLargeantModuleLabel;
   std::string fTrackModuleLabel;
+  std::string fShowerModuleLabel;
   std::string fPFParticleModuleLabel;
   std::string fVertexModuleLabel;
   std::string fPIDModuleLabel;
@@ -325,14 +325,15 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
   //fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
-  fPandizzleAlg(pset.get<fhicl::ParameterSet>("ModuleLabels")) ,
+  //fPandizzleAlg(pset.get<fhicl::ParameterSet>("ModuleLabels")) ,
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")),
-
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
+  fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
   fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
   fLargeantModuleLabel     (pset.get< std::string >("ModuleLabels.LargeantModuleLabel")),
   fTrackModuleLabel        (pset.get< std::string >("ModuleLabels.TrackModuleLabel")),
+  fShowerModuleLabel        (pset.get< std::string >("ModuleLabels.ShowerModuleLabel")),
   fPFParticleModuleLabel   (pset.get< std::string >("ModuleLabels.PFParticleModuleLabel")),
   fVertexModuleLabel   (pset.get< std::string >("ModuleLabels.VertexModuleLabel")),
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
@@ -454,10 +455,77 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelTrackMVAMuon",&fSelTrackMVAMuon);
     fTree->Branch("SelTrackMVAProton",&fSelTrackMVAProton);
     fTree->Branch("SelTrackMVAPhoton",&fSelTrackMVAPhoton);
+    fTree->Branch("SelShowerTruePDG",&fSelShowerTruePDG);
+    fTree->Branch("SelShowerTruePrimary",&fSelShowerTruePrimary);
+    fTree->Branch("SelShowerTrueMomX",&fSelShowerTrueMomX);
+    fTree->Branch("SelShowerTrueMomY",&fSelShowerTrueMomY);
+    fTree->Branch("SelShowerTrueMomZ",&fSelShowerTrueMomZ);
+    fTree->Branch("SelShowerTrueMomT",&fSelShowerTrueMomT);
+    fTree->Branch("SelShowerTrueStartX",&fSelShowerTrueStartX);
+    fTree->Branch("SelShowerTrueStartY",&fSelShowerTrueStartY);
+    fTree->Branch("SelShowerTrueStartZ",&fSelShowerTrueStartZ);
+    fTree->Branch("SelShowerTrueStartT",&fSelShowerTrueStartT);
+    fTree->Branch("SelShowerTrueEndX",&fSelShowerTrueEndX);
+    fTree->Branch("SelShowerTrueEndY",&fSelShowerTrueEndY);
+    fTree->Branch("SelShowerTrueEndZ",&fSelShowerTrueEndZ);
+    fTree->Branch("SelShowerTrueEndT",&fSelShowerTrueEndT);
+    fTree->Branch("SelShowerRecoMomX",&fSelShowerRecoMomX);
+    fTree->Branch("SelShowerRecoMomY",&fSelShowerRecoMomY);
+    fTree->Branch("SelShowerRecoMomZ",&fSelShowerRecoMomZ);
+    fTree->Branch("SelShowerRecoMomT",&fSelShowerRecoMomT);
+    fTree->Branch("SelShowerRecoStartX",&fSelShowerRecoStartX);
+    fTree->Branch("SelShowerRecoStartY",&fSelShowerRecoStartY);
+    fTree->Branch("SelShowerRecoStartZ",&fSelShowerRecoStartZ);
+    fTree->Branch("SelShowerRecoStartT",&fSelShowerRecoStartT);
+    fTree->Branch("SelShowerRecoEndX",&fSelShowerRecoEndX);
+    fTree->Branch("SelShowerRecoEndY",&fSelShowerRecoEndY);
+    fTree->Branch("SelShowerRecoEndZ",&fSelShowerRecoEndZ);
+    fTree->Branch("SelShowerRecoEndT",&fSelShowerRecoEndT);
+    fTree->Branch("SelShowerRecoUpstreamX",&fSelShowerRecoUpstreamX);
+    fTree->Branch("SelShowerRecoUpstreamY",&fSelShowerRecoUpstreamY);
+    fTree->Branch("SelShowerRecoUpstreamZ",&fSelShowerRecoUpstreamZ);
+    fTree->Branch("SelShowerRecoUpstreamT",&fSelShowerRecoUpstreamT);
+    fTree->Branch("SelShowerRecoDownstreamX",&fSelShowerRecoDownstreamX);
+    fTree->Branch("SelShowerRecoDownstreamY",&fSelShowerRecoDownstreamY);
+    fTree->Branch("SelShowerRecoDownstreamZ",&fSelShowerRecoDownstreamZ);
+    fTree->Branch("SelShowerRecoDownstreamT",&fSelShowerRecoDownstreamT);
+    fTree->Branch("SelShowerRecoEndClosestToVertexX",&fSelShowerRecoEndClosestToVertexX);
+    fTree->Branch("SelShowerRecoEndClosestToVertexY",&fSelShowerRecoEndClosestToVertexY);
+    fTree->Branch("SelShowerRecoEndClosestToVertexZ",&fSelShowerRecoEndClosestToVertexZ);
+    fTree->Branch("SelShowerRecoLength",&fSelShowerRecoLength);
+    fTree->Branch("SelShowerRecoContained",&fSelShowerRecoContained);
+    fTree->Branch("SelShowerRecoCharge",&fSelShowerRecoCharge);
+    fTree->Branch("SelShowerRecoMomMCS",&fSelShowerRecoMomMCS);
+    fTree->Branch("SelShowerRecoMomContained",&fSelShowerRecoMomContained);
+    fTree->Branch("SelShowerRecoNMatchedVertices",&fSelShowerRecoNMatchedVertices);
+    fTree->Branch("SelShowerRecoVertexX",&fSelShowerRecoVertexX);
+    fTree->Branch("SelShowerRecoVertexY",&fSelShowerRecoVertexY);
+    fTree->Branch("SelShowerRecoVertexZ",&fSelShowerRecoVertexZ);
+    fTree->Branch("SelShowerRecoNChildPFP",&fSelShowerRecoNChildPFP);
+    fTree->Branch("SelShowerRecoNChildTrackPFP",&fSelShowerRecoNChildTrackPFP);
+    fTree->Branch("SelShowerRecoNChildShowerPFP",&fSelShowerRecoNChildShowerPFP);
+    fTree->Branch("SelShowerRecoDirX",&fSelShowerRecoDirX);
+    fTree->Branch("SelShowerRecoDirY",&fSelShowerRecoDirY);
+    fTree->Branch("SelShowerRecoDirZ",&fSelShowerRecoDirZ);
+    fTree->Branch("SelShowerRecodEdx",&fSelShowerRecodEdx);
+    fTree->Branch("SelShowerRecoIsPrimaryPFPDaughter",&fSelShowerRecoIsPrimaryPFPDaughter);
+
+    fTree->Branch("SelShowerMVAElectron",&fSelShowerMVAElectron);
+    fTree->Branch("SelShowerMVAPion",&fSelShowerMVAPion);
+    fTree->Branch("SelShowerMVAMuon",&fSelShowerMVAMuon);
+    fTree->Branch("SelShowerMVAProton",&fSelShowerMVAProton);
+    fTree->Branch("SelShowerMVAPhoton",&fSelShowerMVAPhoton);
+    fTree->Branch("RecoNuVtxX",&fRecoNuVtxX);
+    fTree->Branch("RecoNuVtxY",&fRecoNuVtxY);
+    fTree->Branch("RecoNuVtxZ",&fRecoNuVtxZ);
     fTree->Branch("RecoEventCharge",&fRecoEventCharge);
     fTree->Branch("NumuRecoMomLep",&fNumuRecoMomLep);
     fTree->Branch("NumuRecoEHad",&fNumuRecoEHad);
     fTree->Branch("NumuRecoENu",&fNumuRecoENu);
+    fTree->Branch("NueRecoMomLep",&fNueRecoMomLep);
+    fTree->Branch("NueRecoEHad",&fNueRecoEHad);
+    fTree->Branch("NueRecoENu",&fNueRecoENu);
+
 
 
     fPOTTree = tfs->make<TTree>("pottree","pot tree");
@@ -532,6 +600,7 @@ void FDSelection::CCNuSelection::Reset()
   fLepEndT = kDefDoub;
   fLepNuAngle = kDefDoub;
   //Selection stuff
+  //Track stuff
   //true bits
   fSelTrackTruePDG = kDefInt;
   fSelTrackTruePrimary = kDefInt;
@@ -583,19 +652,94 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackRecoNChildPFP = kDefInt;
   fSelTrackRecoNChildTrackPFP = kDefInt;
   fSelTrackRecoNChildShowerPFP = kDefInt;
-
   //MVA bits
   fSelTrackMVAElectron = kDefDoub;
   fSelTrackMVAPion = kDefDoub;
   fSelTrackMVAMuon = kDefDoub;
   fSelTrackMVAProton = kDefDoub;
   fSelTrackMVAPhoton = kDefDoub;
-  //Event level stuff
-  fRecoEventCharge = kDefDoub;
   //Reco energy bits
   fNumuRecoEHad = kDefDoub;
   fNumuRecoMomLep = kDefDoub;
   fNumuRecoENu = kDefDoub; //Neutrino reco energy
+
+  //Shower bits
+  //true bits
+  fSelShowerTruePDG = kDefInt;
+  fSelShowerTruePrimary = kDefInt;
+  fSelShowerTrueMomX = kDefDoub;
+  fSelShowerTrueMomY = kDefDoub;
+  fSelShowerTrueMomZ = kDefDoub;
+  fSelShowerTrueMomT = kDefDoub;
+  fSelShowerTrueStartX = kDefDoub;
+  fSelShowerTrueStartY = kDefDoub;
+  fSelShowerTrueStartZ = kDefDoub;
+  fSelShowerTrueStartT = kDefDoub;
+  fSelShowerTrueEndX = kDefDoub;
+  fSelShowerTrueEndY = kDefDoub;
+  fSelShowerTrueEndZ = kDefDoub;
+  fSelShowerTrueEndT = kDefDoub;
+  //reco bits
+  fSelShowerRecoMomX = kDefDoub;
+  fSelShowerRecoMomY = kDefDoub;
+  fSelShowerRecoMomZ = kDefDoub;
+  fSelShowerRecoMomT = kDefDoub;
+  fSelShowerRecoStartX = kDefDoub;
+  fSelShowerRecoStartY = kDefDoub;
+  fSelShowerRecoStartZ = kDefDoub;
+  fSelShowerRecoStartT = kDefDoub;
+  fSelShowerRecoEndX = kDefDoub;
+  fSelShowerRecoEndY = kDefDoub;
+  fSelShowerRecoEndZ = kDefDoub;
+  fSelShowerRecoEndT = kDefDoub;
+  fSelShowerRecoUpstreamX = kDefDoub;
+  fSelShowerRecoUpstreamY = kDefDoub;
+  fSelShowerRecoUpstreamZ = kDefDoub;
+  fSelShowerRecoUpstreamT = kDefDoub;
+  fSelShowerRecoDownstreamX = kDefDoub;
+  fSelShowerRecoDownstreamY = kDefDoub;
+  fSelShowerRecoDownstreamZ = kDefDoub;
+  fSelShowerRecoDownstreamT = kDefDoub;
+  fSelShowerRecoEndClosestToVertexX = kDefDoub;
+  fSelShowerRecoEndClosestToVertexY = kDefDoub;
+  fSelShowerRecoEndClosestToVertexZ = kDefDoub;
+  fSelShowerRecoLength = kDefDoub;
+  fSelShowerRecoContained = 0;
+  fSelShowerRecoCharge = kDefDoub;
+  fSelShowerRecoMomMCS = kDefDoub;
+  fSelShowerRecoMomContained = kDefDoub;
+  fSelShowerRecoNMatchedVertices = kDefInt;
+  fSelShowerRecoVertexX = kDefDoub;
+  fSelShowerRecoVertexY = kDefDoub;
+  fSelShowerRecoVertexZ = kDefDoub;
+  fSelShowerRecoNChildPFP = kDefInt;
+  fSelShowerRecoNChildTrackPFP = kDefInt;
+  fSelShowerRecoNChildShowerPFP = kDefInt;
+  fSelShowerRecoDirX = kDefDoub;
+  fSelShowerRecoDirY = kDefDoub;
+  fSelShowerRecoDirZ = kDefDoub;
+  fSelShowerRecodEdx = kDefDoub;
+  fSelShowerRecoIsPrimaryPFPDaughter = 0;
+  //MVA bits
+  fSelShowerMVAElectron = kDefDoub;
+  fSelShowerMVAPion = kDefDoub;
+  fSelShowerMVAMuon = kDefDoub;
+  fSelShowerMVAProton = kDefDoub;
+  fSelShowerMVAPhoton = kDefDoub;
+  //Reco nu bits
+  fRecoNuVtxX = kDefDoub;
+  fRecoNuVtxY = kDefDoub;
+  fRecoNuVtxZ = kDefDoub;
+
+
+  //Reco energy bits
+  fNueRecoEHad = kDefDoub;
+  fNueRecoMomLep = kDefDoub;
+  fNueRecoENu = kDefDoub; //Neutrino reco energy
+
+  //Event level stuff
+  fRecoEventCharge = kDefDoub;
+
 }
 
 void FDSelection::CCNuSelection::GetEventInfo(art::Event const & evt){
