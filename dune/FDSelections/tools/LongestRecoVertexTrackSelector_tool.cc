@@ -31,12 +31,12 @@ art::Ptr<recob::Track> FDSelectionTools::LongestRecoVertexTrackSelector::SelectT
     //Now get the associated track 
     art::FindManyP<recob::Track> fmtpfp(pfparticleListHandle, evt, fTrackModuleLabel);
     const std::vector<art::Ptr<recob::Track> > pfp_track_vector = fmtpfp.at(child_pfp.key());
-    if (pfp_track_vector.size() > 1){ //Found a PFP with more than one track matched.  Complain and exit
+    if (pfp_track_vector.size() > 1){ //Found a PFP with more than one track matched.  Complain and move on
       std::cout<<"Number of associated tracks to a PFP is greater than 1: " << pfp_track_vector.size() << std::endl;
-      return mytrack; //empty
+      continue; //empty
     } 
     else if (pfp_track_vector.size() == 0){ //Don't bother complaining of no track was found.  It's either missing or its a shower.  No biggie here
-      return mytrack; 
+      continue; 
     }
     const art::Ptr<recob::Track> track = pfp_track_vector[0];
     double current_track_length = track->Length();
