@@ -7,12 +7,14 @@
 
 #include "PandizzleAlg.h"
 
-FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) {
-  fTrackModuleLabel  = pset.get<std::string>("TrackModuleLabel");
-  fShowerModuleLabel = pset.get<std::string>("ShowerModuleLabel");
-  fPIDModuleLabel    = pset.get<std::string>("PIDModuleLabel");
-  fPFParticleModuleLabel = pset.get<std::string>("PFParticleModuleLabel");
-  fSpacePointModuleLabel = pset.get<std::string>("SpacePointModuleLabel");
+FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) :
+  fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg"))
+{
+  fTrackModuleLabel  = pset.get<std::string>("ModuleLabels.TrackModuleLabel");
+  fShowerModuleLabel = pset.get<std::string>("ModuleLabels.ShowerModuleLabel");
+  fPIDModuleLabel    = pset.get<std::string>("ModuleLabels.PIDModuleLabel");
+  fPFParticleModuleLabel = pset.get<std::string>("ModuleLabels.PFParticleModuleLabel");
+  fSpacePointModuleLabel = pset.get<std::string>("ModuleLabels.SpacePointModuleLabel");
   InitialiseTrees();
   ResetTreeVariables();
 }
@@ -52,13 +54,17 @@ void FDSelection::PandizzleAlg::InitialiseTrees() {
     BookTreeInt(tree, "PFPMichelTrueMotherID");
     BookTreeInt(tree, "PFPMichelTruePDG");
     BookTreeFloat(tree, "PFPMichelElectronMVA");
-    BookTreeFloat(tree, "PFPMichelRecoEnergy");
-
-
-
-
-
-
+    BookTreeFloat(tree, "PFPMichelRecoEnergyPlane0");
+    BookTreeFloat(tree, "PFPMichelRecoEnergyPlane1");
+    BookTreeFloat(tree, "PFPMichelRecoEnergyPlane2");
+    BookTreeFloat(tree,"PFPTrackDeflecAngleMean");
+    BookTreeFloat(tree,"PFPTrackDeflecAngleSD");
+    BookTreeFloat(tree,"PFPTrackMuonMVA");
+    BookTreeFloat(tree,"PFPTrackProtonMVA");
+    BookTreeFloat(tree,"PFPTrackPionMVA");
+    BookTreeFloat(tree,"PFPTrackPhotonMVA");
+    BookTreeFloat(tree,"PFPTrackElectronMVA");
+    BookTreeFloat(tree,"PFPTrackLengthRatio");
   }
 }
 
@@ -84,6 +90,7 @@ void FDSelection::PandizzleAlg::Run(const art::Event& evt) {
   //Now grab the primary children of these PFP
   for (unsigned int i_nupfp = 0; i_nupfp < nu_pfps.size(); i_nupfp++){
     art::Ptr<recob::PFParticle> nu_pfp = nu_pfps[i_nupfp];
+    //std::cout<<"Nu ID: " << nu_pfp->Self() << std::endl;
     std::vector<art::Ptr<recob::PFParticle> > child_pfps = SelectChildPFParticles(nu_pfp, pfparticleMap);
     //Assess each child pfp
     for (unsigned int i_childpfp = 0; i_childpfp < child_pfps.size(); i_childpfp++){
@@ -134,6 +141,7 @@ void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFPartic
   //Get the PFP hits
   std::vector<art::Ptr<recob::Hit> > pfp_hits = GetPFPHits(pfp, evt);
   fVarHolder.IntVars["PFPNHits"] = pfp_hits.size();
+  //if (pfp_hits.size() == 0) std::cout<<"PDG: " << pfp->PdgCode() << "  NHits: " << pfp_hits.size() << "  ID: " << pfp->Self() << "  NDau" << pfp->NumDaughters() << "  Parent " << pfp->Parent()  << std::endl;
 
   //Get the true PDG
   int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(pfp_hits); 
@@ -203,6 +211,7 @@ std::vector<art::Ptr<recob::Hit> > FDSelection::PandizzleAlg::GetPFPHits(const a
 
   art::FindManyP<recob::SpacePoint> fmsppfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
   const std::vector<art::Ptr<recob::SpacePoint> > sel_pfp_spacepoints = fmsppfp.at(pfp.key());
+  //std::cout<<"NSpacePoints: " << sel_pfp_spacepoints.size() << std::endl;
   art::FindManyP<recob::Hit> fmhsp(spacePointListHandle, evt, fSpacePointModuleLabel);
   //Loop over the space points and retrieve the hits
   for (unsigned i_sp = 0; i_sp < sel_pfp_spacepoints.size(); i_sp++){
@@ -264,7 +273,9 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
   fVarHolder.FloatVars["PFPMichelDist"] = -100.;
   fVarHolder.IntVars["PFPMichelNHits"] = -100;
   fVarHolder.FloatVars["PFPMichelElectronMVA"] = -100.;
-  fVarHolder.FloatVars["PFPMichelRecoEnergy"] = -100.;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = -100.;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = -100.;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = -100.;
 
   //If no child PFPs, sack everything off
   if (child_pfps.size() == 0){
@@ -360,6 +371,11 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
   std::map<std::string,double> mvaOutMap = closest_child_pfp_mva_pid_result->mvaOutput;
   fVarHolder.FloatVars["PFPMichelElectronMVA"] = mvaOutMap["electron"];
 
+  //Reco energy
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 0);
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 1);
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 2);
+
   return;
 }
 
@@ -372,6 +388,13 @@ void FDSelection::PandizzleAlg::FillTrackVariables(const art::Ptr<recob::PFParti
     mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel;
     return;
   }
+  //Get the track handle
+  art::Handle< std::vector<recob::Track> > trackListHandle;
+  if (!(evt.getByLabel(fTrackModuleLabel, trackListHandle))){
+    mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel;
+    return;
+  }
+
 
   art::FindManyP<recob::Track> fmtpfp(pfparticleListHandle, evt, fTrackModuleLabel);
   std::vector<art::Ptr<recob::Track> > pfp_tracks = fmtpfp.at(pfp.key());
@@ -385,6 +408,24 @@ void FDSelection::PandizzleAlg::FillTrackVariables(const art::Ptr<recob::PFParti
 
   art::Ptr<recob::Track> pfp_track = pfp_tracks.at(0);
   CalculateTrackDeflection(pfp_track);
+  CalculateTrackLengthRatio(pfp_track, evt);
+  //PID
+  art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
+  std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(pfp_track.key());
+  art::Ptr<anab::MVAPIDResult> pid = pids[0];
+  std::map<std::string,double> mvaOutMap = pid->mvaOutput;
+  fVarHolder.FloatVars["PFPTrackMuonMVA"] = mvaOutMap["muon"];
+  fVarHolder.FloatVars["PFPTrackProtonMVA"] = mvaOutMap["proton"];
+  fVarHolder.FloatVars["PFPTrackPionMVA"] = mvaOutMap["pion"];
+  fVarHolder.FloatVars["PFPTrackPhotonMVA"] = mvaOutMap["photon"];
+  fVarHolder.FloatVars["PFPTrackElectronMVA"] = mvaOutMap["electron"];
+
+
+
+
+
+
+  //fVarHolder.FloatVars["PFPMichelElectronMVA"]
 
   return;
 }
@@ -402,19 +443,114 @@ void FDSelection::PandizzleAlg::CalculateTrackDeflection(const art::Ptr<recob::T
     directions.push_back(direction);
   }
 
-  TH1F *hist = new TH1F("hist","",100,-5,5);
-  TString title = Form("event_%i_trueID_%i_truePDG_%i",fVarHolder.IntVars["event"], fVarHolder.IntVars["PFPTrueID"],fVarHolder.IntVars["PFPTruePDG"]);
-  hist->SetTitle(title);
-  //TCanvas *can = new TCanvas("can","can");
   //Now let's loop through the direction and compare adjacent elements (wow!)
+  std::vector<double> deflection_angles;
   for (size_t i_dir = 0; i_dir < directions.size()-1; i_dir++){
-    double angle = directions[i_dir].Angle(directions[i_dir+1]) * 180 / 3.142;
-    hist->Fill(angle);
+    //double angle = directions[i_dir].Angle(directions[i_dir+1]) * 180 / 3.142;
+    //Aim: rotate both direction so that the first direction is parallel to the z-axis.  Then take the x-projection of scattered track and calculate the angle between that and the first direction
+    TVector3 z_axis(0,0,1);
+    TVector3 direction_first = directions[i_dir];
+    TVector3 direction_second = directions[i_dir+1];
+
+    //Ignore if either direction is 0 (i.e. not 1)
+    if (direction_first.Mag() < 0.999 || direction_second.Mag() < 0.999){
+      continue;
+    }
+    double angle_dir_first_z_axis = direction_first.Angle(z_axis);
+    TVector3 orthogonal_vector = direction_first.Cross(z_axis);
+    direction_first.Rotate(angle_dir_first_z_axis, orthogonal_vector);
+    direction_second.Rotate(angle_dir_first_z_axis, orthogonal_vector);
+    //Now work out the angle between the vectors in th x-z plane
+    //double angle = atan(direction_second.X()/direction_first.Z());
+    direction_first.SetY(0);
+    direction_second.SetY(0);
+    double dot_product = direction_first.Dot(direction_second);
+    double angle = acos(dot_product) * 180/3.142;
+    //define +x as a +angle
+    if (direction_second.X() < 0) angle*=-1;
+    deflection_angles.push_back(angle);
+  }
+  double angle_mean = 0;
+  for (size_t i_angle = 0; i_angle < deflection_angles.size(); i_angle++){
+    angle_mean += deflection_angles[i_angle];
+  }
+  angle_mean/=deflection_angles.size();
+  double angle_sd = 0;
+  for (size_t i_angle = 0; i_angle < deflection_angles.size(); i_angle++){
+    angle_sd = (deflection_angles[i_angle] - angle_mean)*(deflection_angles[i_angle] - angle_mean);
+  }
+  angle_sd/=(deflection_angles.size()-1);
+  fVarHolder.FloatVars["PFPTrackDeflecAngleMean"] = angle_mean;
+  fVarHolder.FloatVars["PFPTrackDeflecAngleSD"] = angle_sd;
+  return;
+}
+
+void FDSelection::PandizzleAlg::CalculateTrackLengthRatio(const art::Ptr<recob::Track> track, const art::Event& evt){
+  //Get the PFP handle
+  art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+    mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel;
+    return;
+  }
+  //Get the track handle
+  art::Handle< std::vector<recob::Track> > trackListHandle;
+  if (!(evt.getByLabel(fTrackModuleLabel, trackListHandle))){
+    mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel;
+    return;
+  }
+  //Need to get the PFP back from the track
+  art::FindManyP<recob::PFParticle> fmpfptrk(trackListHandle, evt, fTrackModuleLabel);
+  std::vector<art::Ptr<recob::PFParticle> > matched_pfps = fmpfptrk.at(track.key());
+  if (matched_pfps.size() > 1){
+    mf::LogWarning("PandizzleAlg") << "Found more than one recob::PFParticle matched to the track: " << matched_pfps.size();
+    return;
+  }
+  if (matched_pfps.size() == 0){
+    return; //Nothing to do
+  }
+  art::Ptr<recob::PFParticle> track_pfp = matched_pfps[0];
+
+  std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
+  art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
+
+  //Ceate the full PFP map
+  lar_pandora::PFParticleMap pfparticleMap;
+  lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
+
+  //Grab the primary PFPs (the neutrinos) from the 
+  std::vector<art::Ptr<recob::PFParticle> > nu_pfps;
+  lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(pfparticleList, nu_pfps);
+
+  art::FindManyP<recob::Track> fmptrkpfp(pfparticleListHandle, evt, fTrackModuleLabel);
+
+  double average_length = 0;
+  int ntracks = 0;
+  //Now grab the primary children of these PFP
+  for (unsigned int i_nupfp = 0; i_nupfp < nu_pfps.size(); i_nupfp++){
+    art::Ptr<recob::PFParticle> nu_pfp = nu_pfps[i_nupfp];
+    //std::cout<<"Nu ID: " << nu_pfp->Self() << std::endl;
+    std::vector<art::Ptr<recob::PFParticle> > child_pfps = SelectChildPFParticles(nu_pfp, pfparticleMap);
+    //Assess each child pfp
+    for (unsigned int i_childpfp = 0; i_childpfp < child_pfps.size(); i_childpfp++){
+      art::Ptr<recob::PFParticle> child_pfp = child_pfps[i_childpfp];
+      //Don't assess the particle we care about in the average
+      if (child_pfp->Self() == track_pfp->Self()) continue;
+      std::vector<art::Ptr<recob::Track> > matched_tracks = fmptrkpfp.at(child_pfp.key());
+      if (matched_tracks.size() > 1){
+        mf::LogWarning("PandizzleAlg") << "Found more than one recob::Track matched to PFP: " << matched_tracks.size();
+        continue;
+      }
+      if (matched_tracks.size() == 0){
+        continue;
+      }
+      art::Ptr<recob::Track> matched_track = matched_tracks[0];
+      average_length += matched_track->Length();
+      ntracks++;
+    }
   }
 
-  hist->Draw();
-  //can->SaveAs(title+(TString)(".png"));
-  delete hist;
-  //delete can;
-  return;
+  average_length/=ntracks;
+  double track_length = track->Length(); 
+  fVarHolder.FloatVars["PFPTrackLengthRatio"] = track_length/average_length;
+
 }

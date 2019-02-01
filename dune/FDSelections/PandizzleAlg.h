@@ -30,6 +30,7 @@
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+#include "larreco/RecoAlg/ShowerEnergyAlg.h"
 
 // c++
 #include <vector>
@@ -37,8 +38,6 @@
 
 // ROOT
 #include "TTree.h"
-#include "TH1F.h"
-//#include "TCanvas.h"
 
 //Custom
 #include "FDSelectionUtils.h"
@@ -81,6 +80,8 @@ class FDSelection::PandizzleAlg {
   void FillTrackVariables(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
   void CalculateTrackDeflection(const art::Ptr<recob::Track> track);
 
+  void CalculateTrackLengthRatio(const art::Ptr<recob::Track> track, const art::Event& evt);
+
 
   // module labels
   std::string fTrackModuleLabel;
@@ -94,6 +95,9 @@ class FDSelection::PandizzleAlg {
   TTree* fSignalShowerTree;
   TTree *fBackgroundTrackTree;
   TTree *fBackgroundShowerTree;
+
+  //Algs
+  shower::ShowerEnergyAlg fShowerEnergyAlg;
 
   struct VarHolder{ //This thing holds all variables to be handed to the trees
     std::map<std::string, int> IntVars;

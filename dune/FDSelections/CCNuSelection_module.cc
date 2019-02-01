@@ -87,13 +87,13 @@ private:
   void Reset();      //Resets all tree vars
   void GetEventInfo(art::Event const & evt); //Grab event-level info that is necessary/handy for selecting events but doesn't really fall under the 'selection' banner
   void GetTruthInfo(art::Event const & evt);  //Grab the truth info from the art record
+  void FillVertexInformation(art::Event const & evt); //Grab the vertex parameters 
   void RunTrackSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
   double CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
   bool IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt); // check if the track is contained in the detector
   art::Ptr<recob::PFParticle> GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt);
   art::Ptr<recob::Track> GetTrackMatchedPFParticle(art::Ptr<recob::PFParticle> const pfparticle, art::Event const & evt);
 
-  void FillVertexInformation(art::Ptr<recob::Track> const track, art::Event const & evt); //Grab the vertex parameters associated with this track
   void FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt); //Grab the vertex parameters associated with this track
 
   //Shower stuff
@@ -107,7 +107,7 @@ private:
 
   //Algs
   //PIDAnaAlg fPIDAnaAlg;
-  //PandizzleAlg fPandizzleAlg;
+  PandizzleAlg fPandizzleAlg;
   calo::CalorimetryAlg fCalorimetryAlg;
   shower::ShowerEnergyAlg fShowerEnergyAlg;
 
@@ -200,7 +200,7 @@ private:
   double fSelTrackRecoCharge;
   double fSelTrackRecoMomMCS;
   double fSelTrackRecoMomContained;
-  int fSelTrackRecoNMatchedVertices;
+  //int fSelTrackRecoNMatchedVertices;
   double fSelTrackRecoVertexX;
   double fSelTrackRecoVertexY;
   double fSelTrackRecoVertexZ;
@@ -224,6 +224,9 @@ private:
   double fRecoNuVtxX;
   double fRecoNuVtxY;
   double fRecoNuVtxZ;
+  int fRecoNuVtxNShowers;
+  int fRecoNuVtxNTracks;
+  int fRecoNuVtxNChildren;
 
   //Shower Selection stuff
   //true bits
@@ -325,7 +328,7 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
   //fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
-  //fPandizzleAlg(pset.get<fhicl::ParameterSet>("ModuleLabels")) ,
+  fPandizzleAlg(pset) ,
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")),
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
@@ -353,11 +356,13 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
   GetEventInfo(evt);
   if (fIsMC) GetTruthInfo(evt);
+  FillVertexInformation(evt);
   RunTrackSelection(evt);
   RunShowerSelection(evt);
 
+
   //fPIDAnaAlg.Run(evt);
-  //fPandizzleAlg.Run(evt);
+  fPandizzleAlg.Run(evt);
 
   fTree->Fill();
   Reset(); //Reset at the end of the event
@@ -443,7 +448,7 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelTrackRecoCharge",&fSelTrackRecoCharge);
     fTree->Branch("SelTrackRecoMomMCS",&fSelTrackRecoMomMCS);
     fTree->Branch("SelTrackRecoMomContained",&fSelTrackRecoMomContained);
-    fTree->Branch("SelTrackRecoNMatchedVertices",&fSelTrackRecoNMatchedVertices);
+    //fTree->Branch("SelTrackRecoNMatchedVertices",&fSelTrackRecoNMatchedVertices);
     fTree->Branch("SelTrackRecoVertexX",&fSelTrackRecoVertexX);
     fTree->Branch("SelTrackRecoVertexY",&fSelTrackRecoVertexY);
     fTree->Branch("SelTrackRecoVertexZ",&fSelTrackRecoVertexZ);
@@ -518,6 +523,10 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoNuVtxX",&fRecoNuVtxX);
     fTree->Branch("RecoNuVtxY",&fRecoNuVtxY);
     fTree->Branch("RecoNuVtxZ",&fRecoNuVtxZ);
+    fTree->Branch("RecoNuVtxNShowers",&fRecoNuVtxNShowers);
+    fTree->Branch("RecoNuVtxNTracks",&fRecoNuVtxNTracks);
+    fTree->Branch("RecoNuVtxNChildren",&fRecoNuVtxNChildren);
+
     fTree->Branch("RecoEventCharge",&fRecoEventCharge);
     fTree->Branch("NumuRecoMomLep",&fNumuRecoMomLep);
     fTree->Branch("NumuRecoEHad",&fNumuRecoEHad);
@@ -645,7 +654,7 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackRecoCharge = kDefDoub;
   fSelTrackRecoMomMCS = kDefDoub;
   fSelTrackRecoMomContained = kDefDoub;
-  fSelTrackRecoNMatchedVertices = kDefInt;
+  //fSelTrackRecoNMatchedVertices = kDefInt;
   fSelTrackRecoVertexX = kDefDoub;
   fSelTrackRecoVertexY = kDefDoub;
   fSelTrackRecoVertexZ = kDefDoub;
@@ -730,6 +739,10 @@ void FDSelection::CCNuSelection::Reset()
   fRecoNuVtxX = kDefDoub;
   fRecoNuVtxY = kDefDoub;
   fRecoNuVtxZ = kDefDoub;
+  fRecoNuVtxNShowers = 0;
+  fRecoNuVtxNTracks = 0;
+  fRecoNuVtxNChildren = 0;
+
 
 
   //Reco energy bits
@@ -840,11 +853,17 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   art::Ptr<recob::Track> sel_track = fRecoTrackSelector->FindSelectedTrack(evt);
 
   //If we didn't find a selected track then what's the point?
-  if (!(sel_track.isAvailable())) return;
+  if (!(sel_track.isAvailable())) {
+    std::cout<<"FDSelection::CCNuSelection::RunTrackSelection - no track returned from selection" << std::endl; 
+    return;
+  }
 
   //24/07/18 DBrailsford Get the reco energy data product for neutrinos
   art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
-  if (!evt.getByLabel(fNumuEnergyRecoModuleLabel, energyRecoHandle)) return;
+  if (!evt.getByLabel(fNumuEnergyRecoModuleLabel, energyRecoHandle)) {
+    std::cout<<"FDSelection::CCNuSelection::RunTrackSelection - no energy reconstruction found with label " << fNumuEnergyRecoModuleLabel << std::endl;
+    return;
+  }
 
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
@@ -881,8 +900,6 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   }
   fSelTrackRecoLength = sel_track->Length();
   fSelTrackRecoCharge = CalculateTrackCharge(sel_track, sel_track_hits);
-  //27/11/18 DBrailsford Fill vertex information
-  FillVertexInformation(sel_track, evt);
   //Now that the vertex information has been filled.  Calculate which end of th etrack is closest
   TVector3 upstream_end(fSelTrackRecoUpstreamX,fSelTrackRecoUpstreamY,fSelTrackRecoUpstreamZ);
   TVector3 downstream_end(fSelTrackRecoDownstreamX,fSelTrackRecoDownstreamY,fSelTrackRecoDownstreamZ);
@@ -981,80 +998,64 @@ bool FDSelection::CCNuSelection::IsTrackContained(art::Ptr<recob::Track> const t
   return true;
 }
 
-void FDSelection::CCNuSelection::FillVertexInformation(art::Ptr<recob::Track> const track, art::Event const & evt){
-  if (fUsePandoraVertex){
-    //Have to get the PFP and then get the VTX
-    //Need the PFP vector handle
-    art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
-    if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
-      std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
-      return;
-    }
-    std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
-    art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
-
-
-
-    lar_pandora::PFParticleVector nu_pfps;
-    lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(pfparticleList, nu_pfps);
-    //Loop over the neutrinos
-    if (nu_pfps.size() != 1){
-      std::cout<<"FDSelection::CCNuSelection: Number of Nu PFPs does not equal 1: " << nu_pfps.size() << std::endl;
-      return; //do nothing
-    }
-    art::Ptr<recob::PFParticle> nu_pfp = nu_pfps[0];
-    art::FindManyP<recob::Vertex> fmvpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
-    const std::vector<art::Ptr<recob::Vertex> > sel_pfp_vertices = fmvpfp.at(nu_pfp.key());
-    fSelTrackRecoNMatchedVertices = sel_pfp_vertices.size();
-    if (fSelTrackRecoNMatchedVertices == 0){ //Nothing to do
-      return;
-    }
-    else if (fSelTrackRecoNMatchedVertices > 1){
-      std::cout<< "CCNuSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelTrackRecoNMatchedVertices << std::endl;
-    }
-    //always take the first vertex, even if there's more than one
-    art::Ptr<recob::Vertex> matched_vertex = sel_pfp_vertices[0];
-    fSelTrackRecoVertexX = matched_vertex->position().X();
-    fSelTrackRecoVertexY = matched_vertex->position().Y();
-    fSelTrackRecoVertexZ = matched_vertex->position().Z();
-
-    /*
-    art::Ptr<recob::PFParticle> matched_pfp =GetPFParticleMatchedToTrack(track, evt);
-
-    art::FindManyP<recob::Vertex> fmvpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
-    const std::vector<art::Ptr<recob::Vertex> > sel_pfp_vertices = fmvpfp.at(matched_pfp.key());
-    fSelTrackRecoNMatchedVertices = sel_pfp_vertices.size();
-    if (fSelTrackRecoNMatchedVertices == 0){ //Nothing to do
-      return;
-    }
-    else if (fSelTrackRecoNMatchedVertices > 1){
-      std::cout<< "CCNuSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelTrackRecoNMatchedVertices << std::endl;
-    }
-    //always take the first vertex, even if there's more than one
-    art::Ptr<recob::Vertex> matched_vertex = sel_pfp_vertices[0];
-    fSelTrackRecoVertexX = matched_vertex->position().X();
-    fSelTrackRecoVertexY = matched_vertex->position().Y();
-    fSelTrackRecoVertexZ = matched_vertex->position().Z();
-    //Count how many PFPs are matched to this vertex
-    art::Handle< std::vector<recob::Vertex> > vertexListHandle;
-    if (!(evt.getByLabel(fVertexModuleLabel, vertexListHandle))){
-      std::cout<<"CCNuSelection::FillVertexInformation Unable to find std::vector<recob::Vertex> with module label: " << fVertexModuleLabel << std::endl;
-      return;
-    }
-
-    std::vector<art::Ptr<recob::Vertex> > vertexList;
-    art::fill_ptr_vector(vertexList, vertexListHandle);
-
-    art::FindManyP<recob::PFParticle> fmpfpv(vertexListHandle, evt, fVertexModuleLabel);
-    const std::vector<art::Ptr<recob::PFParticle> > sel_vertex_pfps = fmpfpv.at(matched_vertex.key());
-    */
-
+void FDSelection::CCNuSelection::FillVertexInformation(art::Event const & evt){
+  //Have to get the PFP and then get the VTX
+  //Need the PFP vector handle
+  art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+    std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
+    return;
   }
-  else{
-    fSelTrackRecoVertexX = track->Start().X();
-    fSelTrackRecoVertexY = track->Start().Y();
-    fSelTrackRecoVertexZ = track->Start().Z();
+  std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
+  art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
+
+
+
+  lar_pandora::PFParticleVector nu_pfps;
+  lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(pfparticleList, nu_pfps);
+  //Loop over the neutrinos
+  if (nu_pfps.size() != 1){
+    std::cout<<"FDSelection::CCNuSelection: Number of Nu PFPs does not equal 1: " << nu_pfps.size() << std::endl;
+    return; //do nothing
   }
+  art::Ptr<recob::PFParticle> nu_pfp = nu_pfps[0];
+
+  //Count the number of children
+  lar_pandora::PFParticleMap pfparticleMap;
+  lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
+  for (int i_childpfp = 0; i_childpfp < nu_pfp->NumDaughters(); i_childpfp++){
+    int child_id = nu_pfp->Daughter(i_childpfp);
+    art::Ptr<recob::PFParticle> child_pfp = pfparticleMap[child_id];
+    int pdg = child_pfp->PdgCode();
+    if (pdg == 11) fRecoNuVtxNShowers++;
+    else if (pdg == 13) fRecoNuVtxNTracks++;
+    fRecoNuVtxNChildren++;
+  }
+
+  art::FindManyP<recob::Vertex> fmvpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
+  const std::vector<art::Ptr<recob::Vertex> > sel_pfp_vertices = fmvpfp.at(nu_pfp.key());
+  /*
+  fSelTrackRecoNMatchedVertices = sel_pfp_vertices.size();
+  if (fSelTrackRecoNMatchedVertices == 0){ //Nothing to do
+    return;
+  }
+  else if (fSelTrackRecoNMatchedVertices > 1){
+    std::cout<< "CCNuSelection::FillVertexInformation Number of matched vertices bigger than 1: " << fSelTrackRecoNMatchedVertices << std::endl;
+  }
+  */
+  if (sel_pfp_vertices.size() == 0){ //Nothing to do
+    return;
+  }
+  else if (sel_pfp_vertices.size() > 1){
+    std::cout<< "CCNuSelection::FillVertexInformation Number of matched vertices bigger than 1: " << sel_pfp_vertices.size() << std::endl;
+  }
+
+  //always take the first vertex, even if there's more than one
+  art::Ptr<recob::Vertex> matched_vertex = sel_pfp_vertices[0];
+  fRecoNuVtxX = matched_vertex->position().X();
+  fRecoNuVtxY = matched_vertex->position().Y();
+  fRecoNuVtxZ = matched_vertex->position().Z();
+
   return;
 }
 
@@ -1144,7 +1145,10 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   art::Ptr<recob::Shower> sel_shower = fRecoShowerSelector->FindSelectedShower(evt);
 
   //If we didn't find a selected track then what's the point?
-  if (!(sel_shower.isAvailable())) return;
+  if (!(sel_shower.isAvailable())) {
+    std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - no shower selected by tool"<<std::endl;
+    return;
+  }
 
   //10/10/18 DBrailsford start assessing PFParticle stuff
   //Now get the PFParticles
@@ -1170,28 +1174,33 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   if (!(nu_pfp.isAvailable())){
     std::cout<<"Was not able to find the primary neutrino PFP after selecting a shower.  I don't think this should ever happen"<<std::endl;
   }
+  /*
   //Now get the associated vertex
   art::FindOneP<recob::Vertex> fopfpv(pfparticleListHandle, evt, fPFParticleModuleLabel);
   const art::Ptr<recob::Vertex> nu_vertex = fopfpv.at(nu_pfp.key());
   if (!(nu_vertex.isAvailable())){
     std::cout<<"Was not able to find the reco vertex after finding the neutrino PFP.  I don't think this should ever happen"<<std::endl;
   }
+  */
 
 
 
   //24/07/18 DBrailsford Get the reco energy data product for neutrinos
   art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
-  if (!evt.getByLabel(fNueEnergyRecoModuleLabel, energyRecoHandle)) return;
+  if (!evt.getByLabel(fNueEnergyRecoModuleLabel, energyRecoHandle)) {
+    std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - Not able to find energy reconstruction container with name " << fNueEnergyRecoModuleLabel << std::endl;
+    return;
+  }
 
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
   const std::vector<art::Ptr<recob::Hit> > sel_shower_hits = fmhs.at(sel_shower.key());
 
-  //Start filling
-  //Get the reconstructed neutrino vertex position
-  fRecoNuVtxX = nu_vertex->position().X();
-  fRecoNuVtxY = nu_vertex->position().Y();
-  fRecoNuVtxZ = nu_vertex->position().Z();
+  ////Start filling
+  ////Get the reconstructed neutrino vertex position
+  //fRecoNuVtxX = nu_vertex->position().X();
+  //fRecoNuVtxY = nu_vertex->position().Y();
+  //fRecoNuVtxZ = nu_vertex->position().Z();
 
   //Is this PFParticle a primary daughter of the neutrino
   fSelShowerRecoIsPrimaryPFPDaughter = IsPFParticlePrimaryDaughter(sel_pfp, pfparticleList);
