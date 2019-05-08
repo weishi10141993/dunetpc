@@ -435,7 +435,8 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
   fVarHolder.FloatVars["PFPMichelDist"] = closest_distance;
 
   std::vector<art::Ptr<recob::Hit> > michel_hits = GetPFPHits(closest_child_pfp, evt);
-  fVarHolder.IntVars["PFPMichelNHits"] = michel_hits.size();
+  //Cap the hits at 200
+  fVarHolder.IntVars["PFPMichelNHits"] = std::min((int)(michel_hits.size()),200);
   int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(michel_hits); 
   if (g4id > 0){
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
