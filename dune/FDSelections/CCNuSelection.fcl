@@ -14,7 +14,9 @@ CCNuSelection:
    PFParticleModuleLabel:       "pandora"
    VertexModuleLabel:           "pandora"
    SpacePointModuleLabel:       "pandora"
+   ClusterModuleLabel:          "pandora"
    PIDModuleLabel:              "pid"
+   ParticleIDModuleLabel:       "pandorapid"
    HitsModuleLabel:             "linecluster"
    POTModuleLabel:              "generator"
    NumuEnergyRecoModuleLabel:   "energyreconumu"
@@ -24,6 +26,8 @@ CCNuSelection:
  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
  ShowerEnergyAlg:             @local::dune10kt_showerenergy
  UsePandoraVertex: true
+
+ MichelCandidateDistance: 4
 
 }
 CCNuSelection.RecoTrackSelectorTool.tool_type: "LongestRecoVertexTrackSelector"
