@@ -25,6 +25,8 @@ art_make( LIBRARY_NAME FDSelection
           	        ${ROOT_XMLIO}
           	        ${ROOT_GDML}
 	  	        ${ROOT_BASIC_LIB_LIST}
+            ${ROOT_TMVA}
+
 MODULE_LIBRARIES FDSelection
           	           ${ART_FRAMEWORK_CORE}
 	  	           ${ART_FRAMEWORK_PRINCIPAL}
