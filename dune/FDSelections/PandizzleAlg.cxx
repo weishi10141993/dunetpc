@@ -13,8 +13,13 @@ FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) :
   fTrackModuleLabel  = pset.get<std::string>("ModuleLabels.TrackModuleLabel");
   fShowerModuleLabel = pset.get<std::string>("ModuleLabels.ShowerModuleLabel");
   fPIDModuleLabel    = pset.get<std::string>("ModuleLabels.PIDModuleLabel");
+  fParticleIDModuleLabel    = pset.get<std::string>("ModuleLabels.ParticleIDModuleLabel");
+
   fPFParticleModuleLabel = pset.get<std::string>("ModuleLabels.PFParticleModuleLabel");
   fSpacePointModuleLabel = pset.get<std::string>("ModuleLabels.SpacePointModuleLabel");
+  fClusterModuleLabel = pset.get<std::string>("ModuleLabels.ClusterModuleLabel");
+  fIPMichelCandidateDistance = pset.get<double>("MichelCandidateDistance");
+
   InitialiseTrees();
   ResetTreeVariables();
 }
@@ -45,6 +50,7 @@ void FDSelection::PandizzleAlg::InitialiseTrees() {
     BookTreeFloat(tree, "PFPTrueMomX");
     BookTreeFloat(tree, "PFPTrueMomY");
     BookTreeFloat(tree, "PFPTrueMomZ");
+    BookTreeBool(tree,"PFPTrueIsMichelDecay");
     BookTreeInt(tree, "PFPNChildren");
     BookTreeInt(tree, "PFPNShowerChildren");
     BookTreeInt(tree, "PFPNTrackChildren");
@@ -58,13 +64,28 @@ void FDSelection::PandizzleAlg::InitialiseTrees() {
     BookTreeFloat(tree, "PFPMichelRecoEnergyPlane1");
     BookTreeFloat(tree, "PFPMichelRecoEnergyPlane2");
     BookTreeFloat(tree,"PFPTrackDeflecAngleMean");
+    BookTreeFloat(tree,"PFPTrackDeflecAngleVar");
     BookTreeFloat(tree,"PFPTrackDeflecAngleSD");
+    BookTreeInt(tree,"PFPTrackDeflecNAngles");
+    BookTreeFloat(tree,"PFPTrackEvalRatio");
+    BookTreeFloat(tree,"PFPTrackConcentration");
+    BookTreeFloat(tree,"PFPTrackCoreHaloRatio");
+    BookTreeFloat(tree,"PFPTrackConicalness");
+    BookTreeFloat(tree,"PFPTrackdEdxStart");
+    BookTreeFloat(tree,"PFPTrackdEdxEnd");
+    BookTreeFloat(tree,"PFPTrackdEdxEndRatio");
     BookTreeFloat(tree,"PFPTrackMuonMVA");
     BookTreeFloat(tree,"PFPTrackProtonMVA");
     BookTreeFloat(tree,"PFPTrackPionMVA");
     BookTreeFloat(tree,"PFPTrackPhotonMVA");
     BookTreeFloat(tree,"PFPTrackElectronMVA");
     BookTreeFloat(tree,"PFPTrackLengthRatio");
+    BookTreeFloat(tree,"PFPTrackLength");
+    BookTreeFloat(tree,"PFPTrackOtherLengths");
+    BookTreeFloat(tree,"PFPTrackPIDA");
+    BookTreeInt(tree,"PFPTrackIsLongest");
+
+
   }
 }
 
@@ -97,6 +118,8 @@ void FDSelection::PandizzleAlg::Run(const art::Event& evt) {
       art::Ptr<recob::PFParticle> child_pfp = child_pfps[i_childpfp];
       //Process the child PFP
       ProcessPFParticle(child_pfp, evt);
+      FillTree();
+      ResetTreeVariables();
     }
   }
   //mf::LogWarning("PandizzleAlg") << "No tracks";
@@ -157,6 +180,21 @@ void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFPartic
       fVarHolder.FloatVars["PFPTrueMomY"] = matched_mcparticle->Momentum(0).Y();
       fVarHolder.FloatVars["PFPTrueMomZ"] = matched_mcparticle->Momentum(0).Z();
       fVarHolder.FloatVars["PFPTrueMomT"] = matched_mcparticle->Momentum(0).T();
+      if (std::abs(fVarHolder.IntVars["PFPTruePDG"]) == 13){
+        bool has_electron = 0;
+        bool has_numu = 0;
+        bool has_nue = 0;
+        for (int i_child = 0; i_child < matched_mcparticle->NumberDaughters(); i_child++){
+          const simb::MCParticle* child_particle = pi_serv->ParticleList().at(matched_mcparticle->Daughter(i_child));
+          int abs_pdg = std::abs(child_particle->PdgCode());
+          if (abs_pdg == 11) has_electron = 1;
+          else if (abs_pdg == 12) has_nue = 1;
+          else if (abs_pdg == 14) has_numu = 1;
+        }
+        //std::cout<<has_electron << " " << has_nue << " " << has_numu << std::endl;
+        if (has_electron && has_nue && has_numu) fVarHolder.BoolVars["PFPTrueIsMichelDecay"] = 1;
+        //std::cout<<"Michel decay: " << fVarHolder.BoolVars["PFPTrueIsMichelDecay"] << std::endl;
+      }
     }
   }
 
@@ -170,8 +208,6 @@ void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFPartic
   FillTrackVariables(pfp, evt);
 
 
-  FillTree();
-  ResetTreeVariables();
   return;
 }
 
@@ -182,6 +218,10 @@ void FDSelection::PandizzleAlg::ResetTreeVariables(){
   for (std::map<std::string, float>::iterator mapIt = fVarHolder.FloatVars.begin(); mapIt != fVarHolder.FloatVars.end(); mapIt++){
     mapIt->second = -9999.;
   }
+  for (std::map<std::string, bool>::iterator mapIt = fVarHolder.BoolVars.begin(); mapIt != fVarHolder.BoolVars.end(); mapIt++){
+    mapIt->second = 0;
+  }
+
   return;
 }
 
@@ -202,6 +242,7 @@ std::vector<art::Ptr<recob::Hit> > FDSelection::PandizzleAlg::GetPFPHits(const a
     mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel;
     return pfp_hits; //empty
   }
+  /*
   //Get the spacepoint handle out of the event
   art::Handle< std::vector<recob::SpacePoint> > spacePointListHandle;
   if (!(evt.getByLabel(fSpacePointModuleLabel, spacePointListHandle))){
@@ -221,6 +262,26 @@ std::vector<art::Ptr<recob::Hit> > FDSelection::PandizzleAlg::GetPFPHits(const a
       pfp_hits.push_back(sel_pfp_hits[i_hit]);
     }
   }
+  */
+  //22/02/19 DBrailsford
+  //As recommended by pandora, use the clusters as the route from PFP to hits
+  //Get the cluster handle
+  art::Handle< std::vector<recob::Cluster> > clusterListHandle;
+  if (!(evt.getByLabel(fClusterModuleLabel, clusterListHandle))){
+    mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::Cluster> with module label: " << fClusterModuleLabel;
+    return pfp_hits; //empty
+  }
+  art::FindManyP<recob::Cluster> fmcpfp(pfparticleListHandle, evt, fPFParticleModuleLabel);
+  const std::vector<art::Ptr<recob::Cluster> > sel_pfp_clusters = fmcpfp.at(pfp.key());
+  art::FindManyP<recob::Hit> fmhc(clusterListHandle, evt, fClusterModuleLabel);
+  //Loop over the clusters and retrieve the hits
+  for (unsigned i_cluster = 0; i_cluster < sel_pfp_clusters.size(); i_cluster++){
+    art::Ptr<recob::Cluster> cluster = sel_pfp_clusters[i_cluster];
+    const std::vector<art::Ptr<recob::Hit> > sel_pfp_hits = fmhc.at(cluster.key());
+    for (unsigned i_hit = 0; i_hit < sel_pfp_hits.size(); i_hit++){
+      pfp_hits.push_back(sel_pfp_hits[i_hit]);
+    }
+  }
   return pfp_hits;
 }
 
@@ -231,13 +292,24 @@ void FDSelection::PandizzleAlg::BookTreeInt(TTree *tree, std::string branch_name
 }
 
 void FDSelection::PandizzleAlg::BookTreeFloat(TTree *tree, std::string branch_name){
-  fVarHolder.FloatVars[branch_name] = -9999.;
+  fVarHolder.FloatVars[branch_name] = -9999.0;
   tree->Branch(branch_name.c_str(), &(fVarHolder.FloatVars[branch_name]));
   return;
 }
+
+void FDSelection::PandizzleAlg::BookTreeBool(TTree *tree, std::string branch_name){
+  fVarHolder.BoolVars[branch_name] = 0;
+  tree->Branch(branch_name.c_str(), &(fVarHolder.BoolVars[branch_name]));
+  return;
+}
+
 void FDSelection::PandizzleAlg::FillTree(){
-  if (fVarHolder.IntVars["PFPTruePDG"] == 13){ //signal
+  if (std::abs(fVarHolder.IntVars["PFPTruePDG"]) == 13){ //signal
     if (fVarHolder.IntVars["PFPPDG"] == 13){ //track
+      if (fVarHolder.FloatVars["PFPTrackLength"]<0){
+        mf::LogWarning("PandizzleAlg") << "Found candidate track with length < 0.  Not filling tree";
+        return;
+      }
       fSignalTrackTree->Fill();
     }
     else if (fVarHolder.IntVars["PFPPDG"] == 11){ //shower
@@ -249,6 +321,10 @@ void FDSelection::PandizzleAlg::FillTree(){
   }
   else { //background
     if (fVarHolder.IntVars["PFPPDG"] == 13){ //track
+      if (fVarHolder.FloatVars["PFPTrackLength"]<0){
+        mf::LogWarning("PandizzleAlg") << "Found candidate track with length < 0.  Not filling tree";
+        return;
+      }
       fBackgroundTrackTree->Fill();
     }
     else if (fVarHolder.IntVars["PFPPDG"] == 11){ //shower
@@ -270,12 +346,12 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
     return;
   }
   //Assign the branch value to a new default value to indicate that we have a track, but don't necessarily have a Michel candidate (rather than a global default value)
-  fVarHolder.FloatVars["PFPMichelDist"] = -100.;
-  fVarHolder.IntVars["PFPMichelNHits"] = -100;
-  fVarHolder.FloatVars["PFPMichelElectronMVA"] = -100.;
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = -100.;
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = -100.;
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = -100.;
+  fVarHolder.FloatVars["PFPMichelDist"] = -2.;
+  fVarHolder.IntVars["PFPMichelNHits"] = -2;
+  fVarHolder.FloatVars["PFPMichelElectronMVA"] = -2;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = -2;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = -2;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = -2;
 
   //If no child PFPs, sack everything off
   if (child_pfps.size() == 0){
@@ -353,6 +429,9 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
     }
   }
 
+  //Check that the PFP passes our Michel requirement
+  if (closest_distance > fIPMichelCandidateDistance) return;
+
   fVarHolder.FloatVars["PFPMichelDist"] = closest_distance;
 
   std::vector<art::Ptr<recob::Hit> > michel_hits = GetPFPHits(closest_child_pfp, evt);
@@ -408,22 +487,35 @@ void FDSelection::PandizzleAlg::FillTrackVariables(const art::Ptr<recob::PFParti
 
   art::Ptr<recob::Track> pfp_track = pfp_tracks.at(0);
   CalculateTrackDeflection(pfp_track);
-  CalculateTrackLengthRatio(pfp_track, evt);
+  CalculateTrackLengthVariables(pfp_track, evt);
   //PID
   art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
   std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(pfp_track.key());
   art::Ptr<anab::MVAPIDResult> pid = pids[0];
+  fVarHolder.FloatVars["PFPTrackEvalRatio"] = pid->evalRatio;
+  fVarHolder.FloatVars["PFPTrackConcentration"] = pid->concentration;
+  fVarHolder.FloatVars["PFPTrackCoreHaloRatio"] = pid->coreHaloRatio;
+  fVarHolder.FloatVars["PFPTrackConicalness"] = pid->conicalness;
+  fVarHolder.FloatVars["PFPTrackdEdxStart"] = pid->dEdxStart;
+  fVarHolder.FloatVars["PFPTrackdEdxEnd"] = pid->dEdxEnd;
+  fVarHolder.FloatVars["PFPTrackdEdxEndRatio"] = pid->dEdxEndRatio;
   std::map<std::string,double> mvaOutMap = pid->mvaOutput;
   fVarHolder.FloatVars["PFPTrackMuonMVA"] = mvaOutMap["muon"];
   fVarHolder.FloatVars["PFPTrackProtonMVA"] = mvaOutMap["proton"];
   fVarHolder.FloatVars["PFPTrackPionMVA"] = mvaOutMap["pion"];
   fVarHolder.FloatVars["PFPTrackPhotonMVA"] = mvaOutMap["photon"];
   fVarHolder.FloatVars["PFPTrackElectronMVA"] = mvaOutMap["electron"];
-
-
-
-
-
+  //Other PID (the non-MVA PID
+  art::FindManyP<anab::ParticleID> fmparticleidt(trackListHandle, evt, fParticleIDModuleLabel);
+  std::vector<art::Ptr<anab::ParticleID> > particle_ids = fmparticleidt.at(pfp_track.key());
+  //Initialise PIDA to a slightly nevative default value
+  fVarHolder.FloatVars["PFPTrackPIDA"] = -2;
+  for (unsigned int i_pid = 0; i_pid < particle_ids.size(); i_pid++){
+    art::Ptr<anab::ParticleID> particle_id = particle_ids[i_pid];
+    if (particle_id->PlaneID().Plane != 2) continue;
+    //Cap PIDA at 50
+    fVarHolder.FloatVars["PFPTrackPIDA"] = std::min(particle_id->PIDA(),50.);
+  }
 
   //fVarHolder.FloatVars["PFPMichelElectronMVA"]
 
@@ -465,7 +557,12 @@ void FDSelection::PandizzleAlg::CalculateTrackDeflection(const art::Ptr<recob::T
     direction_first.SetY(0);
     direction_second.SetY(0);
     double dot_product = direction_first.Dot(direction_second);
+    dot_product = std::min(std::max(dot_product,-1.),1.); //to ensure we are bounded (floating point precision can screw up this calculation
     double angle = acos(dot_product) * 180/3.142;
+    //if (TMath::IsNaN(angle)){
+    //  continue;
+    //  //for (int i = 0; i < 500; i++) std::cout<<"ANGLE IS NAN : cos=="<<dot_product<<std::endl;
+    //}
     //define +x as a +angle
     if (direction_second.X() < 0) angle*=-1;
     deflection_angles.push_back(angle);
@@ -474,18 +571,24 @@ void FDSelection::PandizzleAlg::CalculateTrackDeflection(const art::Ptr<recob::T
   for (size_t i_angle = 0; i_angle < deflection_angles.size(); i_angle++){
     angle_mean += deflection_angles[i_angle];
   }
-  angle_mean/=deflection_angles.size();
-  double angle_sd = 0;
+  //angle_mean/=deflection_angles.size();
+  if (deflection_angles.size()>0) angle_mean/=deflection_angles.size();
+  else angle_mean=-100;
+  double angle_var = 0;
   for (size_t i_angle = 0; i_angle < deflection_angles.size(); i_angle++){
-    angle_sd = (deflection_angles[i_angle] - angle_mean)*(deflection_angles[i_angle] - angle_mean);
+    angle_var = (deflection_angles[i_angle] - angle_mean)*(deflection_angles[i_angle] - angle_mean);
   }
-  angle_sd/=(deflection_angles.size()-1);
+  if (deflection_angles.size() > 0) angle_var /= (deflection_angles.size()-1);
+  else angle_var = -2.;
+  //angle_var=sqrt(angle_var);
   fVarHolder.FloatVars["PFPTrackDeflecAngleMean"] = angle_mean;
-  fVarHolder.FloatVars["PFPTrackDeflecAngleSD"] = angle_sd;
+  fVarHolder.FloatVars["PFPTrackDeflecAngleVar"] = angle_var;
+  fVarHolder.FloatVars["PFPTrackDeflecAngleSD"] = sqrt(angle_var);
+  fVarHolder.IntVars["PFPTrackDeflecNAngles"] = deflection_angles.size();
   return;
 }
 
-void FDSelection::PandizzleAlg::CalculateTrackLengthRatio(const art::Ptr<recob::Track> track, const art::Event& evt){
+void FDSelection::PandizzleAlg::CalculateTrackLengthVariables(const art::Ptr<recob::Track> track, const art::Event& evt){
   //Get the PFP handle
   art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
   if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
@@ -525,6 +628,9 @@ void FDSelection::PandizzleAlg::CalculateTrackLengthRatio(const art::Ptr<recob::
 
   double average_length = 0;
   int ntracks = 0;
+  double candidate_track_length = track->Length(); 
+  bool is_longest_track = 1;
+
   //Now grab the primary children of these PFP
   for (unsigned int i_nupfp = 0; i_nupfp < nu_pfps.size(); i_nupfp++){
     art::Ptr<recob::PFParticle> nu_pfp = nu_pfps[i_nupfp];
@@ -544,13 +650,18 @@ void FDSelection::PandizzleAlg::CalculateTrackLengthRatio(const art::Ptr<recob::
         continue;
       }
       art::Ptr<recob::Track> matched_track = matched_tracks[0];
+      double matched_track_length = matched_track->Length();
+      if (matched_track_length > candidate_track_length) is_longest_track=0;
       average_length += matched_track->Length();
       ntracks++;
     }
   }
 
-  average_length/=ntracks;
-  double track_length = track->Length(); 
-  fVarHolder.FloatVars["PFPTrackLengthRatio"] = track_length/average_length;
+  if (ntracks > 0) average_length/=ntracks;
+  else average_length = 0;
+  fVarHolder.FloatVars["PFPTrackOtherLengths"] = average_length;
+  fVarHolder.FloatVars["PFPTrackLength"] = candidate_track_length;
+  fVarHolder.FloatVars["PFPTrackLengthRatio"] = average_length/candidate_track_length;
+  fVarHolder.IntVars["PFPTrackIsLongest"] = is_longest_track;
 
 }

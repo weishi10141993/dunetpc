@@ -24,6 +24,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
+#include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/AnalysisBase/MVAPIDResult.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
@@ -55,6 +56,13 @@ class FDSelection::PandizzleAlg {
 
   void Run(const art::Event& evt);
 
+  void ProcessPFParticle(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
+  void ResetTreeVariables();
+  int GetIntVar(std::string name) { return fVarHolder.IntVars[name]; };
+  float GetFloatVar(std::string name) { return fVarHolder.FloatVars[name]; };
+  bool GetBoolVar(std::string name) { return fVarHolder.BoolVars[name]; };
+
+
  private:
 
   /// Initialise the tree
@@ -62,16 +70,16 @@ class FDSelection::PandizzleAlg {
 
   std::vector<art::Ptr<recob::PFParticle> > SelectChildPFParticles(const art::Ptr<recob::PFParticle> parent_pfp, const lar_pandora::PFParticleMap & pfp_map);
 
-  void ProcessPFParticle(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
   int CountPFPWithPDG(const std::vector<art::Ptr<recob::PFParticle> > & pfps, int pdg);
 
   std::vector<art::Ptr<recob::Hit> > GetPFPHits(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
 
-  void ResetTreeVariables();
 
   void BookTreeInt(TTree *tree, std::string branch_name);
 
   void BookTreeFloat(TTree *tree, std::string branch_name);
+
+  void BookTreeBool(TTree *tree, std::string branch_name);
 
   void FillTree();
 
@@ -80,15 +88,20 @@ class FDSelection::PandizzleAlg {
   void FillTrackVariables(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
   void CalculateTrackDeflection(const art::Ptr<recob::Track> track);
 
-  void CalculateTrackLengthRatio(const art::Ptr<recob::Track> track, const art::Event& evt);
+  void CalculateTrackLengthVariables(const art::Ptr<recob::Track> track, const art::Event& evt);
 
 
   // module labels
   std::string fTrackModuleLabel;
   std::string fShowerModuleLabel;
   std::string fPIDModuleLabel;
+  std::string fParticleIDModuleLabel;
   std::string fPFParticleModuleLabel;
   std::string fSpacePointModuleLabel;
+  std::string fClusterModuleLabel;
+
+  //Input params
+  double fIPMichelCandidateDistance;
 
   // tree
   TTree* fSignalTrackTree;
@@ -102,6 +115,7 @@ class FDSelection::PandizzleAlg {
   struct VarHolder{ //This thing holds all variables to be handed to the trees
     std::map<std::string, int> IntVars;
     std::map<std::string, float> FloatVars;
+    std::map<std::string, bool> BoolVars;
   };
 
   VarHolder fVarHolder;
