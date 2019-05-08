@@ -21,6 +21,8 @@
 #include <iostream>
 //ROOT
 #include "TTree.h"
+#include "TMVA/Reader.h"
+
 //ART
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "art/Utilities/make_tool.h" 
@@ -213,6 +215,8 @@ private:
   double fSelTrackMVAMuon;
   double fSelTrackMVAProton;
   double fSelTrackMVAPhoton;
+  //Pandizzle var
+  double fSelTrackPandizzleVar;
   //Event-level bits
   double fRecoEventCharge; //Total collected charge (as measured by the collection planes)
   //reco energy bits
@@ -312,6 +316,7 @@ private:
   std::string fPFParticleModuleLabel;
   std::string fVertexModuleLabel;
   std::string fPIDModuleLabel;
+  std::string fParticleIDModuleLabel;
   std::string fHitsModuleLabel;
   std::string fPOTModuleLabel;
   std::string fNumuEnergyRecoModuleLabel;
@@ -320,6 +325,23 @@ private:
  
   //Processing flags
   bool fUsePandoraVertex;
+
+
+  //TMVAStuff
+  TMVA::Reader fReader;
+  float fTMVAPFPMichelNHits;
+  float fTMVAPFPMichelElectronMVA;
+  float fTMVAPFPMichelRecoEnergyPlane2;
+  float fTMVAPFPTrackDeflecAngleSD;
+  float fTMVAPFPTrackLength;
+  float fTMVAPFPTrackEvalRatio;
+  float fTMVAPFPTrackConcentration;
+  float fTMVAPFPTrackCoreHaloRatio;
+  float fTMVAPFPTrackConicalness;
+  float fTMVAPFPTrackdEdxStart;
+  float fTMVAPFPTrackdEdxEnd;
+  float fTMVAPFPTrackdEdxEndRatio;
+
 
 };
 
@@ -340,11 +362,27 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fPFParticleModuleLabel   (pset.get< std::string >("ModuleLabels.PFParticleModuleLabel")),
   fVertexModuleLabel   (pset.get< std::string >("ModuleLabels.VertexModuleLabel")),
   fPIDModuleLabel          (pset.get< std::string >("ModuleLabels.PIDModuleLabel")),
+  fParticleIDModuleLabel          (pset.get< std::string >("ModuleLabels.ParticleIDModuleLabel")),
   fHitsModuleLabel         (pset.get< std::string >("ModuleLabels.HitsModuleLabel")),
   fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
   fNumuEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NumuEnergyRecoModuleLabel")),
   fNueEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NueEnergyRecoModuleLabel")),
-  fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")) {}
+  fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")),
+  fReader("") {
+  fReader.AddVariable("PFPMichelNHits",&fTMVAPFPMichelNHits);
+  fReader.AddVariable("PFPMichelElectronMVA",&fTMVAPFPMichelElectronMVA);
+  fReader.AddVariable("PFPMichelRecoEnergyPlane2",&fTMVAPFPMichelRecoEnergyPlane2);
+  fReader.AddVariable("PFPTrackDeflecAngleSD",&fTMVAPFPTrackDeflecAngleSD);
+  fReader.AddVariable("PFPTrackLength",&fTMVAPFPTrackLength);
+  fReader.AddVariable("PFPTrackEvalRatio",&fTMVAPFPTrackEvalRatio);
+  fReader.AddVariable("PFPTrackConcentration",&fTMVAPFPTrackConcentration);
+  fReader.AddVariable("PFPTrackCoreHaloRatio",&fTMVAPFPTrackCoreHaloRatio);
+  fReader.AddVariable("PFPTrackConicalness",&fTMVAPFPTrackConicalness);
+  fReader.AddVariable("PFPTrackdEdxStart",&fTMVAPFPTrackdEdxStart);
+  fReader.AddVariable("PFPTrackdEdxEnd",&fTMVAPFPTrackdEdxEnd);
+  fReader.AddVariable("PFPTrackdEdxEndRatio",&fTMVAPFPTrackdEdxEndRatio);
+  fReader.BookMVA("BDTG","/dune/app/users/dbrailsf/oscillation/nu_mu/cutsel/trainings/pandizzle/dataset_pandizzle/weights/TMVAClassification_BDTG.weights.xml");
+}
 
 void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 {
@@ -460,6 +498,7 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelTrackMVAMuon",&fSelTrackMVAMuon);
     fTree->Branch("SelTrackMVAProton",&fSelTrackMVAProton);
     fTree->Branch("SelTrackMVAPhoton",&fSelTrackMVAPhoton);
+    fTree->Branch("SelTrackPandizzleVar",&fSelTrackPandizzleVar);
     fTree->Branch("SelShowerTruePDG",&fSelShowerTruePDG);
     fTree->Branch("SelShowerTruePrimary",&fSelShowerTruePrimary);
     fTree->Branch("SelShowerTrueMomX",&fSelShowerTrueMomX);
@@ -667,6 +706,8 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackMVAMuon = kDefDoub;
   fSelTrackMVAProton = kDefDoub;
   fSelTrackMVAPhoton = kDefDoub;
+  //Pandizzle
+  fSelTrackPandizzleVar = kDefDoub;
   //Reco energy bits
   fNumuRecoEHad = kDefDoub;
   fNumuRecoMomLep = kDefDoub;
@@ -962,6 +1003,24 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   fSelTrackMVAMuon = mvaOutMap["muon"];
   fSelTrackMVAProton = mvaOutMap["proton"];
   fSelTrackMVAPhoton = mvaOutMap["photon"];
+
+  //11/04/19 DBrailsford
+  //Get the pandizzle variables
+  art::Ptr<recob::PFParticle> track_pfp = GetPFParticleMatchedToTrack(sel_track, evt);
+  fPandizzleAlg.ProcessPFParticle(track_pfp, evt);
+  fTMVAPFPMichelNHits = (float)(fPandizzleAlg.GetIntVar("PFPMichelNHits"));
+  fTMVAPFPMichelElectronMVA = fPandizzleAlg.GetFloatVar("PFPMichelElectronMVA");
+  fTMVAPFPMichelRecoEnergyPlane2 = fPandizzleAlg.GetFloatVar("PFPMichelRecoEnergyPlane2");
+  fTMVAPFPTrackDeflecAngleSD = fPandizzleAlg.GetFloatVar("PFPTrackDeflecAngleSD");
+  fTMVAPFPTrackLength = fPandizzleAlg.GetFloatVar("PFPTrackLength");
+  fTMVAPFPTrackEvalRatio = fPandizzleAlg.GetFloatVar("PFPTrackEvalRatio");
+  fTMVAPFPTrackConcentration = fPandizzleAlg.GetFloatVar("PFPTrackConcentration");
+  fTMVAPFPTrackCoreHaloRatio = fPandizzleAlg.GetFloatVar("PFPTrackCoreHaloRatio");
+  fTMVAPFPTrackConicalness = fPandizzleAlg.GetFloatVar("PFPTrackConicalness");
+  fTMVAPFPTrackdEdxStart = fPandizzleAlg.GetFloatVar("PFPTrackdEdxStart");
+  fTMVAPFPTrackdEdxEnd = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEnd");
+  fTMVAPFPTrackdEdxEndRatio = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEndRatio");
+  fSelTrackPandizzleVar = fReader.EvaluateMVA("BDTG");
 }
 
 double FDSelection::CCNuSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
@@ -1253,6 +1312,7 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   fSelShowerMVAMuon = mvaOutMap["muon"];
   fSelShowerMVAProton = mvaOutMap["proton"];
   fSelShowerMVAPhoton = mvaOutMap["photon"];
+
 }
 
 double FDSelection::CCNuSelection::CalculateShowerCharge(art::Ptr<recob::Shower> const shower, std::vector< art::Ptr< recob::Hit> > const shower_hits){
