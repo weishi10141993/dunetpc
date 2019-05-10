@@ -146,6 +146,14 @@ private:
   double fNuY;
   double fNuZ;
   double fNuT;
+  //Outgoing particle count
+  int fNPiP; //Number of pi+
+  int fNPim; //Number of pi-
+  int fNPi0; //Number of pi0
+  int fNPhotons; //Number of photons
+  int fNProtons; //Number of protons
+  int fNNeutrons; //Number of neutrinos
+  int fNOther; //Number of other particles
   //Outgoing lepton stuff
   int fLepPDG;
   double fMomLepX;
@@ -174,6 +182,9 @@ private:
   double fSelTrackTrueEndZ;
   double fSelTrackTrueEndT;
   //reco bits
+  int fSelTrackRecoNHits;
+  double fSelTrackRecoCompleteness;
+  double fSelTrackRecoHitPurity;
   double fSelTrackRecoMomX;
   double fSelTrackRecoMomY;
   double fSelTrackRecoMomZ;
@@ -249,6 +260,9 @@ private:
   double fSelShowerTrueEndZ;
   double fSelShowerTrueEndT;
   //reco bits
+  int fSelShowerRecoNHits;
+  double fSelShowerRecoCompleteness;
+  double fSelShowerRecoHitPurity;
   double fSelShowerRecoMomX;
   double fSelShowerRecoMomY;
   double fSelShowerRecoMomZ;
@@ -341,6 +355,7 @@ private:
   float fTMVAPFPTrackdEdxStart;
   float fTMVAPFPTrackdEdxEnd;
   float fTMVAPFPTrackdEdxEndRatio;
+  float fTMVAPFPTrackPIDA;
 
 
 };
@@ -381,6 +396,7 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fReader.AddVariable("PFPTrackdEdxStart",&fTMVAPFPTrackdEdxStart);
   fReader.AddVariable("PFPTrackdEdxEnd",&fTMVAPFPTrackdEdxEnd);
   fReader.AddVariable("PFPTrackdEdxEndRatio",&fTMVAPFPTrackdEdxEndRatio);
+  //fReader.AddVariable("PFPTrackPIDA",&fTMVAPFPTrackPIDA);
   fReader.BookMVA("BDTG","/dune/app/users/dbrailsf/oscillation/nu_mu/cutsel/trainings/pandizzle/dataset_pandizzle/weights/TMVAClassification_BDTG.weights.xml");
 }
 
@@ -400,7 +416,7 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
 
   //fPIDAnaAlg.Run(evt);
-  fPandizzleAlg.Run(evt);
+  //fPandizzleAlg.Run(evt);
 
   fTree->Fill();
   Reset(); //Reset at the end of the event
@@ -434,6 +450,13 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("NuY",&fNuY);
     fTree->Branch("NuZ",&fNuZ);
     fTree->Branch("NuT",&fNuT);
+    fTree->Branch("NPiP",&fNPiP);
+    fTree->Branch("NPim",&fNPim);
+    fTree->Branch("NPi0",&fNPi0);
+    fTree->Branch("NPhotons",&fNPhotons);
+    fTree->Branch("NProton",&fNProtons);
+    fTree->Branch("NNeutrons",&fNNeutrons);
+    fTree->Branch("NOther",&fNOther);
     fTree->Branch("LepPDG",&fLepPDG);
     fTree->Branch("MomLepX",&fMomLepX);
     fTree->Branch("MomLepY",&fMomLepY);
@@ -458,6 +481,9 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelTrackTrueEndY",&fSelTrackTrueEndY);
     fTree->Branch("SelTrackTrueEndZ",&fSelTrackTrueEndZ);
     fTree->Branch("SelTrackTrueEndT",&fSelTrackTrueEndT);
+    fTree->Branch("SelTrackRecoNHits",&fSelTrackRecoNHits);
+    fTree->Branch("SelTrackRecoCompleteness",&fSelTrackRecoCompleteness);
+    fTree->Branch("SelTrackRecoHitPurity",&fSelTrackRecoHitPurity);
     fTree->Branch("SelTrackRecoMomX",&fSelTrackRecoMomX);
     fTree->Branch("SelTrackRecoMomY",&fSelTrackRecoMomY);
     fTree->Branch("SelTrackRecoMomZ",&fSelTrackRecoMomZ);
@@ -499,6 +525,19 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelTrackMVAProton",&fSelTrackMVAProton);
     fTree->Branch("SelTrackMVAPhoton",&fSelTrackMVAPhoton);
     fTree->Branch("SelTrackPandizzleVar",&fSelTrackPandizzleVar);
+    fTree->Branch("TMVAPFPMichelNHits",&fTMVAPFPMichelNHits);
+    fTree->Branch("TMVAPFPMichelElectronMVA",&fTMVAPFPMichelElectronMVA);
+    fTree->Branch("TMVAPFPMichelRecoEnergyPlane2",&fTMVAPFPMichelRecoEnergyPlane2);
+    fTree->Branch("TMVAPFPTrackDeflecAngleSD",&fTMVAPFPTrackDeflecAngleSD);
+    fTree->Branch("TMVAPFPTrackLength",&fTMVAPFPTrackLength);
+    fTree->Branch("TMVAPFPTrackEvalRatio",&fTMVAPFPTrackEvalRatio);
+    fTree->Branch("TMVAPFPTrackConcentration",&fTMVAPFPTrackConcentration);
+    fTree->Branch("TMVAPFPTrackCoreHaloRatio",&fTMVAPFPTrackCoreHaloRatio);
+    fTree->Branch("TMVAPFPTrackConicalness",&fTMVAPFPTrackConicalness);
+    fTree->Branch("TMVAPFPTrackdEdxStart",&fTMVAPFPTrackdEdxStart);
+    fTree->Branch("TMVAPFPTrackdEdxEnd",&fTMVAPFPTrackdEdxEnd);
+    fTree->Branch("TMVAPFPTrackdEdxEndRatio",&fTMVAPFPTrackdEdxEndRatio);
+    fTree->Branch("TMVAPFPTrackPIDA",&fTMVAPFPTrackPIDA);
     fTree->Branch("SelShowerTruePDG",&fSelShowerTruePDG);
     fTree->Branch("SelShowerTruePrimary",&fSelShowerTruePrimary);
     fTree->Branch("SelShowerTrueMomX",&fSelShowerTrueMomX);
@@ -513,6 +552,9 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelShowerTrueEndY",&fSelShowerTrueEndY);
     fTree->Branch("SelShowerTrueEndZ",&fSelShowerTrueEndZ);
     fTree->Branch("SelShowerTrueEndT",&fSelShowerTrueEndT);
+    fTree->Branch("SelShowerRecoNHits",&fSelShowerRecoNHits);
+    fTree->Branch("SelShowerRecoCompleteness",&fSelShowerRecoCompleteness);
+    fTree->Branch("SelShowerRecoHitPurity",&fSelShowerRecoHitPurity);
     fTree->Branch("SelShowerRecoMomX",&fSelShowerRecoMomX);
     fTree->Branch("SelShowerRecoMomY",&fSelShowerRecoMomY);
     fTree->Branch("SelShowerRecoMomZ",&fSelShowerRecoMomZ);
@@ -636,6 +678,13 @@ void FDSelection::CCNuSelection::Reset()
   fNuY = kDefDoub;
   fNuZ = kDefDoub;
   fNuT = kDefDoub;
+  fNPiP = 0;
+  fNPim = 0;
+  fNPi0 = 0;
+  fNPhotons = 0;
+  fNProtons = 0;
+  fNNeutrons = 0;
+  fNOther = 0;
   //Outgoing lepton stuff
   fLepPDG = kDefInt;
   fMomLepX = kDefDoub;
@@ -665,6 +714,7 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackTrueEndZ = kDefDoub;
   fSelTrackTrueEndT = kDefDoub;
   //reco bits
+  fSelTrackRecoNHits = kDefInt;
   fSelTrackRecoMomX = kDefDoub;
   fSelTrackRecoMomY = kDefDoub;
   fSelTrackRecoMomZ = kDefDoub;
@@ -708,6 +758,20 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackMVAPhoton = kDefDoub;
   //Pandizzle
   fSelTrackPandizzleVar = kDefDoub;
+  fTMVAPFPMichelNHits            = kDefDoub;
+  fTMVAPFPMichelElectronMVA      = kDefDoub;
+  fTMVAPFPMichelRecoEnergyPlane2 = kDefDoub;
+  fTMVAPFPTrackDeflecAngleSD     = kDefDoub;
+  fTMVAPFPTrackLength            = kDefDoub;
+  fTMVAPFPTrackEvalRatio         = kDefDoub;
+  fTMVAPFPTrackConcentration     = kDefDoub;
+  fTMVAPFPTrackCoreHaloRatio     = kDefDoub;
+  fTMVAPFPTrackConicalness       = kDefDoub;
+  fTMVAPFPTrackdEdxStart         = kDefDoub;
+  fTMVAPFPTrackdEdxEnd           = kDefDoub;
+  fTMVAPFPTrackdEdxEndRatio      = kDefDoub;
+  fTMVAPFPTrackPIDA              = kDefDoub;
+
   //Reco energy bits
   fNumuRecoEHad = kDefDoub;
   fNumuRecoMomLep = kDefDoub;
@@ -730,6 +794,7 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerTrueEndZ = kDefDoub;
   fSelShowerTrueEndT = kDefDoub;
   //reco bits
+  fSelShowerRecoNHits = kDefInt;
   fSelShowerRecoMomX = kDefDoub;
   fSelShowerRecoMomY = kDefDoub;
   fSelShowerRecoMomZ = kDefDoub;
@@ -862,6 +927,21 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
     fNuY = mcList[i_mctruth]->GetNeutrino().Nu().Vy();
     fNuZ = mcList[i_mctruth]->GetNeutrino().Nu().Vz();
     fNuT = mcList[i_mctruth]->GetNeutrino().Nu().T();
+    //Loop over the final state particles
+    for (int i_part = 0; i_part < mcList[i_mctruth]->NParticles(); i_part++){
+      const simb::MCParticle& final_state_particle = mcList[i_mctruth]->GetParticle(i_part);
+      if (final_state_particle.StatusCode() != 1) continue;
+      int pdg = final_state_particle.PdgCode();
+      if (pdg >= 2000000000) continue;
+      if (std::abs(pdg) >= 11 && std::abs(pdg) <= 16) continue;
+      if (pdg==211) fNPiP++;
+      else if (pdg==-211) fNPim++;
+      else if (pdg==111) fNPi0++;
+      else if (pdg==22) fNPhotons++;
+      else if (pdg==2212) fNProtons++;
+      else if (pdg==2112) fNNeutrons++;
+      else fNOther++;
+    }
 
     //20/11/18 DBrailsford
     //Get the associated g4 particles so that we can find the stop position of the lepton
@@ -909,6 +989,7 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
   const std::vector<art::Ptr<recob::Hit> > sel_track_hits = fmht.at(sel_track.key());
+  fSelTrackRecoNHits = sel_track_hits.size();
 
   //Start filling some variables
   recob::Track::Point_t trackStart, trackEnd;
@@ -1020,6 +1101,8 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   fTMVAPFPTrackdEdxStart = fPandizzleAlg.GetFloatVar("PFPTrackdEdxStart");
   fTMVAPFPTrackdEdxEnd = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEnd");
   fTMVAPFPTrackdEdxEndRatio = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEndRatio");
+  fTMVAPFPTrackPIDA = fPandizzleAlg.GetFloatVar("PFPTrackPIDA");
+
   fSelTrackPandizzleVar = fReader.EvaluateMVA("BDTG");
 }
 
@@ -1254,6 +1337,7 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
   const std::vector<art::Ptr<recob::Hit> > sel_shower_hits = fmhs.at(sel_shower.key());
+  fSelShowerRecoNHits = sel_shower_hits.size();
 
   ////Start filling
   ////Get the reconstructed neutrino vertex position
