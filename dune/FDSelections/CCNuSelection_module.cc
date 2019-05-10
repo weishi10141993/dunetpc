@@ -715,6 +715,8 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackTrueEndT = kDefDoub;
   //reco bits
   fSelTrackRecoNHits = kDefInt;
+  fSelTrackRecoCompleteness = kDefDoub;
+  fSelTrackRecoHitPurity = kDefDoub;
   fSelTrackRecoMomX = kDefDoub;
   fSelTrackRecoMomY = kDefDoub;
   fSelTrackRecoMomZ = kDefDoub;
@@ -795,6 +797,8 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerTrueEndT = kDefDoub;
   //reco bits
   fSelShowerRecoNHits = kDefInt;
+  fSelShowerRecoCompleteness = kDefDoub;
+  fSelShowerRecoHitPurity = kDefDoub;
   fSelShowerRecoMomX = kDefDoub;
   fSelShowerRecoMomY = kDefDoub;
   fSelShowerRecoMomZ = kDefDoub;
@@ -991,6 +995,14 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   const std::vector<art::Ptr<recob::Hit> > sel_track_hits = fmht.at(sel_track.key());
   fSelTrackRecoNHits = sel_track_hits.size();
 
+  //Get the hit list handle
+  art::Handle< std::vector<recob::Hit> > hitListHandle; 
+  std::vector<art::Ptr<recob::Hit> > hitList; 
+  if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
+    art::fill_ptr_vector(hitList, hitListHandle);
+  }
+
+
   //Start filling some variables
   recob::Track::Point_t trackStart, trackEnd;
   std::tie(trackStart, trackEnd) = sel_track->Extent(); 
@@ -1054,6 +1066,9 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   }
 
   int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(sel_track_hits);
+  fSelTrackRecoCompleteness = FDSelectionUtils::CompletenessFromTrueParticleID(sel_track_hits, hitList, g4id);
+  fSelTrackRecoHitPurity = FDSelectionUtils::HitPurityFromTrueParticleID(sel_track_hits, g4id);
+
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
   if (matched_mcparticle){
@@ -1334,10 +1349,17 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
     return;
   }
 
-  //Get the hits for said track
+  //Get the hits for said shower
   art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
   const std::vector<art::Ptr<recob::Hit> > sel_shower_hits = fmhs.at(sel_shower.key());
   fSelShowerRecoNHits = sel_shower_hits.size();
+
+  //Get the hit list handle
+  art::Handle< std::vector<recob::Hit> > hitListHandle; 
+  std::vector<art::Ptr<recob::Hit> > hitList; 
+  if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
+    art::fill_ptr_vector(hitList, hitListHandle);
+  }
 
   ////Start filling
   ////Get the reconstructed neutrino vertex position
@@ -1365,6 +1387,9 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   fNueRecoMomLep = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
 
   int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(sel_shower_hits);
+  fSelShowerRecoCompleteness = FDSelectionUtils::CompletenessFromTrueParticleID(sel_shower_hits, hitList, g4id);
+  fSelShowerRecoHitPurity = FDSelectionUtils::HitPurityFromTrueParticleID(sel_shower_hits, g4id);
+
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   //const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
   const simb::MCParticle* matched_mcparticle = pi_serv->TrackIdToParticle_P(g4id);

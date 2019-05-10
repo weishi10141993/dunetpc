@@ -47,6 +47,9 @@ namespace FDSelectionUtils{
   int TrueParticleIDFromTotalTrueEnergy(const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids=1); //Returns the geant4 ID which contributes the most to the vector of hits.  The matching method looks for which true particle deposits the most true energy in the reco hits
   int TrueParticleIDFromTotalRecoCharge(const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids=1);  //Returns the geant4 ID which contributes the most to the vector of hits.  The matching method looks for which true particle contributes the most reconstructed charge to the hit selection (the reco charge of each hit is correlated with each maximally contributing true particle and summed)
   int TrueParticleIDFromTotalRecoHits(const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids=1);  //Returns the geant4 ID which contributes the most to the vector of hits.  The matching method looks for which true particle maximally contributes to the most reco hits
+  double CompletenessFromTrueParticleID(const std::vector<art::Ptr<recob::Hit> >& selected_hits, const std::vector<art::Ptr<recob::Hit> >& all_hits, int track_id); //Calculate the completeness of hits in the selected hits set which match to a specific true particle ID
+  double HitPurityFromTrueParticleID(const std::vector<art::Ptr<recob::Hit> >& selected_hits, int track_id); //Calculate the purity of a hit set for a specific track ID 
+
   bool IsInsideTPC(TVector3 position, double distance_buffer); //Checks if a position is within any of the TPCs in the geometry (user can define some distance buffer from the TPC walls)
   double CalculateTrackLength(const art::Ptr<recob::Track> track); //Calculates the total length of a recob::track by summing up the distances between adjacent traj. points
 }
