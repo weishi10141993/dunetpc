@@ -27,6 +27,7 @@ wpdir product_dir wire-cell-cfg
 # to find gdml files:
 table_fragment_begin
     pathPrepend(FW_SEARCH_PATH, ${DUNETPC_DIR}/scripts)
+    pathPrepend(FW_SEARCH_PATH, ${DUNETPC_DIR}/weights)
     pathPrepend(FW_SEARCH_PATH, ${DUNETPC_DIR}/gdml)
     #pathPrepend(FW_SEARCH_PATH, ${DUNE_PARDATA_DIR}/FieldResponse)
     # Add StashCache to the FW_SEARCH_PATH

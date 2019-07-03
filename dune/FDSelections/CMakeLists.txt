@@ -39,6 +39,7 @@ MODULE_LIBRARIES FDSelection
         )
 
 add_subdirectory(tools)
+add_subdirectory(weights)
 
 install_headers()
 install_fhicl()

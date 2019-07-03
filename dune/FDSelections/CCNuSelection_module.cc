@@ -397,7 +397,12 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fReader.AddVariable("PFPTrackdEdxEnd",&fTMVAPFPTrackdEdxEnd);
   fReader.AddVariable("PFPTrackdEdxEndRatio",&fTMVAPFPTrackdEdxEndRatio);
   //fReader.AddVariable("PFPTrackPIDA",&fTMVAPFPTrackPIDA);
-  fReader.BookMVA("BDTG","/dune/app/users/dbrailsf/oscillation/nu_mu/cutsel/trainings/pandizzle/dataset_pandizzle/weights/TMVAClassification_BDTG.weights.xml");
+  //fReader.BookMVA("BDTG","/dune/app/users/dbrailsf/oscillation/nu_mu/cutsel/trainings/pandizzle/dataset_pandizzle/weights/TMVAClassification_BDTG.weights.xml");
+  std::string weight_file_name = "TMVAClassification_BDTG.weights.xml";
+  std::string weight_file_path;
+  cet::search_path sp("FW_SEARCH_PATH");
+  sp.find_file(weight_file_name, weight_file_path);
+  fReader.BookMVA("BDTG",weight_file_path);
 }
 
 void FDSelection::CCNuSelection::analyze(art::Event const & evt)
