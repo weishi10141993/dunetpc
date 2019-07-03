@@ -416,7 +416,7 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
 
   //fPIDAnaAlg.Run(evt);
-  //fPandizzleAlg.Run(evt);
+  fPandizzleAlg.Run(evt);
 
   fTree->Fill();
   Reset(); //Reset at the end of the event
@@ -906,8 +906,12 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
     mf::LogWarning("CCNuSelection") << "There are  " << mcList.size() << " MCTruth in this event.  Only taking the first one!!!!";
   }
   for (unsigned int i_mctruth = 0; i_mctruth < mcList.size(); i_mctruth++){
+    if (mcList[i_mctruth]->Origin() != simb::kBeamNeutrino) {
+      mf::LogWarning("CCNuSelection") << "Origin for this event is " << mcList[i_mctruth]->Origin() << " and not simb::kBeamNeutrino (" << simb::kBeamNeutrino<<")";
+      continue;
+    }
     fNuPdg    = mcList[i_mctruth]->GetNeutrino().Nu().PdgCode();
-    fBeamPdg  = mcFlux[i_mctruth]->fntype;
+    if (mcFluxListHandle.isValid()) fBeamPdg  = mcFlux[i_mctruth]->fntype;
     fNC       = mcList[i_mctruth]->GetNeutrino().CCNC();
     fMode     = mcList[i_mctruth]->GetNeutrino().Mode(); //0=QE/El, 1=RES, 2=DIS, 3=Coherent production
     fTargetZ  = mcList[i_mctruth]->GetNeutrino().Target()%100000000/10000;
