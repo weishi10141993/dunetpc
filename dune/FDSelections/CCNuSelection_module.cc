@@ -57,6 +57,10 @@
 constexpr int kDefInt = -9999;
 constexpr int kDefDoub = (double)(kDefInt);
 
+constexpr int kDefMaxNTrueVertexParticles = 500;
+constexpr int kDefMaxNRecoTracks = 500;
+
+
 namespace FDSelection {
   class CCNuSelection;
 }
@@ -90,18 +94,21 @@ private:
   void GetEventInfo(art::Event const & evt); //Grab event-level info that is necessary/handy for selecting events but doesn't really fall under the 'selection' banner
   void GetTruthInfo(art::Event const & evt);  //Grab the truth info from the art record
   void FillVertexInformation(art::Event const & evt); //Grab the vertex parameters 
+  void GetRecoTrackInfo(art::Event const & evt); //Fill the reco track arrays
   void RunTrackSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
   double CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
   bool IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt); // check if the track is contained in the detector
   art::Ptr<recob::PFParticle> GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt);
   art::Ptr<recob::Track> GetTrackMatchedPFParticle(art::Ptr<recob::PFParticle> const pfparticle, art::Event const & evt);
 
-  void FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt); //Grab the vertex parameters associated with this track
+  void FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt, int &n_child_pfp, int &n_child_track_pfp, int &n_child_shower_pfp); //Grab the vertex parameters associated with this track
 
   //Shower stuff
   void RunShowerSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
   double CalculateShowerCharge(art::Ptr<recob::Shower> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
   bool IsPFParticlePrimaryDaughter(art::Ptr<recob::PFParticle> const & pfparticle, std::vector<art::Ptr<recob::PFParticle > > const & pfparticles);
+
+  TVector3 ProjectVectorOntoPlane(TVector3 vector_to_project, TVector3 plane_norm_vector); //Returns a projection o a vector onto a plane
 
 
 
@@ -154,6 +161,18 @@ private:
   int fNProtons; //Number of protons
   int fNNeutrons; //Number of neutrinos
   int fNOther; //Number of other particles
+  int fNVertexParticles; //The total number of particles attached to the GHEP vertex
+  int fVertexParticlePDG[kDefMaxNTrueVertexParticles]; //The PDG of each particle in the GHEP vetex
+  int fVertexParticleStatus[kDefMaxNTrueVertexParticles];
+  int fVertexParticleNChildren[kDefMaxNTrueVertexParticles];
+  double fVertexParticleMomX[kDefMaxNTrueVertexParticles];
+  double fVertexParticleMomY[kDefMaxNTrueVertexParticles];
+  double fVertexParticleMomZ[kDefMaxNTrueVertexParticles];
+  double fVertexParticleMomT[kDefMaxNTrueVertexParticles];
+  double fVertexParticleEndX[kDefMaxNTrueVertexParticles];
+  double fVertexParticleEndY[kDefMaxNTrueVertexParticles];
+  double fVertexParticleEndZ[kDefMaxNTrueVertexParticles];
+  double fVertexParticleEndT[kDefMaxNTrueVertexParticles];
   //Outgoing lepton stuff
   int fLepPDG;
   double fMomLepX;
@@ -165,6 +184,16 @@ private:
   double fLepEndZ;
   double fLepEndT;
   double fLepNuAngle;
+  //Transverse mom stuff
+  double  fNuMomTranMag;
+  double  fTargNuclMomTranMag;
+  double  fInitalMomTranMag;
+  double  fLepMomTranMag;
+  double  fNuclRemMomTranMag;
+  double  fFinalMomTranMagNoLepNoRem;
+  double  fFinalMomTranMagNoLepWithRem;
+  double  fFinalMomTranMagWithLepNoRem;
+  double  fFinalMomTranMagWithLepWithRem;
   //Selection stuff
   //true bits
   int fSelTrackTruePDG;
@@ -228,6 +257,85 @@ private:
   double fSelTrackMVAPhoton;
   //Pandizzle var
   double fSelTrackPandizzleVar;
+
+  //All tracks
+  int fNRecoTracks;
+  bool fRecoTrackIsPrimary[kDefMaxNRecoTracks];
+  int fRecoTrackTruePDG[kDefMaxNRecoTracks];
+  int fRecoTrackTruePrimary[kDefMaxNRecoTracks];
+  double fRecoTrackTrueMomX[kDefMaxNRecoTracks];
+  double fRecoTrackTrueMomY[kDefMaxNRecoTracks];
+  double fRecoTrackTrueMomZ[kDefMaxNRecoTracks];
+  double fRecoTrackTrueMomT[kDefMaxNRecoTracks];
+  double fRecoTrackTrueStartX[kDefMaxNRecoTracks];
+  double fRecoTrackTrueStartY[kDefMaxNRecoTracks];
+  double fRecoTrackTrueStartZ[kDefMaxNRecoTracks];
+  double fRecoTrackTrueStartT[kDefMaxNRecoTracks];
+  double fRecoTrackTrueEndX[kDefMaxNRecoTracks];
+  double fRecoTrackTrueEndY[kDefMaxNRecoTracks];
+  double fRecoTrackTrueEndZ[kDefMaxNRecoTracks];
+  double fRecoTrackTrueEndT[kDefMaxNRecoTracks];
+  //reco bits
+  int fRecoTrackRecoNHits[kDefMaxNRecoTracks];
+  double fRecoTrackRecoCompleteness[kDefMaxNRecoTracks];
+  double fRecoTrackRecoHitPurity[kDefMaxNRecoTracks];
+  double fRecoTrackRecoMomX[kDefMaxNRecoTracks];
+  double fRecoTrackRecoMomY[kDefMaxNRecoTracks];
+  double fRecoTrackRecoMomZ[kDefMaxNRecoTracks];
+  double fRecoTrackRecoMomT[kDefMaxNRecoTracks];
+  double fRecoTrackRecoStartX[kDefMaxNRecoTracks];
+  double fRecoTrackRecoStartY[kDefMaxNRecoTracks];
+  double fRecoTrackRecoStartZ[kDefMaxNRecoTracks];
+  double fRecoTrackRecoStartT[kDefMaxNRecoTracks];
+  double fRecoTrackRecoEndX[kDefMaxNRecoTracks];
+  double fRecoTrackRecoEndY[kDefMaxNRecoTracks];
+  double fRecoTrackRecoEndZ[kDefMaxNRecoTracks];
+  double fRecoTrackRecoEndT[kDefMaxNRecoTracks];
+  double fRecoTrackRecoUpstreamX[kDefMaxNRecoTracks];
+  double fRecoTrackRecoUpstreamY[kDefMaxNRecoTracks];
+  double fRecoTrackRecoUpstreamZ[kDefMaxNRecoTracks];
+  double fRecoTrackRecoUpstreamT[kDefMaxNRecoTracks];
+  double fRecoTrackRecoDownstreamX[kDefMaxNRecoTracks];
+  double fRecoTrackRecoDownstreamY[kDefMaxNRecoTracks];
+  double fRecoTrackRecoDownstreamZ[kDefMaxNRecoTracks];
+  double fRecoTrackRecoDownstreamT[kDefMaxNRecoTracks];
+  double fRecoTrackRecoEndClosestToVertexX[kDefMaxNRecoTracks];
+  double fRecoTrackRecoEndClosestToVertexY[kDefMaxNRecoTracks];
+  double fRecoTrackRecoEndClosestToVertexZ[kDefMaxNRecoTracks];
+  double fRecoTrackRecoLength[kDefMaxNRecoTracks];
+  bool   fRecoTrackRecoContained[kDefMaxNRecoTracks];
+  double fRecoTrackRecoCharge[kDefMaxNRecoTracks];
+  double fRecoTrackRecoMomMCS[kDefMaxNRecoTracks];
+  double fRecoTrackRecoMomContained[kDefMaxNRecoTracks];
+  //int fRecoTrackRecoNMatchedVertices[kDefMaxNRecoTracks];
+  double fRecoTrackRecoVertexX[kDefMaxNRecoTracks];
+  double fRecoTrackRecoVertexY[kDefMaxNRecoTracks];
+  double fRecoTrackRecoVertexZ[kDefMaxNRecoTracks];
+  int fRecoTrackRecoNChildPFP[kDefMaxNRecoTracks];
+  int fRecoTrackRecoNChildTrackPFP[kDefMaxNRecoTracks];
+  int fRecoTrackRecoNChildShowerPFP[kDefMaxNRecoTracks];
+  //MVA bits
+  double fRecoTrackMVAElectron[kDefMaxNRecoTracks];
+  double fRecoTrackMVAPion[kDefMaxNRecoTracks];
+  double fRecoTrackMVAMuon[kDefMaxNRecoTracks];
+  double fRecoTrackMVAProton[kDefMaxNRecoTracks];
+  double fRecoTrackMVAPhoton[kDefMaxNRecoTracks];
+  //Pandizzle var
+  double fRecoTrackPandizzleVar[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPMichelNHits[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPMichelElectronMVA[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPMichelRecoEnergyPlane2[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackDeflecAngleSD[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackLength[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackEvalRatio[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackConcentration[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackCoreHaloRatio[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackConicalness[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackdEdxStart[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackdEdxEnd[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackdEdxEndRatio[kDefMaxNRecoTracks];
+  float fRecoTrackTMVAPFPTrackPIDA[kDefMaxNRecoTracks];
+
   //Event-level bits
   double fRecoEventCharge; //Total collected charge (as measured by the collection planes)
   //reco energy bits
@@ -357,6 +465,20 @@ private:
   float fTMVAPFPTrackdEdxEndRatio;
   float fTMVAPFPTrackPIDA;
 
+  //Used for hooking up variables with the TMVA reader
+  float fHookUpTMVAPFPMichelNHits;
+  float fHookUpTMVAPFPMichelElectronMVA;
+  float fHookUpTMVAPFPMichelRecoEnergyPlane2;
+  float fHookUpTMVAPFPTrackDeflecAngleSD;
+  float fHookUpTMVAPFPTrackLength;
+  float fHookUpTMVAPFPTrackEvalRatio;
+  float fHookUpTMVAPFPTrackConcentration;
+  float fHookUpTMVAPFPTrackCoreHaloRatio;
+  float fHookUpTMVAPFPTrackConicalness;
+  float fHookUpTMVAPFPTrackdEdxStart;
+  float fHookUpTMVAPFPTrackdEdxEnd;
+  float fHookUpTMVAPFPTrackdEdxEndRatio;
+  float fHookUpTMVAPFPTrackPIDA;
 
 };
 
@@ -384,18 +506,18 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fNueEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NueEnergyRecoModuleLabel")),
   fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")),
   fReader("") {
-  fReader.AddVariable("PFPMichelNHits",&fTMVAPFPMichelNHits);
-  fReader.AddVariable("PFPMichelElectronMVA",&fTMVAPFPMichelElectronMVA);
-  fReader.AddVariable("PFPMichelRecoEnergyPlane2",&fTMVAPFPMichelRecoEnergyPlane2);
-  fReader.AddVariable("PFPTrackDeflecAngleSD",&fTMVAPFPTrackDeflecAngleSD);
-  fReader.AddVariable("PFPTrackLength",&fTMVAPFPTrackLength);
-  fReader.AddVariable("PFPTrackEvalRatio",&fTMVAPFPTrackEvalRatio);
-  fReader.AddVariable("PFPTrackConcentration",&fTMVAPFPTrackConcentration);
-  fReader.AddVariable("PFPTrackCoreHaloRatio",&fTMVAPFPTrackCoreHaloRatio);
-  fReader.AddVariable("PFPTrackConicalness",&fTMVAPFPTrackConicalness);
-  fReader.AddVariable("PFPTrackdEdxStart",&fTMVAPFPTrackdEdxStart);
-  fReader.AddVariable("PFPTrackdEdxEnd",&fTMVAPFPTrackdEdxEnd);
-  fReader.AddVariable("PFPTrackdEdxEndRatio",&fTMVAPFPTrackdEdxEndRatio);
+  fReader.AddVariable("PFPMichelNHits",&fHookUpTMVAPFPMichelNHits);
+  fReader.AddVariable("PFPMichelElectronMVA",&fHookUpTMVAPFPMichelElectronMVA);
+  fReader.AddVariable("PFPMichelRecoEnergyPlane2",&fHookUpTMVAPFPMichelRecoEnergyPlane2);
+  fReader.AddVariable("PFPTrackDeflecAngleSD",&fHookUpTMVAPFPTrackDeflecAngleSD);
+  fReader.AddVariable("PFPTrackLength",&fHookUpTMVAPFPTrackLength);
+  fReader.AddVariable("PFPTrackEvalRatio",&fHookUpTMVAPFPTrackEvalRatio);
+  fReader.AddVariable("PFPTrackConcentration",&fHookUpTMVAPFPTrackConcentration);
+  fReader.AddVariable("PFPTrackCoreHaloRatio",&fHookUpTMVAPFPTrackCoreHaloRatio);
+  fReader.AddVariable("PFPTrackConicalness",&fHookUpTMVAPFPTrackConicalness);
+  fReader.AddVariable("PFPTrackdEdxStart",&fHookUpTMVAPFPTrackdEdxStart);
+  fReader.AddVariable("PFPTrackdEdxEnd",&fHookUpTMVAPFPTrackdEdxEnd);
+  fReader.AddVariable("PFPTrackdEdxEndRatio",&fHookUpTMVAPFPTrackdEdxEndRatio);
   //fReader.AddVariable("PFPTrackPIDA",&fTMVAPFPTrackPIDA);
   //fReader.BookMVA("BDTG","/dune/app/users/dbrailsf/oscillation/nu_mu/cutsel/trainings/pandizzle/dataset_pandizzle/weights/TMVAClassification_BDTG.weights.xml");
   std::string weight_file_name = "TMVAClassification_BDTG.weights.xml";
@@ -416,6 +538,7 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
   GetEventInfo(evt);
   if (fIsMC) GetTruthInfo(evt);
   FillVertexInformation(evt);
+  GetRecoTrackInfo(evt);
   RunTrackSelection(evt);
   RunShowerSelection(evt);
 
@@ -462,6 +585,18 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("NProton",&fNProtons);
     fTree->Branch("NNeutrons",&fNNeutrons);
     fTree->Branch("NOther",&fNOther);
+    fTree->Branch("NVertexParticles",&fNVertexParticles);
+    fTree->Branch("VertexParticlePDG",fVertexParticlePDG,"VertexParticlePDG[NVertexParticles]/I");
+    fTree->Branch("VertexParticleStatus",fVertexParticleStatus,"VertexParticleStatus[NVertexParticles]/I");
+    fTree->Branch("VertexParticleNChildren",fVertexParticleNChildren,"VertexParticleNChildren[NVertexParticles]/I");
+    fTree->Branch("VertexParticleMomX",fVertexParticleMomX,"VertexParticleMomX[NVertexParticles]/D");
+    fTree->Branch("VertexParticleMomY",fVertexParticleMomY,"VertexParticleMomY[NVertexParticles]/D");
+    fTree->Branch("VertexParticleMomZ",fVertexParticleMomZ,"VertexParticleMomZ[NVertexParticles]/D");
+    fTree->Branch("VertexParticleMomT",fVertexParticleMomT,"VertexParticleMomT[NVertexParticles]/D");
+    fTree->Branch("VertexParticleEndX",fVertexParticleEndX,"VertexParticleEndX[NVertexParticles]/D");
+    fTree->Branch("VertexParticleEndY",fVertexParticleEndY,"VertexParticleEndY[NVertexParticles]/D");
+    fTree->Branch("VertexParticleEndZ",fVertexParticleEndZ,"VertexParticleEndZ[NVertexParticles]/D");
+    fTree->Branch("VertexParticleEndT",fVertexParticleEndT,"VertexParticleEndT[NVertexParticles]/D");
     fTree->Branch("LepPDG",&fLepPDG);
     fTree->Branch("MomLepX",&fMomLepX);
     fTree->Branch("MomLepY",&fMomLepY);
@@ -472,6 +607,15 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("LepEndZ",&fLepEndZ);
     fTree->Branch("LepEndT",&fLepEndT);
     fTree->Branch("LepNuAngle",&fLepNuAngle);
+    fTree->Branch("NuMomTranMag",&fNuMomTranMag);
+    fTree->Branch("TargNuclMomTranMag",&fTargNuclMomTranMag);
+    fTree->Branch("InitalMomTranMag",&fInitalMomTranMag);
+    fTree->Branch("LepMomTranMag",&fLepMomTranMag);
+    fTree->Branch("NuclRemMomTranMag",&fNuclRemMomTranMag);
+    fTree->Branch("FinalMomTranMagNoLepNoRem",&fFinalMomTranMagNoLepNoRem);
+    fTree->Branch("FinalMomTranMagNoLepWithRem",&fFinalMomTranMagNoLepWithRem);
+    fTree->Branch("FinalMomTranMagWithLepNoRem",&fFinalMomTranMagWithLepNoRem);
+    fTree->Branch("FinalMomTranMagWithLepWithRem",&fFinalMomTranMagWithLepWithRem);
     fTree->Branch("SelTrackTruePDG",&fSelTrackTruePDG);
     fTree->Branch("SelTrackTruePrimary",&fSelTrackTruePrimary);
     fTree->Branch("SelTrackTrueMomX",&fSelTrackTrueMomX);
@@ -543,6 +687,78 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("TMVAPFPTrackdEdxEnd",&fTMVAPFPTrackdEdxEnd);
     fTree->Branch("TMVAPFPTrackdEdxEndRatio",&fTMVAPFPTrackdEdxEndRatio);
     fTree->Branch("TMVAPFPTrackPIDA",&fTMVAPFPTrackPIDA);
+    fTree->Branch("NRecoTracks",&fNRecoTracks);
+    fTree->Branch("RecoTrackIsPrimary",fRecoTrackIsPrimary,"RecoTrackIsPrimary[NRecoTracks]/O");
+    fTree->Branch("RecoTrackTruePDG",fRecoTrackTruePDG,"RecoTrackTruePDG[NRecoTracks]/I");
+    fTree->Branch("RecoTrackTruePrimary",fRecoTrackTruePrimary,"RecoTrackTruePrimary[NRecoTracks]/I");
+    fTree->Branch("RecoTrackTrueMomX",fRecoTrackTrueMomX,"RecoTrackTrueMomX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueMomY",fRecoTrackTrueMomY,"RecoTrackTrueMomY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueMomZ",fRecoTrackTrueMomZ,"RecoTrackTrueMomZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueMomT",fRecoTrackTrueMomT,"RecoTrackTrueMomT[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueStartX",fRecoTrackTrueStartX,"RecoTrackTrueStartX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueStartY",fRecoTrackTrueStartY,"RecoTrackTrueStartY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueStartZ",fRecoTrackTrueStartZ,"RecoTrackTrueStartZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueStartT",fRecoTrackTrueStartT,"RecoTrackTrueStartT[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueEndX",fRecoTrackTrueEndX,"RecoTrackTrueEndX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueEndY",fRecoTrackTrueEndY,"RecoTrackTrueEndY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueEndZ",fRecoTrackTrueEndZ,"RecoTrackTrueEndZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTrueEndT",fRecoTrackTrueEndT,"RecoTrackTrueEndT[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoNHits",fRecoTrackRecoNHits,"RecoTrackRecoNHits[NRecoTracks]/I");
+    fTree->Branch("RecoTrackRecoCompleteness",fRecoTrackRecoCompleteness,"RecoTrackRecoCompleteness[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoHitPurity",fRecoTrackRecoHitPurity,"RecoTrackRecoHitPurity[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoMomX",fRecoTrackRecoMomX,"RecoTrackRecoMomX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoMomY",fRecoTrackRecoMomY,"RecoTrackRecoMomY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoMomZ",fRecoTrackRecoMomZ,"RecoTrackRecoMomZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoMomT",fRecoTrackRecoMomT,"RecoTrackRecoMomT[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoStartX",fRecoTrackRecoStartX,"RecoTrackRecoStartX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoStartY",fRecoTrackRecoStartY,"RecoTrackRecoStartY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoStartZ",fRecoTrackRecoStartZ,"RecoTrackRecoStartZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoStartT",fRecoTrackRecoStartT,"RecoTrackRecoStartT[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoEndX",fRecoTrackRecoEndX,"RecoTrackRecoEndX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoEndY",fRecoTrackRecoEndY,"RecoTrackRecoEndY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoEndZ",fRecoTrackRecoEndZ,"RecoTrackRecoEndZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoEndT",fRecoTrackRecoEndT,"RecoTrackRecoEndT[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoUpstreamX",fRecoTrackRecoUpstreamX,"RecoTrackRecoUpstreamX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoUpstreamY",fRecoTrackRecoUpstreamY,"RecoTrackRecoUpstreamY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoUpstreamZ",fRecoTrackRecoUpstreamZ,"RecoTrackRecoUpstreamZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoUpstreamT",fRecoTrackRecoUpstreamT,"RecoTrackRecoUpstreamT[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoDownstreamX",fRecoTrackRecoDownstreamX,"RecoTrackRecoDownstreamX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoDownstreamY",fRecoTrackRecoDownstreamY,"RecoTrackRecoDownstreamY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoDownstreamZ",fRecoTrackRecoDownstreamZ,"RecoTrackRecoDownstreamZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoDownstreamT",fRecoTrackRecoDownstreamT,"RecoTrackRecoDownstreamT[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoEndClosestToVertexX",fRecoTrackRecoEndClosestToVertexX,"RecoTrackRecoEndClosestToVertexX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoEndClosestToVertexY",fRecoTrackRecoEndClosestToVertexY,"RecoTrackRecoEndClosestToVertexY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoEndClosestToVertexZ",fRecoTrackRecoEndClosestToVertexZ,"RecoTrackRecoEndClosestToVertexZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoLength",fRecoTrackRecoLength,"RecoTrackRecoLength[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoContained",fRecoTrackRecoContained,"RecoTrackRecoContained[NRecoTracks]/O");
+    fTree->Branch("RecoTrackRecoCharge",fRecoTrackRecoCharge,"RecoTrackRecoCharge[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoMomMCS",fRecoTrackRecoMomMCS,"RecoTrackRecoMomMCS[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoMomContained",fRecoTrackRecoMomContained,"RecoTrackRecoMomContained[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoVertexX",fRecoTrackRecoVertexX,"RecoTrackRecoVertexX[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoVertexY",fRecoTrackRecoVertexY,"RecoTrackRecoVertexY[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoVertexZ",fRecoTrackRecoVertexZ,"RecoTrackRecoVertexZ[NRecoTracks]/D");
+    fTree->Branch("RecoTrackRecoNChildPFP",fRecoTrackRecoNChildPFP,"RecoTrackRecoNChildPFP[NRecoTracks]/I");
+    fTree->Branch("RecoTrackRecoNChildTrackPFP",fRecoTrackRecoNChildTrackPFP,"RecoTrackRecoNChildTrackPFP[NRecoTracks]/I");
+    fTree->Branch("RecoTrackRecoNChildShowerPFP",fRecoTrackRecoNChildShowerPFP,"RecoTrackRecoNChildShowerPFP[NRecoTracks]/I");
+    fTree->Branch("RecoTrackMVAElectron",fRecoTrackMVAElectron,"RecoTrackMVAElectron[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAPion",fRecoTrackMVAPion,"RecoTrackMVAPion[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAMuon",fRecoTrackMVAMuon,"RecoTrackMVAMuon[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAProton",fRecoTrackMVAProton,"RecoTrackMVAProton[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAPhoton",fRecoTrackMVAPhoton,"RecoTrackMVAPhoton[NRecoTracks]/D");
+    fTree->Branch("RecoTrackPandizzleVar",fRecoTrackPandizzleVar,"RecoTrackPandizzleVar[NRecoTracks]/D");
+    fTree->Branch("RecoTrackTMVAPFPMichelNHits",fRecoTrackTMVAPFPMichelNHits,"RecoTrackTMVAPFPMichelNHits[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPMichelElectronMVA",fRecoTrackTMVAPFPMichelElectronMVA,"RecoTrackTMVAPFPMichelElectronMVA[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPMichelRecoEnergyPlane2",fRecoTrackTMVAPFPMichelRecoEnergyPlane2,"RecoTrackTMVAPFPMichelRecoEnergyPlane2[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackDeflecAngleSD",fRecoTrackTMVAPFPTrackDeflecAngleSD,"RecoTrackTMVAPFPTrackDeflecAngleSD[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackLength",fRecoTrackTMVAPFPTrackLength,"RecoTrackTMVAPFPTrackLength[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackEvalRatio",fRecoTrackTMVAPFPTrackEvalRatio,"RecoTrackTMVAPFPTrackEvalRatio[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackConcentration",fRecoTrackTMVAPFPTrackConcentration,"RecoTrackTMVAPFPTrackConcentration[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackCoreHaloRatio",fRecoTrackTMVAPFPTrackCoreHaloRatio,"RecoTrackTMVAPFPTrackCoreHaloRatio[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackConicalness",fRecoTrackTMVAPFPTrackConicalness,"RecoTrackTMVAPFPTrackConicalness[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackdEdxStart",fRecoTrackTMVAPFPTrackdEdxStart,"RecoTrackTMVAPFPTrackdEdxStart[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackdEdxEnd",fRecoTrackTMVAPFPTrackdEdxEnd,"RecoTrackTMVAPFPTrackdEdxEnd[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackdEdxEndRatio",fRecoTrackTMVAPFPTrackdEdxEndRatio,"RecoTrackTMVAPFPTrackdEdxEndRatio[NRecoTracks]/F");
+    fTree->Branch("RecoTrackTMVAPFPTrackPIDA",fRecoTrackTMVAPFPTrackPIDA,"RecoTrackTMVAPFPTrackPIDA[NRecoTracks]/F");
     fTree->Branch("SelShowerTruePDG",&fSelShowerTruePDG);
     fTree->Branch("SelShowerTruePrimary",&fSelShowerTruePrimary);
     fTree->Branch("SelShowerTrueMomX",&fSelShowerTrueMomX);
@@ -690,6 +906,20 @@ void FDSelection::CCNuSelection::Reset()
   fNProtons = 0;
   fNNeutrons = 0;
   fNOther = 0;
+  for (int i_vertexparticle = 0; i_vertexparticle < fNVertexParticles; i_vertexparticle++){
+    fVertexParticlePDG[i_vertexparticle] = kDefInt;
+    fVertexParticleStatus[i_vertexparticle] = kDefInt;
+    fVertexParticleNChildren[i_vertexparticle] = kDefInt;
+    fVertexParticleMomX[i_vertexparticle] = kDefDoub;
+    fVertexParticleMomY[i_vertexparticle] = kDefDoub;
+    fVertexParticleMomZ[i_vertexparticle] = kDefDoub;
+    fVertexParticleMomT[i_vertexparticle] = kDefDoub;
+    fVertexParticleEndX[i_vertexparticle] = kDefDoub;
+    fVertexParticleEndY[i_vertexparticle] = kDefDoub;
+    fVertexParticleEndZ[i_vertexparticle] = kDefDoub;
+    fVertexParticleEndT[i_vertexparticle] = kDefDoub;
+  }
+  fNVertexParticles = 0;
   //Outgoing lepton stuff
   fLepPDG = kDefInt;
   fMomLepX = kDefDoub;
@@ -701,6 +931,15 @@ void FDSelection::CCNuSelection::Reset()
   fLepEndZ = kDefDoub;
   fLepEndT = kDefDoub;
   fLepNuAngle = kDefDoub;
+  fNuMomTranMag = kDefDoub;
+  fTargNuclMomTranMag = kDefDoub;
+  fInitalMomTranMag = kDefDoub;
+  fLepMomTranMag = kDefDoub;
+  fNuclRemMomTranMag = kDefDoub;
+  fFinalMomTranMagNoLepNoRem = kDefDoub;
+  fFinalMomTranMagNoLepWithRem = kDefDoub;
+  fFinalMomTranMagWithLepNoRem = kDefDoub;
+  fFinalMomTranMagWithLepWithRem = kDefDoub;
   //Selection stuff
   //Track stuff
   //true bits
@@ -778,6 +1017,81 @@ void FDSelection::CCNuSelection::Reset()
   fTMVAPFPTrackdEdxEnd           = kDefDoub;
   fTMVAPFPTrackdEdxEndRatio      = kDefDoub;
   fTMVAPFPTrackPIDA              = kDefDoub;
+
+  for (int i_recotrack = 0; i_recotrack < fNRecoTracks; i_recotrack++){
+    fRecoTrackIsPrimary[i_recotrack] = false;
+    fRecoTrackTruePDG[i_recotrack] = kDefInt;
+    fRecoTrackTruePrimary[i_recotrack] = kDefInt;
+    fRecoTrackTrueMomX[i_recotrack] = kDefDoub;
+    fRecoTrackTrueMomY[i_recotrack] = kDefDoub;
+    fRecoTrackTrueMomZ[i_recotrack] = kDefDoub;
+    fRecoTrackTrueMomT[i_recotrack] = kDefDoub;
+    fRecoTrackTrueStartX[i_recotrack] = kDefDoub;
+    fRecoTrackTrueStartY[i_recotrack] = kDefDoub;
+    fRecoTrackTrueStartZ[i_recotrack] = kDefDoub;
+    fRecoTrackTrueStartT[i_recotrack] = kDefDoub;
+    fRecoTrackTrueEndX[i_recotrack] = kDefDoub;
+    fRecoTrackTrueEndY[i_recotrack] = kDefDoub;
+    fRecoTrackTrueEndZ[i_recotrack] = kDefDoub;
+    fRecoTrackTrueEndT[i_recotrack] = kDefDoub;
+    fRecoTrackRecoNHits[i_recotrack] = kDefInt;
+    fRecoTrackRecoCompleteness[i_recotrack] = kDefDoub;
+    fRecoTrackRecoHitPurity[i_recotrack] = kDefDoub;
+    fRecoTrackRecoMomX[i_recotrack] = kDefDoub;
+    fRecoTrackRecoMomY[i_recotrack] = kDefDoub;
+    fRecoTrackRecoMomZ[i_recotrack] = kDefDoub;
+    fRecoTrackRecoMomT[i_recotrack] = kDefDoub;
+    fRecoTrackRecoStartX[i_recotrack] = kDefDoub;
+    fRecoTrackRecoStartY[i_recotrack] = kDefDoub;
+    fRecoTrackRecoStartZ[i_recotrack] = kDefDoub;
+    fRecoTrackRecoStartT[i_recotrack] = kDefDoub;
+    fRecoTrackRecoEndX[i_recotrack] = kDefDoub;
+    fRecoTrackRecoEndY[i_recotrack] = kDefDoub;
+    fRecoTrackRecoEndZ[i_recotrack] = kDefDoub;
+    fRecoTrackRecoEndT[i_recotrack] = kDefDoub;
+    fRecoTrackRecoUpstreamX[i_recotrack] = kDefDoub;
+    fRecoTrackRecoUpstreamY[i_recotrack] = kDefDoub;
+    fRecoTrackRecoUpstreamZ[i_recotrack] = kDefDoub;
+    fRecoTrackRecoUpstreamT[i_recotrack] = kDefDoub;
+    fRecoTrackRecoDownstreamX[i_recotrack] = kDefDoub;
+    fRecoTrackRecoDownstreamY[i_recotrack] = kDefDoub;
+    fRecoTrackRecoDownstreamZ[i_recotrack] = kDefDoub;
+    fRecoTrackRecoDownstreamT[i_recotrack] = kDefDoub;
+    fRecoTrackRecoEndClosestToVertexX[i_recotrack] = kDefDoub;
+    fRecoTrackRecoEndClosestToVertexY[i_recotrack] = kDefDoub;
+    fRecoTrackRecoEndClosestToVertexZ[i_recotrack] = kDefDoub;
+    fRecoTrackRecoLength[i_recotrack] = kDefDoub;
+    fRecoTrackRecoContained[i_recotrack] = 0;
+    fRecoTrackRecoCharge[i_recotrack] = kDefDoub;
+    fRecoTrackRecoMomMCS[i_recotrack] = kDefDoub;
+    fRecoTrackRecoMomContained[i_recotrack] = kDefDoub;
+    fRecoTrackRecoVertexX[i_recotrack] = kDefDoub;
+    fRecoTrackRecoVertexY[i_recotrack] = kDefDoub;
+    fRecoTrackRecoVertexZ[i_recotrack] = kDefDoub;
+    fRecoTrackRecoNChildPFP[i_recotrack] = kDefInt;
+    fRecoTrackRecoNChildTrackPFP[i_recotrack] = kDefInt;
+    fRecoTrackRecoNChildShowerPFP[i_recotrack] = kDefInt;
+    fRecoTrackMVAElectron[i_recotrack] = kDefDoub;
+    fRecoTrackMVAPion[i_recotrack] = kDefDoub;
+    fRecoTrackMVAMuon[i_recotrack] = kDefDoub;
+    fRecoTrackMVAProton[i_recotrack] = kDefDoub;
+    fRecoTrackMVAPhoton[i_recotrack] = kDefDoub;
+    fRecoTrackPandizzleVar[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPMichelNHits[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPMichelElectronMVA[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPMichelRecoEnergyPlane2[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackDeflecAngleSD[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackLength[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackEvalRatio[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackConcentration[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackCoreHaloRatio[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackConicalness[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackdEdxStart[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackdEdxEnd[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackdEdxEndRatio[i_recotrack] = kDefDoub;
+    fRecoTrackTMVAPFPTrackPIDA[i_recotrack] = kDefDoub;
+  }
+  fNRecoTracks=0;
 
   //Reco energy bits
   fNumuRecoEHad = kDefDoub;
@@ -910,11 +1224,18 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
   if (mcList.size() > 1){
     mf::LogWarning("CCNuSelection") << "There are  " << mcList.size() << " MCTruth in this event.  Only taking the first one!!!!";
   }
+  //need the assns for later
+  art::FindManyP<simb::MCParticle> fmpt(mcTruthListHandle, evt, fLargeantModuleLabel);
+
   for (unsigned int i_mctruth = 0; i_mctruth < mcList.size(); i_mctruth++){
     if (mcList[i_mctruth]->Origin() != simb::kBeamNeutrino) {
       mf::LogWarning("CCNuSelection") << "Origin for this event is " << mcList[i_mctruth]->Origin() << " and not simb::kBeamNeutrino (" << simb::kBeamNeutrino<<")";
       continue;
     }
+    //20/11/18 DBrailsford
+    //Get the associated g4 particles so that we can find the stop position of the lepton
+    const std::vector<art::Ptr<simb::MCParticle> > associated_particles = fmpt.at(mcList[i_mctruth].key());
+
     fNuPdg    = mcList[i_mctruth]->GetNeutrino().Nu().PdgCode();
     if (mcFluxListHandle.isValid()) fBeamPdg  = mcFlux[i_mctruth]->fntype;
     fNC       = mcList[i_mctruth]->GetNeutrino().CCNC();
@@ -940,11 +1261,45 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
     fNuY = mcList[i_mctruth]->GetNeutrino().Nu().Vy();
     fNuZ = mcList[i_mctruth]->GetNeutrino().Nu().Vz();
     fNuT = mcList[i_mctruth]->GetNeutrino().Nu().T();
-    //Loop over the final state particles
+    //Do some final state counting
+    fNVertexParticles = 0;
+    //Firstly, loop over the geant particles and accumulate all primary particles (as we want their end positions and number of children)
+    for (unsigned int i_part = 0; i_part < associated_particles.size(); i_part++){
+      art::Ptr<simb::MCParticle> particle = associated_particles[i_part];
+      if (particle->StatusCode() != 1) continue; //count tracked particles
+      if (particle->Mother() != 0) continue; //count primary particles
+      fVertexParticlePDG[fNVertexParticles] = particle->PdgCode();;
+      fVertexParticleStatus[fNVertexParticles] = particle->StatusCode();
+      fVertexParticleNChildren[fNVertexParticles] = particle->NumberDaughters();
+      fVertexParticleMomX[fNVertexParticles] = particle->Momentum(0).X();
+      fVertexParticleMomY[fNVertexParticles] = particle->Momentum(0).Y();
+      fVertexParticleMomZ[fNVertexParticles] = particle->Momentum(0).Z();
+      fVertexParticleMomT[fNVertexParticles] = particle->Momentum(0).T();
+      fVertexParticleEndX[fNVertexParticles] = particle->EndPosition().X();
+      fVertexParticleEndY[fNVertexParticles] = particle->EndPosition().Y();
+      fVertexParticleEndZ[fNVertexParticles] = particle->EndPosition().Z();
+      fVertexParticleEndT[fNVertexParticles] = particle->EndPosition().T();
+      fNVertexParticles++;
+    }
+    //Loop over the final state particles from the ghep vertex
     for (int i_part = 0; i_part < mcList[i_mctruth]->NParticles(); i_part++){
-      const simb::MCParticle& final_state_particle = mcList[i_mctruth]->GetParticle(i_part);
-      if (final_state_particle.StatusCode() != 1) continue;
-      int pdg = final_state_particle.PdgCode();
+      const simb::MCParticle& vertex_particle = mcList[i_mctruth]->GetParticle(i_part);
+      int pdg = vertex_particle.PdgCode();
+      if (vertex_particle.StatusCode() != 1){ //only count the non-tracked particles here as we already counted them above
+        fVertexParticlePDG[fNVertexParticles] = pdg;
+        fVertexParticleStatus[fNVertexParticles] = vertex_particle.StatusCode();
+        fVertexParticleNChildren[fNVertexParticles] = vertex_particle.NumberDaughters();
+        fVertexParticleMomX[fNVertexParticles] = vertex_particle.Momentum(0).X();
+        fVertexParticleMomY[fNVertexParticles] = vertex_particle.Momentum(0).Y();
+        fVertexParticleMomZ[fNVertexParticles] = vertex_particle.Momentum(0).Z();
+        fVertexParticleMomT[fNVertexParticles] = vertex_particle.Momentum(0).T();
+        fVertexParticleEndX[fNVertexParticles] = vertex_particle.EndPosition().X();
+        fVertexParticleEndY[fNVertexParticles] = vertex_particle.EndPosition().Y();
+        fVertexParticleEndZ[fNVertexParticles] = vertex_particle.EndPosition().Z();
+        fVertexParticleEndT[fNVertexParticles] = vertex_particle.EndPosition().T();
+        fNVertexParticles++;
+      }
+      if (!(vertex_particle.StatusCode() == 1)) continue;
       if (pdg >= 2000000000) continue;
       if (std::abs(pdg) >= 11 && std::abs(pdg) <= 16) continue;
       if (pdg==211) fNPiP++;
@@ -956,10 +1311,58 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
       else fNOther++;
     }
 
-    //20/11/18 DBrailsford
-    //Get the associated g4 particles so that we can find the stop position of the lepton
-    art::FindManyP<simb::MCParticle> fmpt(mcTruthListHandle, evt, fLargeantModuleLabel);
-    const std::vector<art::Ptr<simb::MCParticle> > associated_particles = fmpt.at(mcList[i_mctruth].key());
+    //do some transverse momentum stuff
+    TVector3 beam_axis(0,0,1);
+    beam_axis.RotateX(-0.101);
+    TVector3 nu_mom_vect = mcList[i_mctruth]->GetNeutrino().Nu().Momentum().Vect();
+    TVector3 nu_mom_tran_vect = ProjectVectorOntoPlane(nu_mom_vect,beam_axis);
+    fNuMomTranMag = nu_mom_tran_vect.Mag(); 
+    TVector3 total_initial_mom_tran_vect;
+    total_initial_mom_tran_vect += nu_mom_tran_vect;
+    TVector3 total_final_mom_tran_vect_nolep_norem;
+    TVector3 total_final_mom_tran_vect_nolep_withrem;
+    TVector3 total_final_mom_tran_vect_withlep_norem;
+    TVector3 total_final_mom_tran_vect_withlep_withrem;
+    //Loop over the particles
+    for (int i_part = 0; i_part < mcList[i_mctruth]->NParticles(); i_part++){
+      const simb::MCParticle& particle = mcList[i_mctruth]->GetParticle(i_part);
+      int status = particle.StatusCode();
+      if (status == 11){ //Nucleon target
+        TVector3 target_nucleon_mom_vect = particle.Momentum(0).Vect();
+        TVector3 target_nucleon_mom_tran_vect = ProjectVectorOntoPlane(target_nucleon_mom_vect, beam_axis); 
+        total_initial_mom_tran_vect += target_nucleon_mom_tran_vect;
+        fTargNuclMomTranMag = target_nucleon_mom_tran_vect.Mag();
+      }
+      else if (status == 15){ //final nuclear remnant
+        TVector3 nuclear_rem_mom_vect = particle.Momentum(0).Vect();
+        TVector3 nuclear_rem_mom_tran_vect = ProjectVectorOntoPlane(nuclear_rem_mom_vect, beam_axis);
+        total_final_mom_tran_vect_nolep_withrem += nuclear_rem_mom_tran_vect;
+        total_final_mom_tran_vect_withlep_withrem += nuclear_rem_mom_tran_vect;
+        fNuclRemMomTranMag = nuclear_rem_mom_tran_vect.Mag();
+      }
+      else if (status == 1){ //final state particle
+        TVector3 fin_state_mom_vect = particle.Momentum(0).Vect();
+        TVector3 fin_state_mom_tran_vect = ProjectVectorOntoPlane(fin_state_mom_vect, beam_axis);
+        int pdg = particle.PdgCode();
+        if (std::abs(pdg) >= 11 && std::abs(pdg) <= 16){
+          total_final_mom_tran_vect_withlep_withrem += fin_state_mom_tran_vect;
+          total_final_mom_tran_vect_withlep_norem += fin_state_mom_tran_vect;
+          fLepMomTranMag = fin_state_mom_tran_vect.Mag();
+        }
+        else{
+          total_final_mom_tran_vect_withlep_withrem += fin_state_mom_tran_vect;
+          total_final_mom_tran_vect_withlep_norem += fin_state_mom_tran_vect;
+          total_final_mom_tran_vect_nolep_withrem += fin_state_mom_tran_vect;
+          total_final_mom_tran_vect_nolep_norem += fin_state_mom_tran_vect;
+        }
+      }
+    }
+    //Get all of the mom mags now
+    fInitalMomTranMag = total_initial_mom_tran_vect.Mag();
+    fFinalMomTranMagNoLepNoRem = total_final_mom_tran_vect_nolep_norem.Mag();
+    fFinalMomTranMagNoLepWithRem = total_final_mom_tran_vect_nolep_withrem.Mag();
+    fFinalMomTranMagWithLepNoRem = total_final_mom_tran_vect_withlep_norem.Mag();
+    fFinalMomTranMagWithLepWithRem = total_final_mom_tran_vect_withlep_withrem.Mag();
     //Also get the MCParticle according to the MCTruth object so we can match
     for (unsigned int i_part = 0; i_part < associated_particles.size(); i_part++){
       art::Ptr<simb::MCParticle> particle = associated_particles[i_part];
@@ -969,11 +1372,190 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
         fLepEndY = particle->EndPosition().Y();
         fLepEndZ = particle->EndPosition().Z();
         fLepEndT = particle->EndPosition().T();
+        break;
       }
 //      if (particle->PdgCode = fLepPDG)
     }
 
   }
+}
+
+void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
+  art::Handle< std::vector<recob::Track> > trackListHandle;
+  std::vector<art::Ptr<recob::Track> > trackList;
+  if (evt.getByLabel(fTrackModuleLabel,trackListHandle)){
+    art::fill_ptr_vector(trackList, trackListHandle);
+  }
+
+  //Get the hit list handle
+  art::Handle< std::vector<recob::Hit> > hitListHandle; 
+  std::vector<art::Ptr<recob::Hit> > hitList; 
+  if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
+    art::fill_ptr_vector(hitList, hitListHandle);
+  }
+
+  //Now make the entire PFPPArticleMap
+  art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+    std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
+    return;
+  }
+  std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
+  art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
+  lar_pandora::PFParticleMap pfparticleMap;
+  lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
+
+
+  //Get the track -> hits assns
+  art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
+
+  fNRecoTracks = trackList.size();
+  //Loop-de-loop
+  for (unsigned int i_track = 0; i_track < trackList.size(); i_track++){
+    art::Ptr<recob::Track> current_track = trackList[i_track];
+    art::Ptr<recob::PFParticle> matched_pfp = GetPFParticleMatchedToTrack(current_track, evt);
+    //Get the parent PFP of this track
+    art::Ptr<recob::PFParticle> parent_pfp = pfparticleMap[matched_pfp->Parent()];
+    //Figure out if we had a primary track
+    if (parent_pfp->PdgCode() == 12 || parent_pfp->PdgCode()==14) fRecoTrackIsPrimary[i_track] = true;
+
+    const std::vector<art::Ptr<recob::Hit> > current_track_hits = fmht.at(current_track.key());
+    fRecoTrackRecoNHits[i_track] = current_track_hits.size();
+
+
+    //Start filling some variables
+    recob::Track::Point_t trackStart, trackEnd;
+    std::tie(trackStart, trackEnd) = current_track->Extent(); 
+    fRecoTrackRecoMomX[i_track] = kDefDoub; //temp
+    fRecoTrackRecoMomY[i_track] = kDefDoub; //temp
+    fRecoTrackRecoMomZ[i_track] = kDefDoub; //temp
+    fRecoTrackRecoMomT[i_track] = kDefDoub; //temp
+    fRecoTrackRecoStartX[i_track] = trackStart.X();
+    fRecoTrackRecoStartY[i_track] = trackStart.Y();
+    fRecoTrackRecoStartZ[i_track] = trackStart.Z();
+    fRecoTrackRecoEndX[i_track] = trackEnd.X();
+    fRecoTrackRecoEndY[i_track] = trackEnd.Y();
+    fRecoTrackRecoEndZ[i_track] = trackEnd.Z();
+    if (fRecoTrackRecoEndZ[i_track] > fRecoTrackRecoStartZ[i_track]){
+      fRecoTrackRecoUpstreamX[i_track] = fRecoTrackRecoStartX[i_track];
+      fRecoTrackRecoUpstreamY[i_track] = fRecoTrackRecoStartY[i_track];
+      fRecoTrackRecoUpstreamZ[i_track] = fRecoTrackRecoStartZ[i_track];
+      fRecoTrackRecoDownstreamX[i_track] = fRecoTrackRecoEndX[i_track];
+      fRecoTrackRecoDownstreamY[i_track] = fRecoTrackRecoEndY[i_track];
+      fRecoTrackRecoDownstreamZ[i_track] = fRecoTrackRecoEndZ[i_track];
+    }
+    else{
+      fRecoTrackRecoDownstreamX[i_track] = fRecoTrackRecoStartX[i_track];
+      fRecoTrackRecoDownstreamY[i_track] = fRecoTrackRecoStartY[i_track];
+      fRecoTrackRecoDownstreamZ[i_track] = fRecoTrackRecoStartZ[i_track];
+      fRecoTrackRecoUpstreamX[i_track] = fRecoTrackRecoEndX[i_track];
+      fRecoTrackRecoUpstreamY[i_track] = fRecoTrackRecoEndY[i_track];
+      fRecoTrackRecoUpstreamZ[i_track] = fRecoTrackRecoEndZ[i_track];
+    }
+    fRecoTrackRecoLength[i_track] = current_track->Length();
+    fRecoTrackRecoCharge[i_track] = CalculateTrackCharge(current_track, current_track_hits);
+    //Now that the vertex information has been filled.  Calculate which end of th etrack is closest
+    TVector3 upstream_end(fRecoTrackRecoUpstreamX[i_track],fRecoTrackRecoUpstreamY[i_track],fRecoTrackRecoUpstreamZ[i_track]);
+    TVector3 downstream_end(fRecoTrackRecoDownstreamX[i_track],fRecoTrackRecoDownstreamY[i_track],fRecoTrackRecoDownstreamZ[i_track]);
+    TVector3 vertex_pos(fRecoTrackRecoVertexX[i_track],fRecoTrackRecoVertexY[i_track],fRecoTrackRecoVertexZ[i_track]);
+    if ((vertex_pos-upstream_end).Mag() < (vertex_pos-downstream_end).Mag()){
+      fRecoTrackRecoEndClosestToVertexX[i_track] = fRecoTrackRecoUpstreamX[i_track];
+      fRecoTrackRecoEndClosestToVertexY[i_track] = fRecoTrackRecoUpstreamY[i_track];
+      fRecoTrackRecoEndClosestToVertexZ[i_track] = fRecoTrackRecoUpstreamZ[i_track];
+    }
+    else{
+      fRecoTrackRecoEndClosestToVertexX[i_track] = fRecoTrackRecoDownstreamX[i_track];
+      fRecoTrackRecoEndClosestToVertexY[i_track] = fRecoTrackRecoDownstreamY[i_track];
+      fRecoTrackRecoEndClosestToVertexZ[i_track] = fRecoTrackRecoDownstreamZ[i_track];
+    }
+    //28/11/18 DBrailsford Fill child PFP info
+    FillChildPFPInformation(current_track, evt, fRecoTrackRecoNChildPFP[i_track], fRecoTrackRecoNChildTrackPFP[i_track], fRecoTrackRecoNChildShowerPFP[i_track]);
+    //24/07/18 DBrailsford Use the data product to get the neutrino energy
+    //fRecoTrackRecoContained[i_track] = IsTrackContained(current_track, current_track_hits, evt);
+    //fNumuRecoENu = energyRecoHandle->fNuLorentzVector.E();
+    //fNumuRecoEHad = energyRecoHandle->fHadLorentzVector.E();
+
+    //fRecoTrackRecoContained = energyRecoHandle->longestTrackContained; 
+    //if (energyRecoHandle->trackMomMethod==1){ //momentum by range was used to calculate ENu
+    //  fRecoTrackRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+    //  fNumuRecoMomLep = fRecoTrackRecoMomContained;
+    //}
+    //else if (energyRecoHandle->trackMomMethod==0){//momentum by MCS
+    //  fRecoTrackRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+    //  fNumuRecoMomLep = fRecoTrackRecoMomMCS;
+    //}
+
+    int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(current_track_hits);
+    fRecoTrackRecoCompleteness[i_track] = FDSelectionUtils::CompletenessFromTrueParticleID(current_track_hits, hitList, g4id);
+    fRecoTrackRecoHitPurity[i_track] = FDSelectionUtils::HitPurityFromTrueParticleID(current_track_hits, g4id);
+
+    art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+    const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
+    if (matched_mcparticle){
+      //Fill variables
+      fRecoTrackTruePDG[i_track] = matched_mcparticle->PdgCode();
+      if (matched_mcparticle->Mother()==0) fRecoTrackTruePrimary[i_track] = 1;
+      else fRecoTrackTruePrimary[i_track] = 0;
+      fRecoTrackTrueMomX[i_track] = matched_mcparticle->Momentum().X();
+      fRecoTrackTrueMomY[i_track] = matched_mcparticle->Momentum().Y();
+      fRecoTrackTrueMomZ[i_track] = matched_mcparticle->Momentum().Z();
+      fRecoTrackTrueMomT[i_track] = matched_mcparticle->Momentum().T();
+      fRecoTrackTrueStartX[i_track] = matched_mcparticle->Position(0).X();
+      fRecoTrackTrueStartY[i_track] = matched_mcparticle->Position(0).Y();
+      fRecoTrackTrueStartZ[i_track] = matched_mcparticle->Position(0).Z();
+      fRecoTrackTrueStartT[i_track] = matched_mcparticle->Position(0).T();
+      fRecoTrackTrueEndX[i_track] = matched_mcparticle->EndPosition().X();
+      fRecoTrackTrueEndY[i_track] = matched_mcparticle->EndPosition().Y();
+      fRecoTrackTrueEndZ[i_track] = matched_mcparticle->EndPosition().Z();
+      fRecoTrackTrueEndT[i_track] = matched_mcparticle->EndPosition().T();
+    }
+    //Now get the pid stuff
+    art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
+    std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_track.key());
+    std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+    //Get the PIDs
+    fRecoTrackMVAElectron[i_track] = mvaOutMap["electron"];
+    fRecoTrackMVAPion[i_track] = mvaOutMap["pich"];
+    fRecoTrackMVAMuon[i_track] = mvaOutMap["muon"];
+    fRecoTrackMVAProton[i_track] = mvaOutMap["proton"];
+    fRecoTrackMVAPhoton[i_track] = mvaOutMap["photon"];
+
+    //11/04/19 DBrailsford
+    //Get the pandizzle variables
+    art::Ptr<recob::PFParticle> track_pfp = GetPFParticleMatchedToTrack(current_track, evt);
+    fPandizzleAlg.ProcessPFParticle(track_pfp, evt);
+    fRecoTrackTMVAPFPMichelNHits[i_track] = (float)(fPandizzleAlg.GetIntVar("PFPMichelNHits"));
+    fRecoTrackTMVAPFPMichelElectronMVA[i_track] = fPandizzleAlg.GetFloatVar("PFPMichelElectronMVA");
+    fRecoTrackTMVAPFPMichelRecoEnergyPlane2[i_track] = fPandizzleAlg.GetFloatVar("PFPMichelRecoEnergyPlane2");
+    fRecoTrackTMVAPFPTrackDeflecAngleSD[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackDeflecAngleSD");
+    fRecoTrackTMVAPFPTrackLength[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackLength");
+    fRecoTrackTMVAPFPTrackEvalRatio[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackEvalRatio");
+    fRecoTrackTMVAPFPTrackConcentration[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackConcentration");
+    fRecoTrackTMVAPFPTrackCoreHaloRatio[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackCoreHaloRatio");
+    fRecoTrackTMVAPFPTrackConicalness[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackConicalness");
+    fRecoTrackTMVAPFPTrackdEdxStart[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackdEdxStart");
+    fRecoTrackTMVAPFPTrackdEdxEnd[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEnd");
+    fRecoTrackTMVAPFPTrackdEdxEndRatio[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEndRatio");
+    fRecoTrackTMVAPFPTrackPIDA[i_track] = fPandizzleAlg.GetFloatVar("PFPTrackPIDA");
+
+    fHookUpTMVAPFPMichelNHits = (fRecoTrackTMVAPFPMichelNHits[i_track]);
+    fHookUpTMVAPFPMichelElectronMVA = (fRecoTrackTMVAPFPMichelElectronMVA[i_track]);
+    fHookUpTMVAPFPMichelRecoEnergyPlane2 = (fRecoTrackTMVAPFPMichelRecoEnergyPlane2[i_track]);
+    fHookUpTMVAPFPTrackDeflecAngleSD = (fRecoTrackTMVAPFPTrackDeflecAngleSD[i_track]);
+    fHookUpTMVAPFPTrackLength = (fRecoTrackTMVAPFPTrackLength[i_track]);
+    fHookUpTMVAPFPTrackEvalRatio = (fRecoTrackTMVAPFPTrackEvalRatio[i_track]);
+    fHookUpTMVAPFPTrackConcentration = (fRecoTrackTMVAPFPTrackConcentration[i_track]);
+    fHookUpTMVAPFPTrackCoreHaloRatio = (fRecoTrackTMVAPFPTrackCoreHaloRatio[i_track]);
+    fHookUpTMVAPFPTrackConicalness = (fRecoTrackTMVAPFPTrackConicalness[i_track]);
+    fHookUpTMVAPFPTrackdEdxStart = (fRecoTrackTMVAPFPTrackdEdxStart[i_track]);
+    fHookUpTMVAPFPTrackdEdxEnd = (fRecoTrackTMVAPFPTrackdEdxEnd[i_track]);
+    fHookUpTMVAPFPTrackdEdxEndRatio = (fRecoTrackTMVAPFPTrackdEdxEndRatio[i_track]);
+
+    fRecoTrackPandizzleVar[i_track] = fReader.EvaluateMVA("BDTG");
+
+  }
+
+  return;
 }
 
 void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
@@ -1058,7 +1640,7 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
     fSelTrackRecoEndClosestToVertexZ = fSelTrackRecoDownstreamZ;
   }
   //28/11/18 DBrailsford Fill child PFP info
-  FillChildPFPInformation(sel_track, evt);
+  FillChildPFPInformation(sel_track, evt, fSelTrackRecoNChildPFP, fSelTrackRecoNChildTrackPFP, fSelTrackRecoNChildShowerPFP);
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
   //fSelTrackRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
   fNumuRecoENu = energyRecoHandle->fNuLorentzVector.E();
@@ -1126,6 +1708,19 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   fTMVAPFPTrackdEdxEnd = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEnd");
   fTMVAPFPTrackdEdxEndRatio = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEndRatio");
   fTMVAPFPTrackPIDA = fPandizzleAlg.GetFloatVar("PFPTrackPIDA");
+
+  fHookUpTMVAPFPMichelNHits = (fTMVAPFPMichelNHits);
+  fHookUpTMVAPFPMichelElectronMVA = (fTMVAPFPMichelElectronMVA);
+  fHookUpTMVAPFPMichelRecoEnergyPlane2 = (fTMVAPFPMichelRecoEnergyPlane2);
+  fHookUpTMVAPFPTrackDeflecAngleSD = (fTMVAPFPTrackDeflecAngleSD);
+  fHookUpTMVAPFPTrackLength = (fTMVAPFPTrackLength);
+  fHookUpTMVAPFPTrackEvalRatio = (fTMVAPFPTrackEvalRatio);
+  fHookUpTMVAPFPTrackConcentration = (fTMVAPFPTrackConcentration);
+  fHookUpTMVAPFPTrackCoreHaloRatio = (fTMVAPFPTrackCoreHaloRatio);
+  fHookUpTMVAPFPTrackConicalness = (fTMVAPFPTrackConicalness);
+  fHookUpTMVAPFPTrackdEdxStart = (fTMVAPFPTrackdEdxStart);
+  fHookUpTMVAPFPTrackdEdxEnd = (fTMVAPFPTrackdEdxEnd);
+  fHookUpTMVAPFPTrackdEdxEndRatio = (fTMVAPFPTrackdEdxEndRatio);
 
   fSelTrackPandizzleVar = fReader.EvaluateMVA("BDTG");
 }
@@ -1225,7 +1820,10 @@ void FDSelection::CCNuSelection::FillVertexInformation(art::Event const & evt){
   return;
 }
 
-void FDSelection::CCNuSelection::FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt){
+void FDSelection::CCNuSelection::FillChildPFPInformation(art::Ptr<recob::Track> const track, art::Event const & evt, int &n_child_pfp, int &n_child_track_pfp, int &n_child_shower_pfp){
+  n_child_pfp = 0;
+  n_child_track_pfp = 0;
+  n_child_shower_pfp = 0;
   //Get the PFP from the track
   art::Ptr<recob::PFParticle> matched_pfp = GetPFParticleMatchedToTrack(track, evt);
   if (!(matched_pfp.isAvailable())) return;
@@ -1242,15 +1840,15 @@ void FDSelection::CCNuSelection::FillChildPFPInformation(art::Ptr<recob::Track> 
   lar_pandora::PFParticleMap pfparticleMap;
   lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
 
-  fSelTrackRecoNChildPFP = matched_pfp->NumDaughters();
-  fSelTrackRecoNChildTrackPFP = 0;
-  fSelTrackRecoNChildShowerPFP = 0;
+  n_child_pfp = matched_pfp->NumDaughters();
+  //fSelTrackRecoNChildTrackPFP = 0;
+  //fSelTrackRecoNChildShowerPFP = 0;
   for (int i_child = 0; i_child < matched_pfp->NumDaughters(); i_child++){
     int child_id = matched_pfp->Daughter(i_child);
     art::Ptr<recob::PFParticle> child_pfp = pfparticleMap[child_id];
     int pdg = child_pfp->PdgCode();
-    if (pdg==13) fSelTrackRecoNChildTrackPFP++;
-    else if (pdg==11) fSelTrackRecoNChildShowerPFP++;
+    if (pdg==13) n_child_track_pfp++;
+    else if (pdg==11) n_child_shower_pfp++;
     else std::cout<<"FillChildPFPInformation: found a child PFP with an unexpected pdg code: " << pdg << std::endl;
   }
 
@@ -1453,7 +2051,10 @@ bool FDSelection::CCNuSelection::IsPFParticlePrimaryDaughter(art::Ptr<recob::PFP
   return false;
 }
 
-
+TVector3 FDSelection::CCNuSelection::ProjectVectorOntoPlane(TVector3 vector_to_project, TVector3 plane_norm_vector){
+  TVector3 projected_vector = vector_to_project - (vector_to_project.Dot(plane_norm_vector)/(plane_norm_vector.Mag()*plane_norm_vector.Mag()))*plane_norm_vector;
+  return projected_vector;
+}
 
 
 
