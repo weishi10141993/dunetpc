@@ -551,6 +551,10 @@ void FDSelection::PandizzleAlg::CalculateTrackDeflection(const art::Ptr<recob::T
     }
     double angle_dir_first_z_axis = direction_first.Angle(z_axis);
     TVector3 orthogonal_vector = direction_first.Cross(z_axis);
+    if (orthogonal_vector.Unit().Mag() < 0.999){
+        continue;
+    }
+
     direction_first.Rotate(angle_dir_first_z_axis, orthogonal_vector);
     direction_second.Rotate(angle_dir_first_z_axis, orthogonal_vector);
     //Now work out the angle between the vectors in th x-z plane
