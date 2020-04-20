@@ -24,8 +24,11 @@
 #include "TMVA/Reader.h"
 
 //ART
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "art/Utilities/make_tool.h" 
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
+
 //LArSoft
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"

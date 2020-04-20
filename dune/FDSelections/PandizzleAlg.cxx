@@ -390,7 +390,7 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
     return;
   }
   art::Ptr<recob::Track> mu_track = sel_pfp_tracks[0];
-  TVector3 mu_end_position = mu_track->End();
+  TVector3 mu_end_position(mu_track->End().X(), mu_track->End().Y(), mu_track->End().Z());;
 
   art::Ptr<recob::PFParticle> closest_child_pfp;
   art::Ptr<anab::MVAPIDResult> closest_child_pfp_mva_pid_result;

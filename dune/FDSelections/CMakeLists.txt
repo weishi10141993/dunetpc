@@ -1,14 +1,15 @@
 art_make( LIBRARY_NAME FDSelection
 	  LIB_LIBRARIES larcorealg_Geometry
 	  	        larcore_Geometry_Geometry_service
-		          larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
+		          larsim_Simulation nug4_ParticleNavigation lardataobj_Simulation
  	  	       larsim_MCCheater_BackTrackerService_service
          	  larsim_MCCheater_ParticleInventoryService_service
 	  	        lardata_Utilities
 	  	        larevt_Filters
 	  	        lardataobj_RawData
 	  	        lardataobj_RecoBase
-	  	        lardata_RecoObjects larreco_Deprecated
+	  	        lardata_RecoObjects 
+#larreco_Deprecated
 	  	        larreco_RecoAlg
          			larreco_Calorimetry
 	  	        larpandora_LArPandoraInterface

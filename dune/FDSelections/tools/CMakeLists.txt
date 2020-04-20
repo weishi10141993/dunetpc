@@ -1,10 +1,10 @@
 simple_plugin(LongestRecoTrackSelector "tool"
     	  	        lardataobj_RecoBase
                 ${ROOT_BASIC_LIB_LIST}
-#                ${ART_FRAMEWORK_CORE}
-${ART_FRAMEWORK_PRINCIPAL}
-# 	  	           art_Persistency_Common canvas
-# 	  	           art_Persistency_Provenance canvas
+                ${ART_FRAMEWORK_PRINCIPAL}
+                ${ART_FRAMEWORK_CORE}
+ 	  	           art_Persistency_Common canvas
+ 	  	           art_Persistency_Provenance canvas
  	  	           art_Utilities canvas
 
              )
@@ -15,6 +15,10 @@ simple_plugin(LongestRecoVertexTrackSelector "tool"
     	  	        larpandora_LArPandoraInterface
                 ${ROOT_BASIC_LIB_LIST}
                 ${ART_FRAMEWORK_PRINCIPAL}
+                ${ART_FRAMEWORK_CORE}
+ 	  	           art_Persistency_Common canvas
+ 	  	           art_Persistency_Provenance canvas
+
  	  	           art_Utilities canvas
              )
 
@@ -23,6 +27,10 @@ simple_plugin(MuonMVARecoTrackSelector "tool"
     	  	        lardataobj_RecoBase
                 ${ROOT_BASIC_LIB_LIST}
                 ${ART_FRAMEWORK_PRINCIPAL}
+                ${ART_FRAMEWORK_CORE}
+ 	  	           art_Persistency_Common canvas
+ 	  	           art_Persistency_Provenance canvas
+
  	  	           art_Utilities canvas
 
              )
@@ -35,6 +43,10 @@ simple_plugin(HighestEnergyRecoShowerSelector "tool"
                 ${ROOT_BASIC_LIB_LIST}
                 ${ART_FRAMEWORK_PRINCIPAL}
                 ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                ${ART_FRAMEWORK_CORE}
+ 	  	           art_Persistency_Common canvas
+ 	  	           art_Persistency_Provenance canvas
+
  	  	           art_Utilities canvas
              )
 
@@ -47,5 +59,9 @@ simple_plugin(HighestEnergyRecoVertexShowerSelector "tool"
                 ${ROOT_BASIC_LIB_LIST}
                 ${ART_FRAMEWORK_PRINCIPAL}
                 ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                ${ART_FRAMEWORK_CORE}
+ 	  	           art_Persistency_Common canvas
+ 	  	           art_Persistency_Provenance canvas
+
  	  	           art_Utilities canvas
              )
