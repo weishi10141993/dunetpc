@@ -27,8 +27,9 @@ art_make( LIBRARY_NAME FDSelection
           	        ${ROOT_GDML}
 	  	        ${ROOT_BASIC_LIB_LIST}
             ${ROOT_TMVA}
-
+            dune_TrackPID_tf
 MODULE_LIBRARIES FDSelection
+dune_TrackPID
           	           ${ART_FRAMEWORK_CORE}
 	  	           ${ART_FRAMEWORK_PRINCIPAL}
 		       	   ${ART_FRAMEWORK_SERVICES_REGISTRY}
