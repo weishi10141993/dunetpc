@@ -48,6 +48,8 @@
 
 //DUNE
 #include "dune/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
+#include "dune/TrackPID/CTPHelper.h"
+#include "dune/TrackPID/CTPResult.h"
 
 //Custom
 //#include "PIDAnaAlg.h"
@@ -128,6 +130,7 @@ private:
   PandizzleAlg fPandizzleAlg;
   calo::CalorimetryAlg fCalorimetryAlg;
   shower::ShowerEnergyAlg fShowerEnergyAlg;
+  ctp::CTPHelper fConvTrackPID;
 
 
   //Tools
@@ -566,8 +569,10 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fPandizzleAlg(pset) ,
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")),
+  fConvTrackPID(pset.get<fhicl::ParameterSet>("ctpHelper")),
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
+  fNVertexParticles(0),
   fNRecoTracks(0),
   fNRecoShowers(0),
   fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
@@ -1942,6 +1947,10 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   fHookUpTMVAPFPTrackdEdxEndRatio = (fTMVAPFPTrackdEdxEndRatio);
 
   fSelTrackPandizzleVar = fReader.EvaluateMVA("BDTG");
+
+  //20/04/20 DBrailsford
+  //Get the DeepPan variables
+  std::cout<<"The DeepPan mu score is: " << fConvTrackPID.RunConvolutionalTrackPID(track_pfp,evt).GetMuonScore() << std::endl;
 }
 
 double FDSelection::CCNuSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
