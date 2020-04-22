@@ -270,6 +270,10 @@ private:
   double fSelTrackMVAPhoton;
   //Pandizzle var
   double fSelTrackPandizzleVar;
+  //DeepPan vars
+  double fSelTrackDeepPanMuVar;
+  double fSelTrackDeepPanPiVar;
+  double fSelTrackDeepPanProtonVar;
 
   //All tracks
   int fNRecoTracks;
@@ -335,6 +339,9 @@ private:
   double fRecoTrackMVAPhoton[kDefMaxNRecoTracks];
   //Pandizzle var
   double fRecoTrackPandizzleVar[kDefMaxNRecoTracks];
+  double fRecoTrackDeepPanMuVar[kDefMaxNRecoTracks];
+  double fRecoTrackDeepPanPiVar[kDefMaxNRecoTracks];
+  double fRecoTrackDeepPanProtonVar[kDefMaxNRecoTracks];
   float fRecoTrackTMVAPFPMichelNHits[kDefMaxNRecoTracks];
   float fRecoTrackTMVAPFPMichelElectronMVA[kDefMaxNRecoTracks];
   float fRecoTrackTMVAPFPMichelRecoEnergyPlane2[kDefMaxNRecoTracks];
@@ -759,6 +766,9 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelTrackMVAProton",&fSelTrackMVAProton);
     fTree->Branch("SelTrackMVAPhoton",&fSelTrackMVAPhoton);
     fTree->Branch("SelTrackPandizzleVar",&fSelTrackPandizzleVar);
+    fTree->Branch("SelTrackDeepPanMuVar",&fSelTrackDeepPanMuVar);
+    fTree->Branch("SelTrackDeepPanPiVar",&fSelTrackDeepPanPiVar);
+    fTree->Branch("SelTrackDeepPanProtonVar",&fSelTrackDeepPanProtonVar);
     fTree->Branch("TMVAPFPMichelNHits",&fTMVAPFPMichelNHits);
     fTree->Branch("TMVAPFPMichelElectronMVA",&fTMVAPFPMichelElectronMVA);
     fTree->Branch("TMVAPFPMichelRecoEnergyPlane2",&fTMVAPFPMichelRecoEnergyPlane2);
@@ -831,6 +841,9 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoTrackMVAProton",fRecoTrackMVAProton,"RecoTrackMVAProton[NRecoTracks]/D");
     fTree->Branch("RecoTrackMVAPhoton",fRecoTrackMVAPhoton,"RecoTrackMVAPhoton[NRecoTracks]/D");
     fTree->Branch("RecoTrackPandizzleVar",fRecoTrackPandizzleVar,"RecoTrackPandizzleVar[NRecoTracks]/D");
+    fTree->Branch("RecoTrackDeepPanMuVar",fRecoTrackDeepPanMuVar,"RecoTrackDeepPanMuVar[NRecoTracks]/D");
+    fTree->Branch("RecoTrackDeepPanPiVar",fRecoTrackDeepPanPiVar,"RecoTrackDeepPanPiVar[NRecoTracks]/D");
+    fTree->Branch("RecoTrackDeepPanProtonVar",fRecoTrackDeepPanProtonVar,"RecoTrackDeepPanProtonVar[NRecoTracks]/D");
     fTree->Branch("RecoTrackTMVAPFPMichelNHits",fRecoTrackTMVAPFPMichelNHits,"RecoTrackTMVAPFPMichelNHits[NRecoTracks]/F");
     fTree->Branch("RecoTrackTMVAPFPMichelElectronMVA",fRecoTrackTMVAPFPMichelElectronMVA,"RecoTrackTMVAPFPMichelElectronMVA[NRecoTracks]/F");
     fTree->Branch("RecoTrackTMVAPFPMichelRecoEnergyPlane2",fRecoTrackTMVAPFPMichelRecoEnergyPlane2,"RecoTrackTMVAPFPMichelRecoEnergyPlane2[NRecoTracks]/F");
@@ -1157,6 +1170,9 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackMVAPhoton = kDefDoub;
   //Pandizzle
   fSelTrackPandizzleVar = kDefDoub;
+  fSelTrackDeepPanMuVar = kDefDoub;
+  fSelTrackDeepPanPiVar = kDefDoub;
+  fSelTrackDeepPanProtonVar = kDefDoub;
   fTMVAPFPMichelNHits            = kDefDoub;
   fTMVAPFPMichelElectronMVA      = kDefDoub;
   fTMVAPFPMichelRecoEnergyPlane2 = kDefDoub;
@@ -1230,6 +1246,9 @@ void FDSelection::CCNuSelection::Reset()
     fRecoTrackMVAProton[i_recotrack] = kDefDoub;
     fRecoTrackMVAPhoton[i_recotrack] = kDefDoub;
     fRecoTrackPandizzleVar[i_recotrack] = kDefDoub;
+    fRecoTrackDeepPanMuVar[i_recotrack] = kDefDoub;
+    fRecoTrackDeepPanPiVar[i_recotrack] = kDefDoub;
+    fRecoTrackDeepPanProtonVar[i_recotrack] = kDefDoub;
     fRecoTrackTMVAPFPMichelNHits[i_recotrack] = kDefDoub;
     fRecoTrackTMVAPFPMichelElectronMVA[i_recotrack] = kDefDoub;
     fRecoTrackTMVAPFPMichelRecoEnergyPlane2[i_recotrack] = kDefDoub;
@@ -1715,7 +1734,6 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
     if (matched_mcparticle){
-      std::cout<<"PDG: " << matched_mcparticle->PdgCode() << "  NPts: " << matched_mcparticle->NumberTrajectoryPoints() << std::endl;
       //Fill variables
       fRecoTrackTruePDG[i_track] = matched_mcparticle->PdgCode();
       if (matched_mcparticle->Mother()==0) fRecoTrackTruePrimary[i_track] = 1;
@@ -1777,6 +1795,14 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
 
     fRecoTrackPandizzleVar[i_track] = fReader.EvaluateMVA("BDTG");
 
+    ////20/04/20 DBrailsford
+    ////Get the DeepPan variables
+    ctp::CTPResult deepPanPIDResult = fConvTrackPID.RunConvolutionalTrackPID(track_pfp, evt);
+    if (deepPanPIDResult.IsValid()){
+        fRecoTrackDeepPanMuVar[i_track] = deepPanPIDResult.GetMuonScore();
+        fRecoTrackDeepPanPiVar[i_track] = deepPanPIDResult.GetPionScore();
+        fRecoTrackDeepPanProtonVar[i_track] = deepPanPIDResult.GetProtonScore();
+    }
   }
 
   return;
@@ -1950,7 +1976,12 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
 
   //20/04/20 DBrailsford
   //Get the DeepPan variables
-  std::cout<<"The DeepPan mu score is: " << fConvTrackPID.RunConvolutionalTrackPID(track_pfp,evt).GetMuonScore() << std::endl;
+  ctp::CTPResult deepPanPIDResult = fConvTrackPID.RunConvolutionalTrackPID(track_pfp, evt);
+  if (deepPanPIDResult.IsValid()){
+      fSelTrackDeepPanMuVar = deepPanPIDResult.GetMuonScore();
+      fSelTrackDeepPanPiVar = deepPanPIDResult.GetPionScore();
+      fSelTrackDeepPanProtonVar = deepPanPIDResult.GetProtonScore();
+  }
 }
 
 double FDSelection::CCNuSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
