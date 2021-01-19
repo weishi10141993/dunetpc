@@ -4,9 +4,8 @@
 #include "Math/GenVector/PositionVector3D.h" 
 #include "Math/GenVector/PxPyPzE4D.h" 
 #include "Math/GenVector/LorentzVector.h" 
-//#include "GuiTypes.h"
 
-using Point3_t = ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<double>>;
+using Point_t = ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<double>>;
 using Position4_t = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>;
 
 namespace dune
@@ -19,7 +18,7 @@ namespace dune
 //    double nuEnergy;
 //    double lepEnergy;
 //    double hadEnergy;
-    Point3_t fRecoVertex;
+    Point_t fRecoVertex;
     Position4_t fNuLorentzVector;
     Position4_t fLepLorentzVector;
     Position4_t fHadLorentzVector;

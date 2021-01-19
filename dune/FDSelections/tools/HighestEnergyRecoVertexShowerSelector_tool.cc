@@ -9,7 +9,7 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestEnergyRecoVertexShowerSelector:
   if (!evt.getByLabel(fShowerModuleLabel, showerListHandle)){
     return myshower;
   }
-  art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
+  //art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
 
 
   art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
@@ -51,10 +51,11 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestEnergyRecoVertexShowerSelector:
       continue;
     }
     const art::Ptr<recob::Shower> shower = pfp_shower_vector[0];
-    const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(shower.key());
+    //const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(shower.key());
     std::map<int,double> showerEnergy;
     for (unsigned int plane = 0; plane < geom->MaxPlanes(); ++plane)
-      showerEnergy[plane] = fShowerEnergyAlg.ShowerEnergy(showerHits, plane);
+      showerEnergy[plane] = shower->Energy()[plane];
+      //showerEnergy[plane] = fShowerEnergyAlg.ShowerEnergy(showerHits, plane);
     int best_plane = -1;
     double highest_energy_plane = 0;
     for (std::map<int,double>::const_iterator showerEnergyIt = showerEnergy.begin(); showerEnergyIt != showerEnergy.end(); ++showerEnergyIt) {

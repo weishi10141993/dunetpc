@@ -9,7 +9,7 @@
 #include "canvas/Persistency/Common/FindManyP.h"
 //LArSoft
 #include "larcore/Geometry/Geometry.h"
-#include "larreco/RecoAlg/ShowerEnergyAlg.h"
+//#include "larreco/RecoAlg/ShowerEnergyAlg.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 //CUSTOM
@@ -21,14 +21,14 @@ namespace FDSelectionTools{
       explicit HighestEnergyRecoVertexShowerSelector(fhicl::ParameterSet const& ps) 
         :
         fShowerModuleLabel(ps.get< std::string> ("ModuleLabels.ShowerModuleLabel")),
-        fPFParticleModuleLabel(ps.get< std::string> ("ModuleLabels.PFParticleModuleLabel")),
-        fShowerEnergyAlg(ps.get<fhicl::ParameterSet>("ShowerEnergyAlg")) {};
+        fPFParticleModuleLabel(ps.get< std::string> ("ModuleLabels.PFParticleModuleLabel")) {};
+        //fShowerEnergyAlg(ps.get<fhicl::ParameterSet>("ShowerEnergyAlg")) {};
 
     private:
       art::Ptr<recob::Shower> SelectShower(art::Event const & evt) override;
       std::string fShowerModuleLabel;
       std::string fPFParticleModuleLabel;
-      shower::ShowerEnergyAlg fShowerEnergyAlg;
+      //shower::ShowerEnergyAlg fShowerEnergyAlg;
 
   };
 }
