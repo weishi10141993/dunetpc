@@ -35,20 +35,20 @@ simple_plugin(MuonMVARecoTrackSelector "tool"
 
              )
 
-simple_plugin(HighestEnergyRecoShowerSelector "tool"
-    	  	        lardataobj_RecoBase
-                larcorealg_Geometry
-                larcore_Geometry_Geometry_service
-                larreco_RecoAlg
-                ${ROOT_BASIC_LIB_LIST}
-                ${ART_FRAMEWORK_PRINCIPAL}
-                ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                ${ART_FRAMEWORK_CORE}
- 	  	           art_Persistency_Common canvas
- 	  	           art_Persistency_Provenance canvas
-
- 	  	           art_Utilities canvas
-             )
+#simple_plugin(HighestEnergyRecoShowerSelector "tool"
+#    	  	        lardataobj_RecoBase
+#                larcorealg_Geometry
+#                larcore_Geometry_Geometry_service
+#                larreco_RecoAlg
+#                ${ROOT_BASIC_LIB_LIST}
+#                ${ART_FRAMEWORK_PRINCIPAL}
+#                ${ART_FRAMEWORK_SERVICES_REGISTRY}
+#                ${ART_FRAMEWORK_CORE}
+# 	  	           art_Persistency_Common canvas
+# 	  	           art_Persistency_Provenance canvas
+#
+# 	  	           art_Utilities canvas
+#             )
 
 simple_plugin(HighestEnergyRecoVertexShowerSelector "tool"
     	  	        lardataobj_RecoBase
@@ -64,4 +64,5 @@ simple_plugin(HighestEnergyRecoVertexShowerSelector "tool"
  	  	           art_Persistency_Provenance canvas
 
  	  	           art_Utilities canvas
+                dune_AnaUtils
              )

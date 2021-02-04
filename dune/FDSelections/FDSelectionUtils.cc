@@ -1,6 +1,7 @@
 #include "FDSelectionUtils.h"
 
 
+/*
 int FDSelectionUtils::TrueParticleID(const art::Ptr<recob::Hit> hit, bool rollup_unsaved_ids) {
   std::map<int,double> id_to_energy_map;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
@@ -109,16 +110,17 @@ int FDSelectionUtils::TrueParticleIDFromTotalRecoHits(const std::vector<art::Ptr
   return objectTrack;
 }
 
+*/
 
-double FDSelectionUtils::CompletenessFromTrueParticleID(const std::vector<art::Ptr<recob::Hit> >& selected_hits, const std::vector<art::Ptr<recob::Hit> >& all_hits, int track_id){
+double FDSelectionUtils::CompletenessFromTrueParticleID(detinfo::DetectorClocksData const& clockData, const std::vector<art::Ptr<recob::Hit> >& selected_hits, const std::vector<art::Ptr<recob::Hit> >& all_hits, int track_id){
   int num_matches_in_sel_hits = 0;
   int num_matches_in_all_hits = 0;
   for (unsigned int i_hit = 0; i_hit < selected_hits.size(); i_hit++){
-    int matched_id = TrueParticleID(selected_hits[i_hit]); 
+    int matched_id = TruthMatchUtils::TrueParticleID(clockData, selected_hits[i_hit], 1); 
     if (matched_id==track_id) num_matches_in_sel_hits++;
   }
   for (unsigned int i_hit = 0; i_hit < all_hits.size(); i_hit++){
-    int matched_id = TrueParticleID(all_hits[i_hit]); 
+    int matched_id = TruthMatchUtils::TrueParticleID(clockData, all_hits[i_hit], 1); 
     if (matched_id==track_id) num_matches_in_all_hits++;
   }
 
@@ -127,10 +129,10 @@ double FDSelectionUtils::CompletenessFromTrueParticleID(const std::vector<art::P
   return completeness;
 }
 
-double FDSelectionUtils::HitPurityFromTrueParticleID(const std::vector<art::Ptr<recob::Hit> >& selected_hits, int track_id){
+double FDSelectionUtils::HitPurityFromTrueParticleID(detinfo::DetectorClocksData const& clockData, const std::vector<art::Ptr<recob::Hit> >& selected_hits, int track_id){
   int num_matches_in_sel_hits = 0;
   for (unsigned int i_hit = 0; i_hit < selected_hits.size(); i_hit++){
-    int matched_id = TrueParticleID(selected_hits[i_hit]); 
+    int matched_id = TruthMatchUtils::TrueParticleID(clockData, selected_hits[i_hit], 1); 
     if (matched_id==track_id) num_matches_in_sel_hits++;
   }
   double hit_purity = 0;

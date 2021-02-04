@@ -1,4 +1,5 @@
 #include "HighestEnergyRecoVertexShowerSelector.h"
+#include "dune/AnaUtils/DUNEAnaShowerUtils.h"
 
 
 art::Ptr<recob::Shower> FDSelectionTools::HighestEnergyRecoVertexShowerSelector::SelectShower(art::Event const & evt){
@@ -53,8 +54,13 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestEnergyRecoVertexShowerSelector:
     const art::Ptr<recob::Shower> shower = pfp_shower_vector[0];
     //const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(shower.key());
     std::map<int,double> showerEnergy;
-    for (unsigned int plane = 0; plane < geom->MaxPlanes(); ++plane)
-      showerEnergy[plane] = shower->Energy()[plane];
+    if (shower->Energy().size() > 0)
+    {
+        for (unsigned int plane = 0; plane < geom->MaxPlanes(); ++plane)
+          showerEnergy[plane] = shower->Energy()[plane];
+    }
+    else 
+        showerEnergy[2] = dune_ana::DUNEAnaShowerUtils::GetHits(shower, evt, "pandoraShowerLegacy").size();
       //showerEnergy[plane] = fShowerEnergyAlg.ShowerEnergy(showerHits, plane);
     int best_plane = -1;
     double highest_energy_plane = 0;

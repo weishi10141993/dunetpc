@@ -13,7 +13,7 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestEnergyRecoShowerSelector::Selec
     return myshower;
   }
 
-  art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
+  //art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
 
   // Get the highest energy shower
   int i_energyist_shower = -1;
@@ -21,8 +21,8 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestEnergyRecoShowerSelector::Selec
   art::ServiceHandle<geo::Geometry> geom;
 
   for (std::vector<art::Ptr<recob::Shower> >::const_iterator showerIt = showerList.begin(); showerIt != showerList.end(); ++showerIt) {
-    const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(showerIt->key());
-    std::map<int,double> showerEnergy;
+    //const std::vector<art::Ptr<recob::Hit> > showerHits = fmhs.at(showerIt->key());
+    //std::map<int,double> showerEnergy;
     for (unsigned int plane = 0; plane < geom->MaxPlanes(); ++plane)
       showerEnergy[plane] = fShowerEnergyAlg.ShowerEnergy(showerHits, plane);
     int best_plane = -1;

@@ -43,13 +43,15 @@
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
-#include "larreco/RecoAlg/ShowerEnergyAlg.h"
+//#include "larreco/RecoAlg/ShowerEnergyAlg.h"
 
+#include "larsim/Utils/TruthMatchUtils.h"
 
 //DUNE
 #include "dune/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
-#include "dune/TrackPID/CTPHelper.h"
-#include "dune/TrackPID/CTPResult.h"
+#include "dune/TrackPID/algorithms/CTPHelper.h"
+#include "dune/AnaUtils/DUNEAnaHitUtils.h"
+#include "dune/TrackPID/products/CTPResult.h"
 
 //Custom
 //#include "PIDAnaAlg.h"
@@ -102,7 +104,7 @@ private:
   void FillVertexInformation(art::Event const & evt); //Grab the vertex parameters 
   void GetRecoTrackInfo(art::Event const & evt); //Fill the reco track arrays
   void RunTrackSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
-  double CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
+  //double CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
   bool IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt); // check if the track is contained in the detector
   art::Ptr<recob::PFParticle> GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & evt);
   art::Ptr<recob::PFParticle> GetPFParticleMatchedToShower(art::Ptr<recob::Shower> const shower, art::Event const & evt);
@@ -116,7 +118,7 @@ private:
   //Shower stuff
   void GetRecoShowerInfo(art::Event const & evt); //Fill the reco shower arrays
   void RunShowerSelection(art::Event const & evt);  //Run the selection and dump relevant info to the truee
-  double CalculateShowerCharge(art::Ptr<recob::Shower> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
+  //double CalculateShowerCharge(art::Ptr<recob::Shower> const track, std::vector< art::Ptr< recob::Hit> > const track_hits); //Calculate hit charge on track as measured by the collection plane
   bool IsPFParticlePrimaryDaughter(art::Ptr<recob::PFParticle> const & pfparticle, std::vector<art::Ptr<recob::PFParticle > > const & pfparticles);
 
   TVector3 ProjectVectorOntoPlane(TVector3 vector_to_project, TVector3 plane_norm_vector); //Returns a projection o a vector onto a plane
@@ -127,9 +129,9 @@ private:
 
   //Algs
   //PIDAnaAlg fPIDAnaAlg;
-  PandizzleAlg fPandizzleAlg;
+  //PandizzleAlg fPandizzleAlg;
   calo::CalorimetryAlg fCalorimetryAlg;
-  shower::ShowerEnergyAlg fShowerEnergyAlg;
+  //shower::ShowerEnergyAlg fShowerEnergyAlg;
   ctp::CTPHelper fConvTrackPID;
 
 
@@ -414,7 +416,6 @@ private:
   double fSelShowerRecoEndClosestToVertexX;
   double fSelShowerRecoEndClosestToVertexY;
   double fSelShowerRecoEndClosestToVertexZ;
-  double fSelShowerRecoLength;
   bool   fSelShowerRecoContained;
   double fSelShowerRecoCharge;
   double fSelShowerRecoMomMCS;
@@ -429,7 +430,10 @@ private:
   double fSelShowerRecoDirX;
   double fSelShowerRecoDirY;
   double fSelShowerRecoDirZ;
-  double fSelShowerRecodEdx;
+  double fSelShowerRecodEdx[3];
+  int fSelShowerRecoBestPlane;
+  double fSelShowerRecoLength;
+  double fSelShowerRecoOpeningAngle;
   bool fSelShowerRecoIsPrimaryPFPDaughter;
   //MVA bits
   double fSelShowerMVAElectron;
@@ -481,7 +485,6 @@ private:
   double fRecoShowerRecoEndClosestToVertexX[kDefMaxNRecoShowers];
   double fRecoShowerRecoEndClosestToVertexY[kDefMaxNRecoShowers];
   double fRecoShowerRecoEndClosestToVertexZ[kDefMaxNRecoShowers];
-  double fRecoShowerRecoLength[kDefMaxNRecoShowers];
   bool   fRecoShowerRecoContained[kDefMaxNRecoShowers];
   double fRecoShowerRecoCharge[kDefMaxNRecoShowers];
   double fRecoShowerRecoMomMCS[kDefMaxNRecoShowers];
@@ -496,7 +499,10 @@ private:
   double fRecoShowerRecoDirX[kDefMaxNRecoShowers];
   double fRecoShowerRecoDirY[kDefMaxNRecoShowers];
   double fRecoShowerRecoDirZ[kDefMaxNRecoShowers];
-  double fRecoShowerRecodEdx[kDefMaxNRecoShowers];
+  double fRecoShowerRecodEdx[kDefMaxNRecoShowers][3];
+  int fRecoShowerRecoBestPlane[kDefMaxNRecoShowers];
+  double fRecoShowerRecoLength[kDefMaxNRecoShowers];
+  double fRecoShowerRecoOpeningAngle[kDefMaxNRecoShowers];
   bool fRecoShowerRecoIsPrimaryPFPDaughter[kDefMaxNRecoShowers];
   double fRecoShowerMVAElectron[kDefMaxNRecoShowers];
   double fRecoShowerMVAPion[kDefMaxNRecoShowers];
@@ -573,9 +579,9 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
   //fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
-  fPandizzleAlg(pset) ,
+  //fPandizzleAlg(pset) ,
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
-  fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")),
+  //fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")),
   fConvTrackPID(pset.get<fhicl::ParameterSet>("ctpHelper")),
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
@@ -619,6 +625,8 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
 
 void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 {
+
+  Reset(); //Reset at the start of the event
   //Get the generic stuff that can be pulled from the top of the record
   fRun = evt.run();
   fSubRun = evt.subRun();
@@ -635,10 +643,9 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
 
   //fPIDAnaAlg.Run(evt);
-  fPandizzleAlg.Run(evt);
+  //fPandizzleAlg.Run(evt);
 
   fTree->Fill();
-  Reset(); //Reset at the end of the event
 }
 
 void FDSelection::CCNuSelection::beginJob()
@@ -897,7 +904,6 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelShowerRecoEndClosestToVertexX",&fSelShowerRecoEndClosestToVertexX);
     fTree->Branch("SelShowerRecoEndClosestToVertexY",&fSelShowerRecoEndClosestToVertexY);
     fTree->Branch("SelShowerRecoEndClosestToVertexZ",&fSelShowerRecoEndClosestToVertexZ);
-    fTree->Branch("SelShowerRecoLength",&fSelShowerRecoLength);
     fTree->Branch("SelShowerRecoContained",&fSelShowerRecoContained);
     fTree->Branch("SelShowerRecoCharge",&fSelShowerRecoCharge);
     fTree->Branch("SelShowerRecoMomMCS",&fSelShowerRecoMomMCS);
@@ -912,7 +918,10 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelShowerRecoDirX",&fSelShowerRecoDirX);
     fTree->Branch("SelShowerRecoDirY",&fSelShowerRecoDirY);
     fTree->Branch("SelShowerRecoDirZ",&fSelShowerRecoDirZ);
-    fTree->Branch("SelShowerRecodEdx",&fSelShowerRecodEdx);
+    fTree->Branch("SelShowerRecodEdx",&fSelShowerRecodEdx,"SelShowerRecodEdx[3]/D");
+    fTree->Branch("SelShowerRecoBestPlane",&fSelShowerRecoBestPlane);
+    fTree->Branch("SelShowerRecoLength",&fSelShowerRecoLength);
+    fTree->Branch("SelShowerRecoOpeningAngle",&fSelShowerRecoOpeningAngle);
     fTree->Branch("SelShowerRecoIsPrimaryPFPDaughter",&fSelShowerRecoIsPrimaryPFPDaughter);
     fTree->Branch("SelShowerMVAElectron",&fSelShowerMVAElectron);
     fTree->Branch("SelShowerMVAPion",&fSelShowerMVAPion);
@@ -961,7 +970,6 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoShowerRecoEndClosestToVertexX",fRecoShowerRecoEndClosestToVertexX,"RecoShowerRecoEndClosestToVertexX[NRecoShowers]/D");
     fTree->Branch("RecoShowerRecoEndClosestToVertexY",fRecoShowerRecoEndClosestToVertexY,"RecoShowerRecoEndClosestToVertexY[NRecoShowers]/D");
     fTree->Branch("RecoShowerRecoEndClosestToVertexZ",fRecoShowerRecoEndClosestToVertexZ,"RecoShowerRecoEndClosestToVertexZ[NRecoShowers]/D");
-    fTree->Branch("RecoShowerRecoLength",fRecoShowerRecoLength,"RecoShowerRecoLength[NRecoShowers]/D");
     fTree->Branch("fRecoShowerRecoContained",fRecoShowerRecoContained,"fRecoShowerRecoContained[NRecoShowers]/O");
     fTree->Branch("RecoShowerRecoCharge",fRecoShowerRecoCharge,"RecoShowerRecoCharge[NRecoShowers]/D");
     fTree->Branch("RecoShowerRecoMomMCS",fRecoShowerRecoMomMCS,"RecoShowerRecoMomMCS[NRecoShowers]/D");
@@ -976,7 +984,10 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoShowerRecoDirX",fRecoShowerRecoDirX,"RecoShowerRecoDirX[NRecoShowers]/D");
     fTree->Branch("RecoShowerRecoDirY",fRecoShowerRecoDirY,"RecoShowerRecoDirY[NRecoShowers]/D");
     fTree->Branch("RecoShowerRecoDirZ",fRecoShowerRecoDirZ,"RecoShowerRecoDirZ[NRecoShowers]/D");
-    fTree->Branch("RecoShowerRecodEdx",fRecoShowerRecodEdx,"RecoShowerRecodEdx[NRecoShowers]/D");
+    fTree->Branch("RecoShowerRecodEdx",fRecoShowerRecodEdx,"RecoShowerRecodEdx[NRecoShowers][3]/D");
+    fTree->Branch("RecoShowerRecoBestPlane",&fRecoShowerRecoBestPlane,"RecoShowerRecoBestPlane[3]/I");
+    fTree->Branch("RecoShowerRecoLength",&fRecoShowerRecoLength,"RecoShowerRecoLength[3]/D");
+    fTree->Branch("RecoShowerRecoOpeningAngle",&fRecoShowerRecoOpeningAngle,"RecoShowerRecoOpeningAngle[3]/D");
     fTree->Branch("RecoShowerRecoIsPrimaryPFPDaughter",fRecoShowerRecoIsPrimaryPFPDaughter,"RecoShowerRecoIsPrimaryPFPDaughter[NRecoShowers]/O");
     fTree->Branch("RecoShowerMVAElectron",fRecoShowerMVAElectron,"RecoShowerMVAElectron[NRecoShowers]/D");
     fTree->Branch("RecoShowerMVAPion",fRecoShowerMVAPion,"RecoShowerMVAPion[NRecoShowers]/D");
@@ -1071,7 +1082,7 @@ void FDSelection::CCNuSelection::Reset()
   fNProtons = 0;
   fNNeutrons = 0;
   fNOther = 0;
-  for (int i_vertexparticle = 0; i_vertexparticle < fNVertexParticles; i_vertexparticle++){
+  for (int i_vertexparticle = 0; i_vertexparticle < (fNVertexParticles == 0 ? kDefMaxNTrueVertexParticles : fNVertexParticles); i_vertexparticle++){
     fVertexParticleIsGHEP[i_vertexparticle] = 0;
     fVertexParticlePDG[i_vertexparticle] = kDefInt;
     fVertexParticleStatus[i_vertexparticle] = kDefInt;
@@ -1187,7 +1198,7 @@ void FDSelection::CCNuSelection::Reset()
   fTMVAPFPTrackdEdxEndRatio      = kDefDoub;
   fTMVAPFPTrackPIDA              = kDefDoub;
 
-  for (int i_recotrack = 0; i_recotrack < fNRecoTracks; i_recotrack++){
+  for (int i_recotrack = 0; i_recotrack < (fNRecoTracks == 0 ? kDefMaxNRecoTracks : fNRecoTracks); i_recotrack++){
     fRecoTrackIsPrimary[i_recotrack] = false;
     fRecoTrackTruePDG[i_recotrack] = kDefInt;
     fRecoTrackTruePrimary[i_recotrack] = false;
@@ -1313,7 +1324,6 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerRecoEndClosestToVertexX = kDefDoub;
   fSelShowerRecoEndClosestToVertexY = kDefDoub;
   fSelShowerRecoEndClosestToVertexZ = kDefDoub;
-  fSelShowerRecoLength = kDefDoub;
   fSelShowerRecoContained = 0;
   fSelShowerRecoCharge = kDefDoub;
   fSelShowerRecoMomMCS = kDefDoub;
@@ -1328,7 +1338,9 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerRecoDirX = kDefDoub;
   fSelShowerRecoDirY = kDefDoub;
   fSelShowerRecoDirZ = kDefDoub;
-  fSelShowerRecodEdx = kDefDoub;
+  fSelShowerRecoBestPlane = kDefInt;
+  fSelShowerRecoLength = kDefDoub;
+  fSelShowerRecoOpeningAngle = kDefDoub;
   fSelShowerRecoIsPrimaryPFPDaughter = 0;
   //MVA bits
   fSelShowerMVAElectron = kDefDoub;
@@ -1336,9 +1348,13 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerMVAMuon = kDefDoub;
   fSelShowerMVAProton = kDefDoub;
   fSelShowerMVAPhoton = kDefDoub;
-  for (int i_plane = 0; i_plane < 3; i_plane++) fSelShowerRecoEnergy[i_plane] = kDefDoub;
+  for (int i_plane = 0; i_plane < 3; i_plane++) 
+  {
+      fSelShowerRecodEdx[i_plane] = kDefDoub;
+      fSelShowerRecoEnergy[i_plane] = kDefDoub;
+  }
   //All shower bits
-  for (int i_shower = 0; i_shower < fNRecoShowers; i_shower++){
+  for (int i_shower = 0; i_shower < (fNRecoShowers == 0 ? kDefMaxNRecoShowers : fNRecoShowers); i_shower++){
     fRecoShowerTruePDG[i_shower] = kDefInt;
     fRecoShowerTruePrimary[i_shower] = false;
     fRecoShowerTrueMomX[i_shower] = kDefDoub;
@@ -1379,7 +1395,6 @@ void FDSelection::CCNuSelection::Reset()
     fRecoShowerRecoEndClosestToVertexX[i_shower] = kDefDoub;
     fRecoShowerRecoEndClosestToVertexY[i_shower] = kDefDoub;
     fRecoShowerRecoEndClosestToVertexZ[i_shower] = kDefDoub;
-    fRecoShowerRecoLength[i_shower] = kDefDoub;
     fRecoShowerRecoContained[i_shower] = kDefDoub;
     fRecoShowerRecoCharge[i_shower] = kDefDoub;
     fRecoShowerRecoMomMCS[i_shower] = kDefDoub;
@@ -1394,7 +1409,9 @@ void FDSelection::CCNuSelection::Reset()
     fRecoShowerRecoDirX[i_shower] = kDefDoub;
     fRecoShowerRecoDirY[i_shower] = kDefDoub;
     fRecoShowerRecoDirZ[i_shower] = kDefDoub;
-    fRecoShowerRecodEdx[i_shower] = kDefDoub;
+    fRecoShowerRecoBestPlane[i_shower] = kDefInt;
+    fRecoShowerRecoLength[i_shower] = kDefDoub;
+    fRecoShowerRecoOpeningAngle[i_shower] = kDefDoub;
     fRecoShowerRecoIsPrimaryPFPDaughter[i_shower] = false;
     fRecoShowerMVAElectron[i_shower] = kDefDoub;
     fRecoShowerMVAPion[i_shower] = kDefDoub;
@@ -1402,7 +1419,8 @@ void FDSelection::CCNuSelection::Reset()
     fRecoShowerMVAProton[i_shower] = kDefDoub;
     fRecoShowerMVAPhoton[i_shower] = kDefDoub;
     for (int i_plane = 0; i_plane < 3; i_plane++){
-      fRecoShowerRecoEnergy[i_shower][i_plane] = kDefDoub;
+        fRecoShowerRecodEdx[i_shower][i_plane] = kDefDoub;
+        fRecoShowerRecoEnergy[i_shower][i_plane] = kDefDoub;
     }
   }
   fNRecoShowers = 0;
@@ -1427,8 +1445,10 @@ void FDSelection::CCNuSelection::Reset()
 }
 
 void FDSelection::CCNuSelection::GetEventInfo(art::Event const & evt){
-  auto const *detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-  fT0 = detprop->TriggerOffset();
+  //auto const *detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
+  fT0 = trigger_offset(clockData);
+  //fT0 = detProp.TriggerOffset();
 
   //Get the hit list handle
   art::Handle< std::vector<recob::Hit> > hitListHandle; 
@@ -1436,15 +1456,16 @@ void FDSelection::CCNuSelection::GetEventInfo(art::Event const & evt){
   if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
     art::fill_ptr_vector(hitList, hitListHandle);
   }
+  auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataForJob(clockData);
+  fRecoEventCharge  = dune_ana::DUNEAnaHitUtils::LifetimeCorrectedTotalHitCharge(clockData, detProp, hitList); 
 
   //Loop over the hits to get the total charge
-  fRecoEventCharge = 0.;
-  for (unsigned int i_hit = 0; i_hit < hitList.size(); i_hit++){
-    if (hitList[i_hit]->WireID().Plane == 2){
-      fRecoEventCharge += hitList[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(hitList[i_hit]->PeakTime(), fT0);
-    }
-  }
-
+  //fRecoEventCharge = 0.;
+  //for (unsigned int i_hit = 0; i_hit < hitList.size(); i_hit++){
+  //  if (hitList[i_hit]->WireID().Plane == 2){
+  //    fRecoEventCharge += hitList[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(hitList[i_hit]->PeakTime(), fT0);
+  //  }
+  //}
   return;
 }
 
@@ -1695,7 +1716,10 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
       fRecoTrackRecoUpstreamZ[i_track] = fRecoTrackRecoEndZ[i_track];
     }
     fRecoTrackRecoLength[i_track] = current_track->Length();
-    fRecoTrackRecoCharge[i_track] = CalculateTrackCharge(current_track, current_track_hits);
+
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataForJob(clockData);
+    fRecoTrackRecoCharge[i_track]  = dune_ana::DUNEAnaHitUtils::LifetimeCorrectedTotalHitCharge(clockData, detProp, current_track_hits); 
     //Now that the vertex information has been filled.  Calculate which end of th etrack is closest
     TVector3 upstream_end(fRecoTrackRecoUpstreamX[i_track],fRecoTrackRecoUpstreamY[i_track],fRecoTrackRecoUpstreamZ[i_track]);
     TVector3 downstream_end(fRecoTrackRecoDownstreamX[i_track],fRecoTrackRecoDownstreamY[i_track],fRecoTrackRecoDownstreamZ[i_track]);
@@ -1727,41 +1751,45 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
     //  fNumuRecoMomLep = fRecoTrackRecoMomMCS;
     //}
 
-    int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(current_track_hits);
-    fRecoTrackRecoCompleteness[i_track] = FDSelectionUtils::CompletenessFromTrueParticleID(current_track_hits, hitList, g4id);
-    fRecoTrackRecoHitPurity[i_track] = FDSelectionUtils::HitPurityFromTrueParticleID(current_track_hits, g4id);
+    //auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+    int g4id = TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, current_track_hits, 1);
+    fRecoTrackRecoCompleteness[i_track] = FDSelectionUtils::CompletenessFromTrueParticleID(clockData, current_track_hits, hitList, g4id);
+    fRecoTrackRecoHitPurity[i_track] = FDSelectionUtils::HitPurityFromTrueParticleID(clockData, current_track_hits, g4id);
 
-    art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
-    const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
-    if (matched_mcparticle){
-      //Fill variables
-      fRecoTrackTruePDG[i_track] = matched_mcparticle->PdgCode();
-      if (matched_mcparticle->Mother()==0) fRecoTrackTruePrimary[i_track] = 1;
-      else fRecoTrackTruePrimary[i_track] = 0;
-      fRecoTrackTrueMomX[i_track] = matched_mcparticle->Momentum().X();
-      fRecoTrackTrueMomY[i_track] = matched_mcparticle->Momentum().Y();
-      fRecoTrackTrueMomZ[i_track] = matched_mcparticle->Momentum().Z();
-      fRecoTrackTrueMomT[i_track] = matched_mcparticle->Momentum().T();
-      fRecoTrackTrueStartX[i_track] = matched_mcparticle->Position(0).X();
-      fRecoTrackTrueStartY[i_track] = matched_mcparticle->Position(0).Y();
-      fRecoTrackTrueStartZ[i_track] = matched_mcparticle->Position(0).Z();
-      fRecoTrackTrueStartT[i_track] = matched_mcparticle->Position(0).T();
-      fRecoTrackTrueEndX[i_track] = matched_mcparticle->EndPosition().X();
-      fRecoTrackTrueEndY[i_track] = matched_mcparticle->EndPosition().Y();
-      fRecoTrackTrueEndZ[i_track] = matched_mcparticle->EndPosition().Z();
-      fRecoTrackTrueEndT[i_track] = matched_mcparticle->EndPosition().T();
+    if (TruthMatchUtils::Valid(g4id)){
+        art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+        const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
+        if (matched_mcparticle){
+          //Fill variables
+          fRecoTrackTruePDG[i_track] = matched_mcparticle->PdgCode();
+          if (matched_mcparticle->Mother()==0) fRecoTrackTruePrimary[i_track] = true;
+          else fRecoTrackTruePrimary[i_track] = false;
+          fRecoTrackTrueMomX[i_track] = matched_mcparticle->Momentum().X();
+          fRecoTrackTrueMomY[i_track] = matched_mcparticle->Momentum().Y();
+          fRecoTrackTrueMomZ[i_track] = matched_mcparticle->Momentum().Z();
+          fRecoTrackTrueMomT[i_track] = matched_mcparticle->Momentum().T();
+          fRecoTrackTrueStartX[i_track] = matched_mcparticle->Position(0).X();
+          fRecoTrackTrueStartY[i_track] = matched_mcparticle->Position(0).Y();
+          fRecoTrackTrueStartZ[i_track] = matched_mcparticle->Position(0).Z();
+          fRecoTrackTrueStartT[i_track] = matched_mcparticle->Position(0).T();
+          fRecoTrackTrueEndX[i_track] = matched_mcparticle->EndPosition().X();
+          fRecoTrackTrueEndY[i_track] = matched_mcparticle->EndPosition().Y();
+          fRecoTrackTrueEndZ[i_track] = matched_mcparticle->EndPosition().Z();
+          fRecoTrackTrueEndT[i_track] = matched_mcparticle->EndPosition().T();
+        }
     }
     //Now get the pid stuff
-    art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
-    std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_track.key());
-    std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
-    //Get the PIDs
-    fRecoTrackMVAElectron[i_track] = mvaOutMap["electron"];
-    fRecoTrackMVAPion[i_track] = mvaOutMap["pich"];
-    fRecoTrackMVAMuon[i_track] = mvaOutMap["muon"];
-    fRecoTrackMVAProton[i_track] = mvaOutMap["proton"];
-    fRecoTrackMVAPhoton[i_track] = mvaOutMap["photon"];
+    //art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
+    //std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_track.key());
+    //std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+    ////Get the PIDs
+    //fRecoTrackMVAElectron[i_track] = mvaOutMap["electron"];
+    //fRecoTrackMVAPion[i_track] = mvaOutMap["pich"];
+    //fRecoTrackMVAMuon[i_track] = mvaOutMap["muon"];
+    //fRecoTrackMVAProton[i_track] = mvaOutMap["proton"];
+    //fRecoTrackMVAPhoton[i_track] = mvaOutMap["photon"];
 
+    /*
     //11/04/19 DBrailsford
     //Get the pandizzle variables
     art::Ptr<recob::PFParticle> track_pfp = GetPFParticleMatchedToTrack(current_track, evt);
@@ -1794,15 +1822,16 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
     fHookUpTMVAPFPTrackdEdxEndRatio = (fRecoTrackTMVAPFPTrackdEdxEndRatio[i_track]);
 
     fRecoTrackPandizzleVar[i_track] = fReader.EvaluateMVA("BDTG");
+    */
 
     ////20/04/20 DBrailsford
     ////Get the DeepPan variables
-    ctp::CTPResult deepPanPIDResult = fConvTrackPID.RunConvolutionalTrackPID(track_pfp, evt);
-    if (deepPanPIDResult.IsValid()){
-        fRecoTrackDeepPanMuVar[i_track] = deepPanPIDResult.GetMuonScore();
-        fRecoTrackDeepPanPiVar[i_track] = deepPanPIDResult.GetPionScore();
-        fRecoTrackDeepPanProtonVar[i_track] = deepPanPIDResult.GetProtonScore();
-    }
+    //ctp::CTPResult deepPanPIDResult = fConvTrackPID.RunConvolutionalTrackPID(track_pfp, evt);
+    //if (deepPanPIDResult.IsValid()){
+    //    fRecoTrackDeepPanMuVar[i_track] = deepPanPIDResult.GetMuonScore();
+    //    fRecoTrackDeepPanPiVar[i_track] = deepPanPIDResult.GetPionScore();
+    //    fRecoTrackDeepPanProtonVar[i_track] = deepPanPIDResult.GetProtonScore();
+    //}
   }
 
   return;
@@ -1825,11 +1854,11 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   }
 
   //24/07/18 DBrailsford Get the reco energy data product for neutrinos
-  art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
-  if (!evt.getByLabel(fNumuEnergyRecoModuleLabel, energyRecoHandle)) {
-    std::cout<<"FDSelection::CCNuSelection::RunTrackSelection - no energy reconstruction found with label " << fNumuEnergyRecoModuleLabel << std::endl;
-    return;
-  }
+  //art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
+  //if (!evt.getByLabel(fNumuEnergyRecoModuleLabel, energyRecoHandle)) {
+  //  std::cout<<"FDSelection::CCNuSelection::RunTrackSelection - no energy reconstruction found with label " << fNumuEnergyRecoModuleLabel << std::endl;
+  //  return;
+  //}
 
   //Get the hits for said track
   art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
@@ -1874,7 +1903,10 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
     fSelTrackRecoUpstreamZ = fSelTrackRecoEndZ;
   }
   fSelTrackRecoLength = sel_track->Length();
-  fSelTrackRecoCharge = CalculateTrackCharge(sel_track, sel_track_hits);
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
+  auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataForJob(clockData);
+  fSelTrackRecoCharge  = dune_ana::DUNEAnaHitUtils::LifetimeCorrectedTotalHitCharge(clockData, detProp, sel_track_hits); 
+
   //Now that the vertex information has been filled.  Calculate which end of th etrack is closest
   TVector3 upstream_end(fSelTrackRecoUpstreamX,fSelTrackRecoUpstreamY,fSelTrackRecoUpstreamZ);
   TVector3 downstream_end(fSelTrackRecoDownstreamX,fSelTrackRecoDownstreamY,fSelTrackRecoDownstreamZ);
@@ -1893,43 +1925,47 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   FillChildPFPInformation(sel_track, evt, fSelTrackRecoNChildPFP, fSelTrackRecoNChildTrackPFP, fSelTrackRecoNChildShowerPFP);
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
   //fSelTrackRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
-  fNumuRecoENu = energyRecoHandle->fNuLorentzVector.E();
-  fNumuRecoEHad = energyRecoHandle->fHadLorentzVector.E();
+  //fNumuRecoENu = energyRecoHandle->fNuLorentzVector.E();
+  //fNumuRecoEHad = energyRecoHandle->fHadLorentzVector.E();
 
-  fSelTrackRecoContained = energyRecoHandle->longestTrackContained; 
-  if (energyRecoHandle->trackMomMethod==1){ //momentum by range was used to calculate ENu
-    fSelTrackRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
-    fNumuRecoMomLep = fSelTrackRecoMomContained;
-  }
-  else if (energyRecoHandle->trackMomMethod==0){//momentum by MCS
-    fSelTrackRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
-    fNumuRecoMomLep = fSelTrackRecoMomMCS;
-  }
+  //fSelTrackRecoContained = energyRecoHandle->longestTrackContained; 
+  //if (energyRecoHandle->trackMomMethod==1){ //momentum by range was used to calculate ENu
+  //  fSelTrackRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+  //  fNumuRecoMomLep = fSelTrackRecoMomContained;
+  //}
+  //else if (energyRecoHandle->trackMomMethod==0){//momentum by MCS
+  //  fSelTrackRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+  //  fNumuRecoMomLep = fSelTrackRecoMomMCS;
+  //}
 
-  int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(sel_track_hits);
-  fSelTrackRecoCompleteness = FDSelectionUtils::CompletenessFromTrueParticleID(sel_track_hits, hitList, g4id);
-  fSelTrackRecoHitPurity = FDSelectionUtils::HitPurityFromTrueParticleID(sel_track_hits, g4id);
+  int g4id = TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, sel_track_hits, 1);
+  fSelTrackRecoCompleteness = FDSelectionUtils::CompletenessFromTrueParticleID(clockData, sel_track_hits, hitList, g4id);
+  fSelTrackRecoHitPurity = FDSelectionUtils::HitPurityFromTrueParticleID(clockData, sel_track_hits, g4id);
 
-  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
-  const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
-  if (matched_mcparticle){
-    //Fill variables
-    fSelTrackTruePDG = matched_mcparticle->PdgCode();
-    if (matched_mcparticle->Mother()==0) fSelTrackTruePrimary = 1;
-    else fSelTrackTruePrimary = 0;
-    fSelTrackTrueMomX = matched_mcparticle->Momentum().X();
-    fSelTrackTrueMomY = matched_mcparticle->Momentum().Y();
-    fSelTrackTrueMomZ = matched_mcparticle->Momentum().Z();
-    fSelTrackTrueMomT = matched_mcparticle->Momentum().T();
-    fSelTrackTrueStartX = matched_mcparticle->Position(0).X();
-    fSelTrackTrueStartY = matched_mcparticle->Position(0).Y();
-    fSelTrackTrueStartZ = matched_mcparticle->Position(0).Z();
-    fSelTrackTrueStartT = matched_mcparticle->Position(0).T();
-    fSelTrackTrueEndX = matched_mcparticle->EndPosition().X();
-    fSelTrackTrueEndY = matched_mcparticle->EndPosition().Y();
-    fSelTrackTrueEndZ = matched_mcparticle->EndPosition().Z();
-    fSelTrackTrueEndT = matched_mcparticle->EndPosition().T();
+  if (TruthMatchUtils::Valid(g4id))
+  {
+      art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+      const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
+      if (matched_mcparticle){
+        //Fill variables
+        fSelTrackTruePDG = matched_mcparticle->PdgCode();
+        if (matched_mcparticle->Mother()==0) fSelTrackTruePrimary = 1;
+        else fSelTrackTruePrimary = 0;
+        fSelTrackTrueMomX = matched_mcparticle->Momentum().X();
+        fSelTrackTrueMomY = matched_mcparticle->Momentum().Y();
+        fSelTrackTrueMomZ = matched_mcparticle->Momentum().Z();
+        fSelTrackTrueMomT = matched_mcparticle->Momentum().T();
+        fSelTrackTrueStartX = matched_mcparticle->Position(0).X();
+        fSelTrackTrueStartY = matched_mcparticle->Position(0).Y();
+        fSelTrackTrueStartZ = matched_mcparticle->Position(0).Z();
+        fSelTrackTrueStartT = matched_mcparticle->Position(0).T();
+        fSelTrackTrueEndX = matched_mcparticle->EndPosition().X();
+        fSelTrackTrueEndY = matched_mcparticle->EndPosition().Y();
+        fSelTrackTrueEndZ = matched_mcparticle->EndPosition().Z();
+        fSelTrackTrueEndT = matched_mcparticle->EndPosition().T();
+      }
   }
+  /*
   //Now get the pid stuff
   art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
   std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_track.key());
@@ -1982,16 +2018,17 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
       fSelTrackDeepPanPiVar = deepPanPIDResult.GetPionScore();
       fSelTrackDeepPanProtonVar = deepPanPIDResult.GetProtonScore();
   }
+  */
 }
 
-double FDSelection::CCNuSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
-  double charge = 0;
-  for (unsigned int i_hit = 0; i_hit < track_hits.size(); i_hit++){
-    if (track_hits[i_hit]->WireID().Plane != 2) continue; //Collection only
-    charge += track_hits[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(track_hits[i_hit]->PeakTime(), fT0);
-  }
-  return charge;
-}
+//double FDSelection::CCNuSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
+//  double charge = 0;
+//  for (unsigned int i_hit = 0; i_hit < track_hits.size(); i_hit++){
+//    if (track_hits[i_hit]->WireID().Plane != 2) continue; //Collection only
+//    charge += track_hits[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(track_hits[i_hit]->PeakTime(), fT0);
+//  }
+//  return charge;
+//}
 
 
 bool FDSelection::CCNuSelection::IsTrackContained(art::Ptr<recob::Track> const track, std::vector< art::Ptr<recob::Hit > > const track_hits, art::Event const & evt){
@@ -2226,7 +2263,14 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
     fRecoShowerRecoStartY[i_shower] = current_shower->ShowerStart().Y();
     fRecoShowerRecoStartZ[i_shower] = current_shower->ShowerStart().Z();
 
-    fRecoShowerRecoCharge[i_shower] = CalculateShowerCharge(current_shower, current_shower_hits);
+    fRecoShowerRecoBestPlane[i_shower] = current_shower->best_plane();
+    fRecoShowerRecoLength[i_shower] = current_shower->Length();
+    fRecoShowerRecoOpeningAngle[i_shower] = current_shower->OpenAngle();
+
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataForJob(clockData);
+    fRecoShowerRecoCharge[i_shower]  = dune_ana::DUNEAnaHitUtils::LifetimeCorrectedTotalHitCharge(clockData, detProp, current_shower_hits); 
+
     //24/07/18 DBrailsford Use the data product to get the neutrino energy
     //fRecoShowerRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
     //fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
@@ -2235,43 +2279,50 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
 
     FillChildPFPInformation(current_shower, evt, fRecoShowerRecoNChildPFP[i_shower], fRecoShowerRecoNChildTrackPFP[i_shower], fRecoShowerRecoNChildShowerPFP[i_shower]);
 
-    int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(current_shower_hits);
-    fRecoShowerRecoCompleteness[i_shower] = FDSelectionUtils::CompletenessFromTrueParticleID(current_shower_hits, hitList, g4id);
-    fRecoShowerRecoHitPurity[i_shower] = FDSelectionUtils::HitPurityFromTrueParticleID(current_shower_hits, g4id);
+    int g4id = TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, current_shower_hits, 1);
+    fRecoShowerRecoCompleteness[i_shower] = FDSelectionUtils::CompletenessFromTrueParticleID(clockData, current_shower_hits, hitList, g4id);
+    fRecoShowerRecoHitPurity[i_shower] = FDSelectionUtils::HitPurityFromTrueParticleID(clockData, current_shower_hits, g4id);
 
-    art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
-    //const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
-    const simb::MCParticle* matched_mcparticle = pi_serv->TrackIdToParticle_P(g4id);
-    if (matched_mcparticle){
-      //Fill variables
-      fRecoShowerTruePDG[i_shower] = matched_mcparticle->PdgCode();
-      if (matched_mcparticle->Mother()==0) fRecoShowerTruePrimary[i_shower] = 1;
-      else fRecoShowerTruePrimary[i_shower] = 0;
-      fRecoShowerTrueMomX[i_shower] = matched_mcparticle->Momentum().X();
-      fRecoShowerTrueMomY[i_shower] = matched_mcparticle->Momentum().Y();
-      fRecoShowerTrueMomZ[i_shower] = matched_mcparticle->Momentum().Z();
-      fRecoShowerTrueMomT[i_shower] = matched_mcparticle->Momentum().T();
-      fRecoShowerTrueStartX[i_shower] = matched_mcparticle->Position(0).X();
-      fRecoShowerTrueStartY[i_shower] = matched_mcparticle->Position(0).Y();
-      fRecoShowerTrueStartZ[i_shower] = matched_mcparticle->Position(0).Z();
-      fRecoShowerTrueStartT[i_shower] = matched_mcparticle->Position(0).T();
-      fRecoShowerTrueEndX[i_shower] = matched_mcparticle->EndPosition().X();
-      fRecoShowerTrueEndY[i_shower] = matched_mcparticle->EndPosition().Y();
-      fRecoShowerTrueEndZ[i_shower] = matched_mcparticle->EndPosition().Z();
-      fRecoShowerTrueEndT[i_shower] = matched_mcparticle->EndPosition().T();
+    if (TruthMatchUtils::Valid(g4id))
+    {
+        art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+        const simb::MCParticle* matched_mcparticle = pi_serv->TrackIdToParticle_P(g4id);
+        if (matched_mcparticle){
+          //Fill variables
+          fRecoShowerTruePDG[i_shower] = matched_mcparticle->PdgCode();
+          if (matched_mcparticle->Mother()==0) fRecoShowerTruePrimary[i_shower] = 1;
+          else fRecoShowerTruePrimary[i_shower] = 0;
+          fRecoShowerTrueMomX[i_shower] = matched_mcparticle->Momentum().X();
+          fRecoShowerTrueMomY[i_shower] = matched_mcparticle->Momentum().Y();
+          fRecoShowerTrueMomZ[i_shower] = matched_mcparticle->Momentum().Z();
+          fRecoShowerTrueMomT[i_shower] = matched_mcparticle->Momentum().T();
+          fRecoShowerTrueStartX[i_shower] = matched_mcparticle->Position(0).X();
+          fRecoShowerTrueStartY[i_shower] = matched_mcparticle->Position(0).Y();
+          fRecoShowerTrueStartZ[i_shower] = matched_mcparticle->Position(0).Z();
+          fRecoShowerTrueStartT[i_shower] = matched_mcparticle->Position(0).T();
+          fRecoShowerTrueEndX[i_shower] = matched_mcparticle->EndPosition().X();
+          fRecoShowerTrueEndY[i_shower] = matched_mcparticle->EndPosition().Y();
+          fRecoShowerTrueEndZ[i_shower] = matched_mcparticle->EndPosition().Z();
+          fRecoShowerTrueEndT[i_shower] = matched_mcparticle->EndPosition().T();
+        }
     }
     //Now get the pid stuff
-    art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
-    std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_shower.key());
-    std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
-    //Get the PIDs
-    fRecoShowerMVAElectron[i_shower] = mvaOutMap["electron"];
-    fRecoShowerMVAPion[i_shower] = mvaOutMap["pich"];
-    fRecoShowerMVAMuon[i_shower] = mvaOutMap["muon"];
-    fRecoShowerMVAProton[i_shower] = mvaOutMap["proton"];
-    fRecoShowerMVAPhoton[i_shower] = mvaOutMap["photon"];
-    for (int i_plane = 0; i_plane < 3; i_plane++){
-      fRecoShowerRecoEnergy[i_shower][i_plane] = fShowerEnergyAlg.ShowerEnergy(current_shower_hits, i_plane);
+    //art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
+    //std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_shower.key());
+    //std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+    ////Get the PIDs
+    //fRecoShowerMVAElectron[i_shower] = mvaOutMap["electron"];
+    //fRecoShowerMVAPion[i_shower] = mvaOutMap["pich"];
+    //fRecoShowerMVAMuon[i_shower] = mvaOutMap["muon"];
+    //fRecoShowerMVAProton[i_shower] = mvaOutMap["proton"];
+    //fRecoShowerMVAPhoton[i_shower] = mvaOutMap["photon"];
+    if (current_shower->dEdx().size() > 0)
+    {
+        for (int i_plane = 0; i_plane < 3; i_plane++){
+          //fRecoShowerRecoEnergy[i_shower][i_plane] = fShowerEnergyAlg.ShowerEnergy(current_shower_hits, i_plane);
+          fRecoShowerRecodEdx[i_shower][i_plane] = current_shower->dEdx()[i_plane];
+          fRecoShowerRecoEnergy[i_shower][i_plane] = current_shower->Energy()[i_plane];
+        }
     }
   }
 
@@ -2335,11 +2386,11 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
 
 
   //24/07/18 DBrailsford Get the reco energy data product for neutrinos
-  art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
-  if (!evt.getByLabel(fNueEnergyRecoModuleLabel, energyRecoHandle)) {
-    std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - Not able to find energy reconstruction container with name " << fNueEnergyRecoModuleLabel << std::endl;
-    return;
-  }
+  //art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
+  //if (!evt.getByLabel(fNueEnergyRecoModuleLabel, energyRecoHandle)) {
+  //  std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - Not able to find energy reconstruction container with name " << fNueEnergyRecoModuleLabel << std::endl;
+  //  return;
+  //}
 
   //Get the hits for said shower
   art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
@@ -2371,66 +2422,80 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   fSelShowerRecoStartY = sel_shower->ShowerStart().Y();
   fSelShowerRecoStartZ = sel_shower->ShowerStart().Z();
 
-  fSelShowerRecoCharge = CalculateShowerCharge(sel_shower, sel_shower_hits);
+  fSelShowerRecoBestPlane = sel_shower->best_plane();
+  fSelShowerRecoLength = sel_shower->Length();
+  fSelShowerRecoOpeningAngle = sel_shower->OpenAngle();
+
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
+  auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataForJob(clockData);
+  fSelShowerRecoCharge  = dune_ana::DUNEAnaHitUtils::LifetimeCorrectedTotalHitCharge(clockData, detProp, sel_shower_hits); 
+
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
   //fSelShowerRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
-  fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
-  fNueRecoEHad = energyRecoHandle->fHadLorentzVector.E();
-  fNueRecoMomLep = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+  //fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
+  //fNueRecoEHad = energyRecoHandle->fHadLorentzVector.E();
+  //fNueRecoMomLep = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
 
   FillChildPFPInformation(sel_shower, evt, fSelShowerRecoNChildPFP, fSelShowerRecoNChildTrackPFP, fSelShowerRecoNChildShowerPFP);
 
-  int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(sel_shower_hits);
-  fSelShowerRecoCompleteness = FDSelectionUtils::CompletenessFromTrueParticleID(sel_shower_hits, hitList, g4id);
-  fSelShowerRecoHitPurity = FDSelectionUtils::HitPurityFromTrueParticleID(sel_shower_hits, g4id);
+  int g4id = TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, sel_shower_hits, 1);
+  fSelShowerRecoCompleteness = FDSelectionUtils::CompletenessFromTrueParticleID(clockData, sel_shower_hits, hitList, g4id);
+  fSelShowerRecoHitPurity = FDSelectionUtils::HitPurityFromTrueParticleID(clockData, sel_shower_hits, g4id);
 
-  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
-  //const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
-  const simb::MCParticle* matched_mcparticle = pi_serv->TrackIdToParticle_P(g4id);
-  if (matched_mcparticle){
-    //Fill variables
-    fSelShowerTruePDG = matched_mcparticle->PdgCode();
-    if (matched_mcparticle->Mother()==0) fSelShowerTruePrimary = 1;
-    else fSelShowerTruePrimary = 0;
-    fSelShowerTrueMomX = matched_mcparticle->Momentum().X();
-    fSelShowerTrueMomY = matched_mcparticle->Momentum().Y();
-    fSelShowerTrueMomZ = matched_mcparticle->Momentum().Z();
-    fSelShowerTrueMomT = matched_mcparticle->Momentum().T();
-    fSelShowerTrueStartX = matched_mcparticle->Position(0).X();
-    fSelShowerTrueStartY = matched_mcparticle->Position(0).Y();
-    fSelShowerTrueStartZ = matched_mcparticle->Position(0).Z();
-    fSelShowerTrueStartT = matched_mcparticle->Position(0).T();
-    fSelShowerTrueEndX = matched_mcparticle->EndPosition().X();
-    fSelShowerTrueEndY = matched_mcparticle->EndPosition().Y();
-    fSelShowerTrueEndZ = matched_mcparticle->EndPosition().Z();
-    fSelShowerTrueEndT = matched_mcparticle->EndPosition().T();
+  if (TruthMatchUtils::Valid(g4id))
+  {
+      art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+      const simb::MCParticle* matched_mcparticle = pi_serv->TrackIdToParticle_P(g4id);
+      if (matched_mcparticle){
+        //Fill variables
+        fSelShowerTruePDG = matched_mcparticle->PdgCode();
+        if (matched_mcparticle->Mother()==0) fSelShowerTruePrimary = 1;
+        else fSelShowerTruePrimary = 0;
+        fSelShowerTrueMomX = matched_mcparticle->Momentum().X();
+        fSelShowerTrueMomY = matched_mcparticle->Momentum().Y();
+        fSelShowerTrueMomZ = matched_mcparticle->Momentum().Z();
+        fSelShowerTrueMomT = matched_mcparticle->Momentum().T();
+        fSelShowerTrueStartX = matched_mcparticle->Position(0).X();
+        fSelShowerTrueStartY = matched_mcparticle->Position(0).Y();
+        fSelShowerTrueStartZ = matched_mcparticle->Position(0).Z();
+        fSelShowerTrueStartT = matched_mcparticle->Position(0).T();
+        fSelShowerTrueEndX = matched_mcparticle->EndPosition().X();
+        fSelShowerTrueEndY = matched_mcparticle->EndPosition().Y();
+        fSelShowerTrueEndZ = matched_mcparticle->EndPosition().Z();
+        fSelShowerTrueEndT = matched_mcparticle->EndPosition().T();
+      }
   }
   //Now get the pid stuff
-  art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
-  std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_shower.key());
-  std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
-  //Get the PIDs
-  fSelShowerMVAElectron = mvaOutMap["electron"];
-  fSelShowerMVAPion = mvaOutMap["pich"];
-  fSelShowerMVAMuon = mvaOutMap["muon"];
-  fSelShowerMVAProton = mvaOutMap["proton"];
-  fSelShowerMVAPhoton = mvaOutMap["photon"];
+  //art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
+  //std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_shower.key());
+  //std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+  ////Get the PIDs
+  //fSelShowerMVAElectron = mvaOutMap["electron"];
+  //fSelShowerMVAPion = mvaOutMap["pich"];
+  //fSelShowerMVAMuon = mvaOutMap["muon"];
+  //fSelShowerMVAProton = mvaOutMap["proton"];
+  //fSelShowerMVAPhoton = mvaOutMap["photon"];
 
   //25/07/19 DBrailsford
   //Calculate shower energy
-  for (unsigned int i_plane = 0; i_plane < 3; i_plane++){
-    fSelShowerRecoEnergy[i_plane] = fShowerEnergyAlg.ShowerEnergy(sel_shower_hits, i_plane);
+  if (sel_shower->dEdx().size() > 0)
+  {
+      for (unsigned int i_plane = 0; i_plane < 3; i_plane++){
+        //fSelShowerRecoEnergy[i_plane] = fShowerEnergyAlg.ShowerEnergy(sel_shower_hits, i_plane);
+        fSelShowerRecodEdx[i_plane] = sel_shower->dEdx()[i_plane];
+        fSelShowerRecoEnergy[i_plane] = sel_shower->Energy()[i_plane];
+      }
   }
 }
 
-double FDSelection::CCNuSelection::CalculateShowerCharge(art::Ptr<recob::Shower> const shower, std::vector< art::Ptr< recob::Hit> > const shower_hits){
-  double charge = 0;
-  for (unsigned int i_hit = 0; i_hit < shower_hits.size(); i_hit++){
-    if (shower_hits[i_hit]->WireID().Plane != 2) continue; //Collection only
-    charge += shower_hits[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(shower_hits[i_hit]->PeakTime(), fT0);
-  }
-  return charge;
-}
+//double FDSelection::CCNuSelection::CalculateShowerCharge(art::Ptr<recob::Shower> const shower, std::vector< art::Ptr< recob::Hit> > const shower_hits){
+//  double charge = 0;
+//  for (unsigned int i_hit = 0; i_hit < shower_hits.size(); i_hit++){
+//    if (shower_hits[i_hit]->WireID().Plane != 2) continue; //Collection only
+//    charge += shower_hits[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(shower_hits[i_hit]->PeakTime(), fT0);
+//  }
+//  return charge;
+//}
 
 bool FDSelection::CCNuSelection::IsPFParticlePrimaryDaughter(art::Ptr<recob::PFParticle> const & pfparticle, std::vector<art::Ptr<recob::PFParticle > > const & pfparticles){
   size_t parent_id = pfparticle->Parent();

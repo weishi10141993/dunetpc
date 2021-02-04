@@ -11,6 +11,7 @@ CCNuSelection:
    NuGenModuleLabel:            "generator" 
    LargeantModuleLabel:         "largeant"
    TrackModuleLabel:            "pandoraTrack"
+#ShowerModuleLabel:           "pandoraShower"
    ShowerModuleLabel:           "pandoraShower"
    PFParticleModuleLabel:       "pandora"
    VertexModuleLabel:           "pandora"
@@ -39,7 +40,7 @@ CCNuSelection.RecoShowerSelectorTool.tool_type: "HighestEnergyRecoVertexShowerSe
 CCNuSelection.RecoShowerSelectorTool.ModuleLabels: @local::CCNuSelection.ModuleLabels
 CCNuSelection.RecoShowerSelectorTool.ShowerEnergyAlg: @local::CCNuSelection.ShowerEnergyAlg
 
-CCNuSelection.ctpHelper.NetworkName: "convolutional_track_pid_April2020_new.pb"
+#CCNuSelection.ctpHelper.NetworkName: "convolutional_track_pid_April2020_new.pb"
 
 
 END_PROLOG

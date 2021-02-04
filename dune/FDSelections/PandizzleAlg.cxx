@@ -6,9 +6,12 @@
 ///////////////////////////////////////////////
 
 #include "PandizzleAlg.h"
+#include "larsim/Utils/TruthMatchUtils.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
-FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) :
-  fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg"))
+
+FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) //:
+  //fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg"))
 {
   fTrackModuleLabel  = pset.get<std::string>("ModuleLabels.TrackModuleLabel");
   fShowerModuleLabel = pset.get<std::string>("ModuleLabels.ShowerModuleLabel");
@@ -167,7 +170,8 @@ void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFPartic
   //if (pfp_hits.size() == 0) std::cout<<"PDG: " << pfp->PdgCode() << "  NHits: " << pfp_hits.size() << "  ID: " << pfp->Self() << "  NDau" << pfp->NumDaughters() << "  Parent " << pfp->Parent()  << std::endl;
 
   //Get the true PDG
-  int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(pfp_hits); 
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  int g4id = TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, pfp_hits, 1); 
   if (g4id > 0){
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
@@ -437,7 +441,8 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
   std::vector<art::Ptr<recob::Hit> > michel_hits = GetPFPHits(closest_child_pfp, evt);
   //Cap the hits at 100
   fVarHolder.IntVars["PFPMichelNHits"] = std::min((int)(michel_hits.size()),100);
-  int g4id = FDSelectionUtils::TrueParticleIDFromTotalRecoHits(michel_hits); 
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  int g4id = TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, michel_hits, 1); 
   if (g4id > 0){
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
@@ -452,9 +457,13 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
   fVarHolder.FloatVars["PFPMichelElectronMVA"] = mvaOutMap["electron"];
 
   //Reco energy
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 0);
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 1);
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 2);
+  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 0);
+  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 1);
+  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 2);
+
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = -999;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = -999;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = -999;
 
   return;
 }

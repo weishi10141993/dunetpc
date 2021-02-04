@@ -31,7 +31,7 @@
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
-#include "larreco/RecoAlg/ShowerEnergyAlg.h"
+//#include "larreco/RecoAlg/ShowerEnergyAlg.h"
 
 // c++
 #include <vector>
@@ -110,7 +110,7 @@ class FDSelection::PandizzleAlg {
   TTree *fBackgroundShowerTree;
 
   //Algs
-  shower::ShowerEnergyAlg fShowerEnergyAlg;
+  //shower::ShowerEnergyAlg fShowerEnergyAlg;
 
   struct VarHolder{ //This thing holds all variables to be handed to the trees
     std::map<std::string, int> IntVars;

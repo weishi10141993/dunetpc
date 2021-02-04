@@ -25,7 +25,7 @@ namespace FDSelectionTools{
     private:
       art::Ptr<recob::Shower> SelectShower(art::Event const & evt) override;
       std::string fShowerModuleLabel;
-      shower::ShowerEnergyAlg fShowerEnergyAlg;
+      //shower::ShowerEnergyAlg fShowerEnergyAlg;
 
   };
 }

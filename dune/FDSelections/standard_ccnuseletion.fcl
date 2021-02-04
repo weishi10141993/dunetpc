@@ -38,7 +38,8 @@ producers:
         module_type:		"MVAPID"
     HitLabel:		"linecluster"
     TrackLabel:		"pandoraTrack"
-    ShowerLabel:		"pandoraShower"
+#ShowerLabel:		"pandoraShower"
+    ShowerLabel:  "pandoraShower"
     SpacePointLabel:	"pandora"
                   CalorimetryAlg:          @local::dune10kt_calorimetryalgmc
     MVAMethods:		[ "electron","muon","photon","pich","proton" ]
