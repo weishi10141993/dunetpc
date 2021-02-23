@@ -29,6 +29,8 @@ art_make( LIBRARY_NAME FDSelection
             ${ROOT_TMVA}
             dune_TrackPID_tf
             larsim_Utils
+            NeutrinoEnergyRecoAlg
+
 MODULE_LIBRARIES FDSelection
 #dune_TrackPID
 dune_TrackPID_algorithms

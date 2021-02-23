@@ -16,6 +16,7 @@ services:
   message:      @local::dune_message_services_prod
   FileCatalogMetadata:  @local::art_file_catalog_mc
                         @table::dunefd_simulation_services
+  Geometry: @local::dune10kt_1x2x6_geo                      
 }
 #services.PhotonVisibilityService:      @local::dune35t_photonvisibilityservice
 #source is now a root file
@@ -32,8 +33,8 @@ physics:
 {
 producers:
     {
-   energyreconue:  @local::dunefd_nuenergyreco
-   energyreconumu: @local::dunefd_nuenergyreco
+#energyreconue:  @local::dunefd_nuenergyreco
+#energyreconumu: @local::dunefd_nuenergyreco
    pid: {
         module_type:		"MVAPID"
     HitLabel:		"linecluster"
@@ -58,7 +59,7 @@ producers:
 }
  #define the output stream, there could be more than one if using filters 
 #stream1:  [ out1 ]
- prod: [energyreconue, energyreconumu, pid]
+ prod: [pid]
 #caf:  [ cafmaker]
 trigger_paths: [prod] 
 
@@ -86,7 +87,6 @@ end_paths: [  ana]
 #   compressionLevel: 1
 # }
 #}
-
-physics.producers.energyreconue.RecoMethod:   2
-physics.producers.energyreconumu.RecoMethod:  1
+#physics.producers.energyreconue.RecoMethod:   2
+#physics.producers.energyreconumu.RecoMethod:  1
 
