@@ -1,6 +1,7 @@
 #include "calorimetry_dune10kt.fcl"
 #include "showeralgorithms.fcl"
 #include "ctphelper.fcl"
+#include "neutrinoenergyrecoalg_dune.fcl"
 
 BEGIN_PROLOG
 
@@ -10,6 +11,7 @@ CCNuSelection:
  ModuleLabels: {
    NuGenModuleLabel:            "generator" 
    LargeantModuleLabel:         "largeant"
+   WireModuleLabel:             "caldata"
    TrackModuleLabel:            "pandoraTrack"
 #ShowerModuleLabel:           "pandoraShower"
    ShowerModuleLabel:           "pandoraShower"
@@ -28,12 +30,14 @@ CCNuSelection:
  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
  ShowerEnergyAlg:             @local::dune10kt_showerenergy
  ctpHelper:                   @local::standard_ctphelper
+ NeutrinoEnergyRecoAlg:       @local::dune10kt_neutrinoenergyrecoalg
  UsePandoraVertex: true
 
  MichelCandidateDistance: 4
 
 }
 CCNuSelection.RecoTrackSelectorTool.tool_type: "LongestRecoVertexTrackSelector"
+CCNuSelection.RecoTrackSelectorTool.ctpHelper: @local::CCNuSelection.ctpHelper
 CCNuSelection.RecoTrackSelectorTool.ModuleLabels: @local::CCNuSelection.ModuleLabels
 
 CCNuSelection.RecoShowerSelectorTool.tool_type: "HighestEnergyRecoVertexShowerSelector"
