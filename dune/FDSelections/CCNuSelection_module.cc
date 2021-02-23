@@ -49,6 +49,7 @@
 
 //DUNE
 #include "dune/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
+#include "dune/FDSensOpt/NeutrinoEnergyRecoAlg/NeutrinoEnergyRecoAlg.h"
 #include "dune/TrackPID/algorithms/CTPHelper.h"
 #include "dune/AnaUtils/DUNEAnaHitUtils.h"
 #include "dune/TrackPID/products/CTPResult.h"
@@ -126,18 +127,6 @@ private:
 
 
   // Declare member data here.
-
-  //Algs
-  //PIDAnaAlg fPIDAnaAlg;
-  //PandizzleAlg fPandizzleAlg;
-  calo::CalorimetryAlg fCalorimetryAlg;
-  //shower::ShowerEnergyAlg fShowerEnergyAlg;
-  ctp::CTPHelper fConvTrackPID;
-
-
-  //Tools
-  std::unique_ptr<FDSelectionTools::RecoTrackSelector> fRecoTrackSelector;
-  std::unique_ptr<FDSelectionTools::RecoShowerSelector> fRecoShowerSelector;
 
 
   TTree *fTree; //The selection tree
@@ -265,6 +254,13 @@ private:
   int fSelTrackRecoNChildTrackPFP;
   int fSelTrackRecoNChildShowerPFP;
   //MVA bits
+  double fSelTrackMVAEvalRatio;
+  double fSelTrackMVAConcentration;
+  double fSelTrackMVACoreHaloRatio;
+  double fSelTrackMVAConicalness;
+  double fSelTrackMVAdEdxStart;
+  double fSelTrackMVAdEdxEnd;
+  double fSelTrackMVAdEdxEndRatio;
   double fSelTrackMVAElectron;
   double fSelTrackMVAPion;
   double fSelTrackMVAMuon;
@@ -334,6 +330,13 @@ private:
   int fRecoTrackRecoNChildTrackPFP[kDefMaxNRecoTracks];
   int fRecoTrackRecoNChildShowerPFP[kDefMaxNRecoTracks];
   //MVA bits
+  double fRecoTrackMVAEvalRatio[kDefMaxNRecoTracks];
+  double fRecoTrackMVAConcentration[kDefMaxNRecoTracks];
+  double fRecoTrackMVACoreHaloRatio[kDefMaxNRecoTracks];
+  double fRecoTrackMVAConicalness[kDefMaxNRecoTracks];
+  double fRecoTrackMVAdEdxStart[kDefMaxNRecoTracks];
+  double fRecoTrackMVAdEdxEnd[kDefMaxNRecoTracks];
+  double fRecoTrackMVAdEdxEndRatio[kDefMaxNRecoTracks];
   double fRecoTrackMVAElectron[kDefMaxNRecoTracks];
   double fRecoTrackMVAPion[kDefMaxNRecoTracks];
   double fRecoTrackMVAMuon[kDefMaxNRecoTracks];
@@ -436,6 +439,13 @@ private:
   double fSelShowerRecoOpeningAngle;
   bool fSelShowerRecoIsPrimaryPFPDaughter;
   //MVA bits
+  double fSelShowerMVAEvalRatio;
+  double fSelShowerMVAConcentration;
+  double fSelShowerMVACoreHaloRatio;
+  double fSelShowerMVAConicalness;
+  double fSelShowerMVAdEdxStart;
+  double fSelShowerMVAdEdxEnd;
+  double fSelShowerMVAdEdxEndRatio;
   double fSelShowerMVAElectron;
   double fSelShowerMVAPion;
   double fSelShowerMVAMuon;
@@ -504,6 +514,13 @@ private:
   double fRecoShowerRecoLength[kDefMaxNRecoShowers];
   double fRecoShowerRecoOpeningAngle[kDefMaxNRecoShowers];
   bool fRecoShowerRecoIsPrimaryPFPDaughter[kDefMaxNRecoShowers];
+  double fRecoShowerMVAEvalRatio[kDefMaxNRecoShowers];
+  double fRecoShowerMVAConcentration[kDefMaxNRecoShowers];
+  double fRecoShowerMVACoreHaloRatio[kDefMaxNRecoShowers];
+  double fRecoShowerMVAConicalness[kDefMaxNRecoShowers];
+  double fRecoShowerMVAdEdxStart[kDefMaxNRecoShowers];
+  double fRecoShowerMVAdEdxEnd[kDefMaxNRecoShowers];
+  double fRecoShowerMVAdEdxEndRatio[kDefMaxNRecoShowers];
   double fRecoShowerMVAElectron[kDefMaxNRecoShowers];
   double fRecoShowerMVAPion[kDefMaxNRecoShowers];
   double fRecoShowerMVAMuon[kDefMaxNRecoShowers];
@@ -525,6 +542,7 @@ private:
   //Fhicl pset labels
   std::string fNuGenModuleLabel;
   std::string fLargeantModuleLabel;
+  std::string fWireModuleLabel;
   std::string fTrackModuleLabel;
   std::string fShowerModuleLabel;
   std::string fPFParticleModuleLabel;
@@ -536,10 +554,20 @@ private:
   std::string fNumuEnergyRecoModuleLabel;
   std::string fNueEnergyRecoModuleLabel;
 
- 
+  //Algs
+  //PIDAnaAlg fPIDAnaAlg;
+  PandizzleAlg fPandizzleAlg;
+  calo::CalorimetryAlg fCalorimetryAlg;
+  //shower::ShowerEnergyAlg fShowerEnergyAlg;
+  ctp::CTPHelper fConvTrackPID;
+  dune::NeutrinoEnergyRecoAlg fNeutrinoEnergyRecoAlg;
+
   //Processing flags
   bool fUsePandoraVertex;
 
+  //Tools
+  std::unique_ptr<FDSelectionTools::RecoTrackSelector> fRecoTrackSelector;
+  std::unique_ptr<FDSelectionTools::RecoShowerSelector> fRecoShowerSelector;
 
   //TMVAStuff
   TMVA::Reader fReader;
@@ -579,17 +607,13 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   :
   EDAnalyzer(pset)   ,
   //fPIDAnaAlg(pset.get<fhicl::ParameterSet>("ModuleLabels"))   ,
-  //fPandizzleAlg(pset) ,
-  fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   //fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")),
-  fConvTrackPID(pset.get<fhicl::ParameterSet>("ctpHelper")),
-  fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
-  fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
   fNVertexParticles(0),
   fNRecoTracks(0),
   fNRecoShowers(0),
   fNuGenModuleLabel        (pset.get< std::string >("ModuleLabels.NuGenModuleLabel")),
   fLargeantModuleLabel     (pset.get< std::string >("ModuleLabels.LargeantModuleLabel")),
+  fWireModuleLabel        (pset.get< std::string >("ModuleLabels.WireModuleLabel")),
   fTrackModuleLabel        (pset.get< std::string >("ModuleLabels.TrackModuleLabel")),
   fShowerModuleLabel        (pset.get< std::string >("ModuleLabels.ShowerModuleLabel")),
   fPFParticleModuleLabel   (pset.get< std::string >("ModuleLabels.PFParticleModuleLabel")),
@@ -600,7 +624,14 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
   fNumuEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NumuEnergyRecoModuleLabel")),
   fNueEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NueEnergyRecoModuleLabel")),
+  fPandizzleAlg(pset) ,
+  fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
+  fConvTrackPID(pset.get<fhicl::ParameterSet>("ctpHelper")),
+  fNeutrinoEnergyRecoAlg(pset.get<fhicl::ParameterSet>("NeutrinoEnergyRecoAlg"),fTrackModuleLabel,fShowerModuleLabel,
+        fHitsModuleLabel,fWireModuleLabel,fTrackModuleLabel,fShowerModuleLabel,fPFParticleModuleLabel),
   fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")),
+  fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
+  fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
   fReader("") {
   fReader.AddVariable("PFPMichelNHits",&fHookUpTMVAPFPMichelNHits);
   fReader.AddVariable("PFPMichelElectronMVA",&fHookUpTMVAPFPMichelElectronMVA);
@@ -643,7 +674,7 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
 
   //fPIDAnaAlg.Run(evt);
-  //fPandizzleAlg.Run(evt);
+  fPandizzleAlg.Run(evt);
 
   fTree->Fill();
 }
@@ -767,6 +798,13 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelTrackRecoNChildPFP",&fSelTrackRecoNChildPFP);
     fTree->Branch("SelTrackRecoNChildTrackPFP",&fSelTrackRecoNChildTrackPFP);
     fTree->Branch("SelTrackRecoNChildShowerPFP",&fSelTrackRecoNChildShowerPFP);
+    fTree->Branch("SelTrackMVAEvalRatio",&fSelTrackMVAEvalRatio);
+    fTree->Branch("SelTrackMVAConcentration",&fSelTrackMVAConcentration);
+    fTree->Branch("SelTrackMVACoreHaloRatio",&fSelTrackMVACoreHaloRatio);
+    fTree->Branch("SelTrackMVAConicalness",&fSelTrackMVAConicalness);
+    fTree->Branch("SelTrackMVAdEdxStart",&fSelTrackMVAdEdxStart);
+    fTree->Branch("SelTrackMVAdEdxEnd",&fSelTrackMVAdEdxEnd);
+    fTree->Branch("SelTrackMVAdEdxEndRatio",&fSelTrackMVAdEdxEndRatio);
     fTree->Branch("SelTrackMVAElectron",&fSelTrackMVAElectron);
     fTree->Branch("SelTrackMVAPion",&fSelTrackMVAPion);
     fTree->Branch("SelTrackMVAMuon",&fSelTrackMVAMuon);
@@ -842,6 +880,13 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoTrackRecoNChildPFP",fRecoTrackRecoNChildPFP,"RecoTrackRecoNChildPFP[NRecoTracks]/I");
     fTree->Branch("RecoTrackRecoNChildTrackPFP",fRecoTrackRecoNChildTrackPFP,"RecoTrackRecoNChildTrackPFP[NRecoTracks]/I");
     fTree->Branch("RecoTrackRecoNChildShowerPFP",fRecoTrackRecoNChildShowerPFP,"RecoTrackRecoNChildShowerPFP[NRecoTracks]/I");
+    fTree->Branch("RecoTrackMVAEvalRatio",fRecoTrackMVAEvalRatio,"RecoTrackMVAEvalRatio[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAConcentration",fRecoTrackMVAConcentration,"RecoTrackMVAConcentration[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVACoreHaloRatio",fRecoTrackMVACoreHaloRatio,"RecoTrackMVACoreHaloRatio[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAConicalness",fRecoTrackMVAConicalness,"RecoTrackMVAConicalness[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAdEdxStart",fRecoTrackMVAdEdxStart,"RecoTrackMVAdEdxStart[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAdEdxEnd",fRecoTrackMVAdEdxEnd,"RecoTrackMVAdEdxEnd[NRecoTracks]/D");
+    fTree->Branch("RecoTrackMVAdEdxEndRatio",fRecoTrackMVAdEdxEndRatio,"RecoTrackMVAdEdxEndRatio[NRecoTracks]/D");
     fTree->Branch("RecoTrackMVAElectron",fRecoTrackMVAElectron,"RecoTrackMVAElectron[NRecoTracks]/D");
     fTree->Branch("RecoTrackMVAPion",fRecoTrackMVAPion,"RecoTrackMVAPion[NRecoTracks]/D");
     fTree->Branch("RecoTrackMVAMuon",fRecoTrackMVAMuon,"RecoTrackMVAMuon[NRecoTracks]/D");
@@ -923,6 +968,13 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelShowerRecoLength",&fSelShowerRecoLength);
     fTree->Branch("SelShowerRecoOpeningAngle",&fSelShowerRecoOpeningAngle);
     fTree->Branch("SelShowerRecoIsPrimaryPFPDaughter",&fSelShowerRecoIsPrimaryPFPDaughter);
+    fTree->Branch("SelShowerMVAEvalRatio",&fSelShowerMVAEvalRatio);
+    fTree->Branch("SelShowerMVAConcentration",&fSelShowerMVAConcentration);
+    fTree->Branch("SelShowerMVACoreHaloRatio",&fSelShowerMVACoreHaloRatio);
+    fTree->Branch("SelShowerMVAConicalness",&fSelShowerMVAConicalness);
+    fTree->Branch("SelShowerMVAdEdxStart",&fSelShowerMVAdEdxStart);
+    fTree->Branch("SelShowerMVAdEdxEnd",&fSelShowerMVAdEdxEnd);
+    fTree->Branch("SelShowerMVAdEdxEndRatio",&fSelShowerMVAdEdxEndRatio);
     fTree->Branch("SelShowerMVAElectron",&fSelShowerMVAElectron);
     fTree->Branch("SelShowerMVAPion",&fSelShowerMVAPion);
     fTree->Branch("SelShowerMVAMuon",&fSelShowerMVAMuon);
@@ -989,6 +1041,13 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoShowerRecoLength",&fRecoShowerRecoLength,"RecoShowerRecoLength[3]/D");
     fTree->Branch("RecoShowerRecoOpeningAngle",&fRecoShowerRecoOpeningAngle,"RecoShowerRecoOpeningAngle[3]/D");
     fTree->Branch("RecoShowerRecoIsPrimaryPFPDaughter",fRecoShowerRecoIsPrimaryPFPDaughter,"RecoShowerRecoIsPrimaryPFPDaughter[NRecoShowers]/O");
+    fTree->Branch("RecoShowerMVAEvalRatio",fRecoShowerMVAEvalRatio,"RecoShowerMVAEvalRatio[NRecoShowers]/D");
+    fTree->Branch("RecoShowerMVAConcentration",fRecoShowerMVAConcentration,"RecoShowerMVAConcentration[NRecoShowers]/D");
+    fTree->Branch("RecoShowerMVACoreHaloRatio",fRecoShowerMVACoreHaloRatio,"RecoShowerMVACoreHaloRatio[NRecoShowers]/D");
+    fTree->Branch("RecoShowerMVAConicalness",fRecoShowerMVAConicalness,"RecoShowerMVAConicalness[NRecoShowers]/D");
+    fTree->Branch("RecoShowerMVAdEdxStart",fRecoShowerMVAdEdxStart,"RecoShowerMVAdEdxStart[NRecoShowers]/D");
+    fTree->Branch("RecoShowerMVAdEdxEnd",fRecoShowerMVAdEdxEnd,"RecoShowerMVAdEdxEnd[NRecoShowers]/D");
+    fTree->Branch("RecoShowerMVAdEdxEndRatio",fRecoShowerMVAdEdxEndRatio,"RecoShowerMVAdEdxEndRatio[NRecoShowers]/D");
     fTree->Branch("RecoShowerMVAElectron",fRecoShowerMVAElectron,"RecoShowerMVAElectron[NRecoShowers]/D");
     fTree->Branch("RecoShowerMVAPion",fRecoShowerMVAPion,"RecoShowerMVAPion[NRecoShowers]/D");
     fTree->Branch("RecoShowerMVAMuon",fRecoShowerMVAMuon,"RecoShowerMVAMuon[NRecoShowers]/D");
@@ -1174,6 +1233,13 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackRecoNChildTrackPFP = kDefInt;
   fSelTrackRecoNChildShowerPFP = kDefInt;
   //MVA bits
+  fSelTrackMVAEvalRatio = kDefDoub;
+  fSelTrackMVAConcentration = kDefDoub;
+  fSelTrackMVACoreHaloRatio = kDefDoub;
+  fSelTrackMVAConicalness = kDefDoub;
+  fSelTrackMVAdEdxStart = kDefDoub;
+  fSelTrackMVAdEdxEnd = kDefDoub;
+  fSelTrackMVAdEdxEndRatio = kDefDoub;
   fSelTrackMVAElectron = kDefDoub;
   fSelTrackMVAPion = kDefDoub;
   fSelTrackMVAMuon = kDefDoub;
@@ -1251,6 +1317,13 @@ void FDSelection::CCNuSelection::Reset()
     fRecoTrackRecoNChildPFP[i_recotrack] = kDefInt;
     fRecoTrackRecoNChildTrackPFP[i_recotrack] = kDefInt;
     fRecoTrackRecoNChildShowerPFP[i_recotrack] = kDefInt;
+    fRecoTrackMVAEvalRatio[i_recotrack] = kDefDoub;
+    fRecoTrackMVAConcentration[i_recotrack] = kDefDoub;
+    fRecoTrackMVACoreHaloRatio[i_recotrack] = kDefDoub;
+    fRecoTrackMVAConicalness[i_recotrack] = kDefDoub;
+    fRecoTrackMVAdEdxStart[i_recotrack] = kDefDoub;
+    fRecoTrackMVAdEdxEnd[i_recotrack] = kDefDoub;
+    fRecoTrackMVAdEdxEndRatio[i_recotrack] = kDefDoub;
     fRecoTrackMVAElectron[i_recotrack] = kDefDoub;
     fRecoTrackMVAPion[i_recotrack] = kDefDoub;
     fRecoTrackMVAMuon[i_recotrack] = kDefDoub;
@@ -1343,6 +1416,13 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerRecoOpeningAngle = kDefDoub;
   fSelShowerRecoIsPrimaryPFPDaughter = 0;
   //MVA bits
+  fSelShowerMVAEvalRatio = kDefDoub;
+  fSelShowerMVAConcentration = kDefDoub;
+  fSelShowerMVACoreHaloRatio = kDefDoub;
+  fSelShowerMVAConicalness = kDefDoub;
+  fSelShowerMVAdEdxStart = kDefDoub;
+  fSelShowerMVAdEdxEnd = kDefDoub;
+  fSelShowerMVAdEdxEndRatio = kDefDoub;
   fSelShowerMVAElectron = kDefDoub;
   fSelShowerMVAPion = kDefDoub;
   fSelShowerMVAMuon = kDefDoub;
@@ -1413,6 +1493,13 @@ void FDSelection::CCNuSelection::Reset()
     fRecoShowerRecoLength[i_shower] = kDefDoub;
     fRecoShowerRecoOpeningAngle[i_shower] = kDefDoub;
     fRecoShowerRecoIsPrimaryPFPDaughter[i_shower] = false;
+    fRecoShowerMVAEvalRatio[i_shower] = kDefDoub;
+    fRecoShowerMVAConcentration[i_shower] = kDefDoub;
+    fRecoShowerMVACoreHaloRatio[i_shower] = kDefDoub;
+    fRecoShowerMVAConicalness[i_shower] = kDefDoub;
+    fRecoShowerMVAdEdxStart[i_shower] = kDefDoub;
+    fRecoShowerMVAdEdxEnd[i_shower] = kDefDoub;
+    fRecoShowerMVAdEdxEndRatio[i_shower] = kDefDoub;
     fRecoShowerMVAElectron[i_shower] = kDefDoub;
     fRecoShowerMVAPion[i_shower] = kDefDoub;
     fRecoShowerMVAMuon[i_shower] = kDefDoub;
@@ -1738,6 +1825,7 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
     FillChildPFPInformation(current_track, evt, fRecoTrackRecoNChildPFP[i_track], fRecoTrackRecoNChildTrackPFP[i_track], fRecoTrackRecoNChildShowerPFP[i_track]);
     //24/07/18 DBrailsford Use the data product to get the neutrino energy
     //fRecoTrackRecoContained[i_track] = IsTrackContained(current_track, current_track_hits, evt);
+    //std::unique_ptr<dune::EnergyRecoOutput> energyRecoHandle(std::make_unique<dune::EnergyRecoOutput>(fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(current_track, evt)));
     //fNumuRecoENu = energyRecoHandle->fNuLorentzVector.E();
     //fNumuRecoEHad = energyRecoHandle->fHadLorentzVector.E();
 
@@ -1779,17 +1867,26 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
         }
     }
     //Now get the pid stuff
-    //art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
-    //std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_track.key());
-    //std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
-    ////Get the PIDs
-    //fRecoTrackMVAElectron[i_track] = mvaOutMap["electron"];
-    //fRecoTrackMVAPion[i_track] = mvaOutMap["pich"];
-    //fRecoTrackMVAMuon[i_track] = mvaOutMap["muon"];
-    //fRecoTrackMVAProton[i_track] = mvaOutMap["proton"];
-    //fRecoTrackMVAPhoton[i_track] = mvaOutMap["photon"];
-
-    /*
+    art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
+    std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_track.key());
+    if (pids.at(0).isAvailable()){
+        fRecoTrackMVAEvalRatio[i_track] = pids.at(0)->evalRatio;
+        fRecoTrackMVAConcentration[i_track] = pids.at(0)->concentration;
+        fRecoTrackMVACoreHaloRatio[i_track] = pids.at(0)->coreHaloRatio;
+        fRecoTrackMVAConicalness[i_track] = pids.at(0)->conicalness;
+        fRecoTrackMVAdEdxStart[i_track] = pids.at(0)->dEdxStart;
+        fRecoTrackMVAdEdxEnd[i_track] = pids.at(0)->dEdxEnd;
+        fRecoTrackMVAdEdxEndRatio[i_track] = pids.at(0)->dEdxEndRatio;
+        std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+        if (!(mvaOutMap.empty())){
+            //Get the PIDs
+            fRecoTrackMVAElectron[i_track] = mvaOutMap["electron"];
+            fRecoTrackMVAPion[i_track] = mvaOutMap["pich"];
+            fRecoTrackMVAMuon[i_track] = mvaOutMap["muon"];
+            fRecoTrackMVAProton[i_track] = mvaOutMap["proton"];
+            fRecoTrackMVAPhoton[i_track] = mvaOutMap["photon"];
+        }
+    }
     //11/04/19 DBrailsford
     //Get the pandizzle variables
     art::Ptr<recob::PFParticle> track_pfp = GetPFParticleMatchedToTrack(current_track, evt);
@@ -1822,7 +1919,6 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
     fHookUpTMVAPFPTrackdEdxEndRatio = (fRecoTrackTMVAPFPTrackdEdxEndRatio[i_track]);
 
     fRecoTrackPandizzleVar[i_track] = fReader.EvaluateMVA("BDTG");
-    */
 
     ////20/04/20 DBrailsford
     ////Get the DeepPan variables
@@ -1925,18 +2021,19 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   FillChildPFPInformation(sel_track, evt, fSelTrackRecoNChildPFP, fSelTrackRecoNChildTrackPFP, fSelTrackRecoNChildShowerPFP);
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
   //fSelTrackRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
-  //fNumuRecoENu = energyRecoHandle->fNuLorentzVector.E();
-  //fNumuRecoEHad = energyRecoHandle->fHadLorentzVector.E();
+  std::unique_ptr<dune::EnergyRecoOutput> energyRecoHandle(std::make_unique<dune::EnergyRecoOutput>(fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_track, evt)));
+  fNumuRecoENu = energyRecoHandle->fNuLorentzVector.E();
+  fNumuRecoEHad = energyRecoHandle->fHadLorentzVector.E();
 
-  //fSelTrackRecoContained = energyRecoHandle->longestTrackContained; 
-  //if (energyRecoHandle->trackMomMethod==1){ //momentum by range was used to calculate ENu
-  //  fSelTrackRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
-  //  fNumuRecoMomLep = fSelTrackRecoMomContained;
-  //}
-  //else if (energyRecoHandle->trackMomMethod==0){//momentum by MCS
-  //  fSelTrackRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
-  //  fNumuRecoMomLep = fSelTrackRecoMomMCS;
-  //}
+  fSelTrackRecoContained = energyRecoHandle->longestTrackContained; 
+  if (energyRecoHandle->trackMomMethod==1){ //momentum by range was used to calculate ENu
+    fSelTrackRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+    fNumuRecoMomLep = fSelTrackRecoMomContained;
+  }
+  else if (energyRecoHandle->trackMomMethod==0){//momentum by MCS
+    fSelTrackRecoMomMCS = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+    fNumuRecoMomLep = fSelTrackRecoMomMCS;
+  }
 
   int g4id = TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, sel_track_hits, 1);
   fSelTrackRecoCompleteness = FDSelectionUtils::CompletenessFromTrueParticleID(clockData, sel_track_hits, hitList, g4id);
@@ -1965,18 +2062,27 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
         fSelTrackTrueEndT = matched_mcparticle->EndPosition().T();
       }
   }
-  /*
   //Now get the pid stuff
   art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
   std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_track.key());
-  std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
-  //Get the PIDs
-  fSelTrackMVAElectron = mvaOutMap["electron"];
-  fSelTrackMVAPion = mvaOutMap["pich"];
-  fSelTrackMVAMuon = mvaOutMap["muon"];
-  fSelTrackMVAProton = mvaOutMap["proton"];
-  fSelTrackMVAPhoton = mvaOutMap["photon"];
-
+  if (pids.at(0).isAvailable()){
+      fSelTrackMVAEvalRatio = pids.at(0)->evalRatio;
+      fSelTrackMVAConcentration = pids.at(0)->concentration;
+      fSelTrackMVACoreHaloRatio = pids.at(0)->coreHaloRatio;
+      fSelTrackMVAConicalness = pids.at(0)->conicalness;
+      fSelTrackMVAdEdxStart = pids.at(0)->dEdxStart;
+      fSelTrackMVAdEdxEnd = pids.at(0)->dEdxEnd;
+      fSelTrackMVAdEdxEndRatio = pids.at(0)->dEdxEndRatio;
+      std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+      if (!(mvaOutMap.empty())){
+          //Get the PIDs
+          fSelTrackMVAElectron = mvaOutMap["electron"];
+          fSelTrackMVAPion = mvaOutMap["pich"];
+          fSelTrackMVAMuon = mvaOutMap["muon"];
+          fSelTrackMVAProton = mvaOutMap["proton"];
+          fSelTrackMVAPhoton = mvaOutMap["photon"];
+      }
+  }
   //11/04/19 DBrailsford
   //Get the pandizzle variables
   art::Ptr<recob::PFParticle> track_pfp = GetPFParticleMatchedToTrack(sel_track, evt);
@@ -2018,7 +2124,6 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
       fSelTrackDeepPanPiVar = deepPanPIDResult.GetPionScore();
       fSelTrackDeepPanProtonVar = deepPanPIDResult.GetProtonScore();
   }
-  */
 }
 
 //double FDSelection::CCNuSelection::CalculateTrackCharge(art::Ptr<recob::Track> const track, std::vector< art::Ptr< recob::Hit> > const track_hits){
@@ -2273,6 +2378,7 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
 
     //24/07/18 DBrailsford Use the data product to get the neutrino energy
     //fRecoShowerRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
+    //std::unique_ptr<dune::EnergyRecoOutput> energyRecoHandle(std::make_unique<dune::EnergyRecoOutput>(fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(current_shower, evt)));
     //fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
     //fNueRecoEHad = energyRecoHandle->fHadLorentzVector.E();
     //fNueRecoMomLep = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
@@ -2307,15 +2413,26 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
         }
     }
     //Now get the pid stuff
-    //art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
-    //std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_shower.key());
-    //std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
-    ////Get the PIDs
-    //fRecoShowerMVAElectron[i_shower] = mvaOutMap["electron"];
-    //fRecoShowerMVAPion[i_shower] = mvaOutMap["pich"];
-    //fRecoShowerMVAMuon[i_shower] = mvaOutMap["muon"];
-    //fRecoShowerMVAProton[i_shower] = mvaOutMap["proton"];
-    //fRecoShowerMVAPhoton[i_shower] = mvaOutMap["photon"];
+    art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
+    std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_shower.key());
+    if (pids.at(0).isAvailable()){
+        fRecoShowerMVAEvalRatio[i_shower] = pids.at(0)->evalRatio;
+        fRecoShowerMVAConcentration[i_shower] = pids.at(0)->concentration;
+        fRecoShowerMVACoreHaloRatio[i_shower] = pids.at(0)->coreHaloRatio;
+        fRecoShowerMVAConicalness[i_shower] = pids.at(0)->conicalness;
+        fRecoShowerMVAdEdxStart[i_shower] = pids.at(0)->dEdxStart;
+        fRecoShowerMVAdEdxEnd[i_shower] = pids.at(0)->dEdxEnd;
+        fRecoShowerMVAdEdxEndRatio[i_shower] = pids.at(0)->dEdxEndRatio;
+        std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+        if (!(mvaOutMap.empty())){
+            //Get the PIDs
+            fRecoShowerMVAElectron[i_shower] = mvaOutMap["electron"];
+            fRecoShowerMVAPion[i_shower] = mvaOutMap["pich"];
+            fRecoShowerMVAMuon[i_shower] = mvaOutMap["muon"];
+            fRecoShowerMVAProton[i_shower] = mvaOutMap["proton"];
+            fRecoShowerMVAPhoton[i_shower] = mvaOutMap["photon"];
+        }
+    }
     if (current_shower->dEdx().size() > 0)
     {
         for (int i_plane = 0; i_plane < 3; i_plane++){
@@ -2432,9 +2549,11 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
 
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
   //fSelShowerRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
-  //fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
-  //fNueRecoEHad = energyRecoHandle->fHadLorentzVector.E();
-  //fNueRecoMomLep = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
+
+  std::unique_ptr<dune::EnergyRecoOutput> energyRecoHandle(std::make_unique<dune::EnergyRecoOutput>(fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_shower, evt)));
+  fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
+  fNueRecoEHad = energyRecoHandle->fHadLorentzVector.E();
+  fNueRecoMomLep = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
 
   FillChildPFPInformation(sel_shower, evt, fSelShowerRecoNChildPFP, fSelShowerRecoNChildTrackPFP, fSelShowerRecoNChildShowerPFP);
 
@@ -2466,15 +2585,26 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
       }
   }
   //Now get the pid stuff
-  //art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
-  //std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_shower.key());
-  //std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
-  ////Get the PIDs
-  //fSelShowerMVAElectron = mvaOutMap["electron"];
-  //fSelShowerMVAPion = mvaOutMap["pich"];
-  //fSelShowerMVAMuon = mvaOutMap["muon"];
-  //fSelShowerMVAProton = mvaOutMap["proton"];
-  //fSelShowerMVAPhoton = mvaOutMap["photon"];
+  art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
+  std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_shower.key());
+  if (pids.at(0).isAvailable()){
+      fSelShowerMVAEvalRatio = pids.at(0)->evalRatio;
+      fSelShowerMVAConcentration = pids.at(0)->concentration;
+      fSelShowerMVACoreHaloRatio = pids.at(0)->coreHaloRatio;
+      fSelShowerMVAConicalness = pids.at(0)->conicalness;
+      fSelShowerMVAdEdxStart = pids.at(0)->dEdxStart;
+      fSelShowerMVAdEdxEnd = pids.at(0)->dEdxEnd;
+      fSelShowerMVAdEdxEndRatio = pids.at(0)->dEdxEndRatio;
+      std::map<std::string,double> mvaOutMap = pids.at(0)->mvaOutput;
+      if (!(mvaOutMap.empty())){
+          //Get the PIDs
+          fSelShowerMVAElectron = mvaOutMap["electron"];
+          fSelShowerMVAPion = mvaOutMap["pich"];
+          fSelShowerMVAMuon = mvaOutMap["muon"];
+          fSelShowerMVAProton = mvaOutMap["proton"];
+          fSelShowerMVAPhoton = mvaOutMap["photon"];
+      }
+  }
 
   //25/07/19 DBrailsford
   //Calculate shower energy
