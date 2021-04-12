@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+testAnalysis:
+{
+   module_type:		"TestAnalysis"
+   MCParticleLabel:     "largeant"
+   PFParticleLabel:     "pandoraJam"
+   PFParticleAssociationLabel: "pandoraJam"
+}
+END_PROLOG

@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+deltaRayVertexAnalysis:
+{
+   module_type:                    "DeltaRayVertexAnalysis"
+   MCParticleLabel:                "largeant"
+   PFParticleLabel:                "pandoraNoStitching"
+   PFParticleAssociationLabel:     "pandoraNoStitching"
+   ApplySpaceChargeCorrection:     true
+}
+END_PROLOG

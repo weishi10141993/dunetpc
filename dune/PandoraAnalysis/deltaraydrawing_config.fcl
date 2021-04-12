@@ -1,0 +1,14 @@
+BEGIN_PROLOG
+deltaRayDrawing:
+{
+   module_type:                    "DeltaRayDrawing"
+   MCParticleLabel:                "largeant"
+   PFParticleLabel:                "pandoraCosmic"
+   TrackLabel:                     "pandoraTrack"
+   ShowerLabel:                    "pandoraModularShower"
+   PFParticleAssociationLabel:     "pandoraCosmic"
+   AnalysisTreeName:               "pandoraShowerTree"
+   ApplySpaceChargeCorrection:     true
+   TrackID:                        1
+}
+END_PROLOG

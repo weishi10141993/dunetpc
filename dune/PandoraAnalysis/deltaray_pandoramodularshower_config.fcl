@@ -1,0 +1,12 @@
+BEGIN_PROLOG
+deltaRayAnalysis_pandoraModularShower:
+{
+   module_type:                    "DeltaRayAnalysis"
+   MCParticleLabel:                "largeant"
+   PFParticleLabel:                "pandoraCosmic"
+   TrackLabel:                     "pandoraTrack"
+   ShowerLabel:                    "pandoraModularShower"
+   PFParticleAssociationLabel:     "pandoraCosmic"
+   AnalysisTreeName:               "pandoraModularShowerTree"
+}
+END_PROLOG
