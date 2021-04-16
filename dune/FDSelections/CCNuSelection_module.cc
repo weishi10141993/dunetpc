@@ -56,7 +56,8 @@
 
 //Custom
 //#include "PIDAnaAlg.h"
-#include "PandizzleAlg.h"
+#include "dune/FDSelections/pandizzle/PandizzleAlg.h"
+#include "dune/FDSelections/pandrizzle/PandrizzleAlg.h"
 #include "FDSelectionUtils.h"
 #include "tools/RecoTrackSelector.h"
 #include "tools/RecoShowerSelector.h"
@@ -557,6 +558,7 @@ private:
   //Algs
   //PIDAnaAlg fPIDAnaAlg;
   PandizzleAlg fPandizzleAlg;
+  PandrizzleAlg fPandrizzleAlg;
   calo::CalorimetryAlg fCalorimetryAlg;
   //shower::ShowerEnergyAlg fShowerEnergyAlg;
   ctp::CTPHelper fConvTrackPID;
@@ -570,7 +572,7 @@ private:
   std::unique_ptr<FDSelectionTools::RecoShowerSelector> fRecoShowerSelector;
 
   //TMVAStuff
-  TMVA::Reader fReader;
+  TMVA::Reader fPandizzleReader;
   float fTMVAPFPMichelNHits;
   float fTMVAPFPMichelElectronMVA;
   float fTMVAPFPMichelRecoEnergyPlane2;
@@ -625,6 +627,7 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fNumuEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NumuEnergyRecoModuleLabel")),
   fNueEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NueEnergyRecoModuleLabel")),
   fPandizzleAlg(pset) ,
+  fPandrizzleAlg(pset),
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fConvTrackPID(pset.get<fhicl::ParameterSet>("ctpHelper")),
   fNeutrinoEnergyRecoAlg(pset.get<fhicl::ParameterSet>("NeutrinoEnergyRecoAlg"),fTrackModuleLabel,fShowerModuleLabel,
@@ -632,26 +635,26 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")),
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
-  fReader("") {
-  fReader.AddVariable("PFPMichelNHits",&fHookUpTMVAPFPMichelNHits);
-  fReader.AddVariable("PFPMichelElectronMVA",&fHookUpTMVAPFPMichelElectronMVA);
-  fReader.AddVariable("PFPMichelRecoEnergyPlane2",&fHookUpTMVAPFPMichelRecoEnergyPlane2);
-  fReader.AddVariable("PFPTrackDeflecAngleSD",&fHookUpTMVAPFPTrackDeflecAngleSD);
-  fReader.AddVariable("PFPTrackLength",&fHookUpTMVAPFPTrackLength);
-  fReader.AddVariable("PFPTrackEvalRatio",&fHookUpTMVAPFPTrackEvalRatio);
-  fReader.AddVariable("PFPTrackConcentration",&fHookUpTMVAPFPTrackConcentration);
-  fReader.AddVariable("PFPTrackCoreHaloRatio",&fHookUpTMVAPFPTrackCoreHaloRatio);
-  fReader.AddVariable("PFPTrackConicalness",&fHookUpTMVAPFPTrackConicalness);
-  fReader.AddVariable("PFPTrackdEdxStart",&fHookUpTMVAPFPTrackdEdxStart);
-  fReader.AddVariable("PFPTrackdEdxEnd",&fHookUpTMVAPFPTrackdEdxEnd);
-  fReader.AddVariable("PFPTrackdEdxEndRatio",&fHookUpTMVAPFPTrackdEdxEndRatio);
-  //fReader.AddVariable("PFPTrackPIDA",&fTMVAPFPTrackPIDA);
-  //fReader.BookMVA("BDTG","/dune/app/users/dbrailsf/oscillation/nu_mu/cutsel/trainings/pandizzle/dataset_pandizzle/weights/TMVAClassification_BDTG.weights.xml");
-  std::string weight_file_name = "TMVAClassification_BDTG.weights.xml";
+  fPandizzleReader("") {
+  fPandizzleReader.AddVariable("PFPMichelNHits",&fHookUpTMVAPFPMichelNHits);
+  fPandizzleReader.AddVariable("PFPMichelElectronMVA",&fHookUpTMVAPFPMichelElectronMVA);
+  fPandizzleReader.AddVariable("PFPMichelRecoEnergyPlane2",&fHookUpTMVAPFPMichelRecoEnergyPlane2);
+  fPandizzleReader.AddVariable("PFPTrackDeflecAngleSD",&fHookUpTMVAPFPTrackDeflecAngleSD);
+  fPandizzleReader.AddVariable("PFPTrackLength",&fHookUpTMVAPFPTrackLength);
+  fPandizzleReader.AddVariable("PFPTrackEvalRatio",&fHookUpTMVAPFPTrackEvalRatio);
+  fPandizzleReader.AddVariable("PFPTrackConcentration",&fHookUpTMVAPFPTrackConcentration);
+  fPandizzleReader.AddVariable("PFPTrackCoreHaloRatio",&fHookUpTMVAPFPTrackCoreHaloRatio);
+  fPandizzleReader.AddVariable("PFPTrackConicalness",&fHookUpTMVAPFPTrackConicalness);
+  fPandizzleReader.AddVariable("PFPTrackdEdxStart",&fHookUpTMVAPFPTrackdEdxStart);
+  fPandizzleReader.AddVariable("PFPTrackdEdxEnd",&fHookUpTMVAPFPTrackdEdxEnd);
+  fPandizzleReader.AddVariable("PFPTrackdEdxEndRatio",&fHookUpTMVAPFPTrackdEdxEndRatio);
+  //fPandizzleReader.AddVariable("PFPTrackPIDA",&fTMVAPFPTrackPIDA);
+  //fPandizzleReader.BookMVA("BDTG","/dune/app/users/dbrailsf/oscillation/nu_mu/cutsel/trainings/pandizzle/dataset_pandizzle/weights/TMVAClassification_BDTG.weights.xml");
+  std::string weight_file_name = "Pandizzle_TMVAClassification_BDTG.weights.xml";
   std::string weight_file_path;
   cet::search_path sp("FW_SEARCH_PATH");
   sp.find_file(weight_file_name, weight_file_path);
-  fReader.BookMVA("BDTG",weight_file_path);
+  fPandizzleReader.BookMVA("BDTG",weight_file_path);
 }
 
 void FDSelection::CCNuSelection::analyze(art::Event const & evt)
@@ -675,6 +678,7 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
   //fPIDAnaAlg.Run(evt);
   fPandizzleAlg.Run(evt);
+  fPandrizzleAlg.Run(evt);
 
   fTree->Fill();
 }
@@ -1918,7 +1922,7 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
     fHookUpTMVAPFPTrackdEdxEnd = (fRecoTrackTMVAPFPTrackdEdxEnd[i_track]);
     fHookUpTMVAPFPTrackdEdxEndRatio = (fRecoTrackTMVAPFPTrackdEdxEndRatio[i_track]);
 
-    fRecoTrackPandizzleVar[i_track] = fReader.EvaluateMVA("BDTG");
+    fRecoTrackPandizzleVar[i_track] = fPandizzleReader.EvaluateMVA("BDTG");
 
     ////20/04/20 DBrailsford
     ////Get the DeepPan variables
@@ -2114,7 +2118,7 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   fHookUpTMVAPFPTrackdEdxEnd = (fTMVAPFPTrackdEdxEnd);
   fHookUpTMVAPFPTrackdEdxEndRatio = (fTMVAPFPTrackdEdxEndRatio);
 
-  fSelTrackPandizzleVar = fReader.EvaluateMVA("BDTG");
+  fSelTrackPandizzleVar = fPandizzleReader.EvaluateMVA("BDTG");
 
   //20/04/20 DBrailsford
   //Get the DeepPan variables

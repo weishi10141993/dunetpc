@@ -1,7 +1,4 @@
-add_subdirectory(pandizzle)
-add_subdirectory(pandrizzle)
-
-art_make( LIBRARY_NAME FDSelection
+art_make( LIBRARY_NAME PandrizzleAlg
 	  LIB_LIBRARIES larcorealg_Geometry
 	  	        larcore_Geometry_Geometry_service
 		          larsim_Simulation nug4_ParticleNavigation lardataobj_Simulation
@@ -33,10 +30,8 @@ art_make( LIBRARY_NAME FDSelection
             dune_TrackPID_tf
             larsim_Utils
             NeutrinoEnergyRecoAlg
-            PandizzleAlg
-            PandrizzleAlg
 
-MODULE_LIBRARIES FDSelection
+MODULE_LIBRARIES PandrizzleAlg
 #dune_TrackPID
 dune_TrackPID_algorithms
 dune_TrackPID_products
@@ -49,9 +44,6 @@ dune_TrackPID_products
 	  	           art_Persistency_Provenance canvas
 	  	           art_Utilities canvas
         )
-
-add_subdirectory(tools)
-add_subdirectory(weights)
 
 install_headers()
 install_fhicl()
