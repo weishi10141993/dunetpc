@@ -34,8 +34,10 @@
 //#include "larreco/RecoAlg/ShowerEnergyAlg.h"
 
 // c++
-#include <vector>
 #include <map>
+#include <memory>
+#include <variant>
+#include <vector>
 
 // ROOT
 #include "TTree.h"
@@ -46,18 +48,31 @@
 //constexpr int kMaxObjects = 999;
 
 namespace FDSelection {
-  class PandrizzleAlg;
+    class PandrizzleAlg;
 }
 
 class FDSelection::PandrizzleAlg {
- public:
+    public:
 
-  PandrizzleAlg(const fhicl::ParameterSet& pset);
+        PandrizzleAlg(const fhicl::ParameterSet& pset);
+        void Run(const art::Event& evt);
 
-  void Run(const art::Event& evt);
+        enum Vars{
+            EvalRatio = 0,
+            Concentration,
+            CoreHaloRatio,
+            Conicalness,
+            dEdxBestPlane,
+            Displacement,
+            DCA,
+            Wideness,
+            EnergyDensity,
+            TerminatingValue
 
- private:
+        };
+    private:
 
+        std::map<Vars, std::unique_ptr<Float_t> >  fInputs;
 
 };
 
