@@ -60,7 +60,7 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestEnergyRecoVertexShowerSelector:
           showerEnergy[plane] = shower->Energy()[plane];
     }
     else 
-        showerEnergy[2] = dune_ana::DUNEAnaShowerUtils::GetHits(shower, evt, "pandoraShowerLegacy").size();
+        showerEnergy[2] = dune_ana::DUNEAnaShowerUtils::GetHits(shower, evt, "pandoraShower").size();
       //showerEnergy[plane] = fShowerEnergyAlg.ShowerEnergy(showerHits, plane);
     int best_plane = -1;
     double highest_energy_plane = 0;
