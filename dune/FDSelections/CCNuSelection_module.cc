@@ -678,7 +678,6 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
   //fPIDAnaAlg.Run(evt);
   fPandizzleAlg.Run(evt);
-  fPandrizzleAlg.Run(evt);
 
   fTree->Fill();
 }
@@ -2469,6 +2468,8 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
     std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - no shower selected by tool"<<std::endl;
     return;
   }
+
+  fPandrizzleAlg.Run(sel_shower, TVector3(fRecoNuVtxX, fRecoNuVtxY, fRecoNuVtxZ), evt);
 
   //10/10/18 DBrailsford start assessing PFParticle stuff
   //Now get the PFParticles

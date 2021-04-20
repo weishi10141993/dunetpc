@@ -7,21 +7,44 @@
 
 #include <limits>
 
+#include "canvas/Persistency/Common/FindOneP.h"
+
 #include "PandrizzleAlg.h"
 #include "larsim/Utils/TruthMatchUtils.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 
-constexpr Float_t kDefValue(std::numeric_limits<Float_t>::lowest());
+namespace
+{
+    constexpr Float_t kDefValue(std::numeric_limits<Float_t>::lowest());
+
+    using namespace FDSelection;
+    void Reset(PandrizzleAlg::InputVarsToReader &inputVarsToReader)
+    {
+        for (PandrizzleAlg::Vars var = PandrizzleAlg::kEvalRatio; var < PandrizzleAlg::kTerminatingValue; var=static_cast<PandrizzleAlg::Vars>(static_cast<int>(var)+1)) 
+        {
+            auto [itr, inserted] = inputVarsToReader.try_emplace(var, std::make_unique<Float_t>(kDefValue));
+            if (!inserted)
+                *(itr->second.get()) = kDefValue;
+        }
+    }
+}
+
+FDSelection::PandrizzleAlg::Record::Record(const InputVarsToReader &inputVarsToReader) 
+{
+    for (PandrizzleAlg::Vars var = PandrizzleAlg::kEvalRatio; var < PandrizzleAlg::kTerminatingValue; var=static_cast<PandrizzleAlg::Vars>(static_cast<int>(var)+1)) 
+    {
+        fInputs.try_emplace(var, *(inputVarsToReader.at(var)));
+    }
+}
 
 FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
+    //fPIDModuleLabel(pset.get<std::string>("ModuleLabels.PIDModuleLabel"))
+    fPIDModuleLabel(""),
     fReader("",0)
 //fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg"))
 {
-    for ( Vars var = kEvalRatio; var < kTerminatingValue; var=static_cast<Vars>(static_cast<int>(var)+1)) 
-    {
-        fInputs.try_emplace(var, std::make_unique<Float_t>(kDefValue));
-    }
+    Reset(fInputsToReader);
     fReader.AddVariable("EvalRatio",GetVarPtr(kEvalRatio));
     fReader.AddVariable("Concentration",GetVarPtr(kConcentration));
     fReader.AddVariable("CoreHaloRatio",GetVarPtr(kCoreHaloRatio));
@@ -42,9 +65,69 @@ FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
 }
 
 
-void FDSelection::PandrizzleAlg::Run(const art::Event& evt) 
+FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::Run(const art::Ptr<recob::Shower> pShower, const TVector3& nuVertex, const art::Event& evt) 
 {
-    std::cout<<"starting"<<std::endl;
-    std::cout<<"value is: " << fReader.EvaluateMVA("BDTG")<<std::endl;;
-    std::cout<<"done"<<std::endl;
+    art::FindOneP<anab::MVAPIDResult> findPIDResult(std::vector<art::Ptr<recob::Shower> >{pShower}, evt, "pid");
+    art::Ptr<anab::MVAPIDResult> mvaPIDResult(findPIDResult.at(0));
+    //MVAPID vars
+    if (mvaPIDResult.isAvailable())
+    {
+        if (isnan(mvaPIDResult->evalRatio))
+            SetVar(kEvalRatio, -0.5f);
+        else
+            SetVar(kEvalRatio, static_cast<Float_t>(mvaPIDResult->evalRatio));
+
+        if (isnan(mvaPIDResult->concentration))
+            SetVar(kConcentration, -2.f);
+        else
+            SetVar(kConcentration, std::min(static_cast<Float_t>(mvaPIDResult->concentration), 50.f));
+        SetVar(kCoreHaloRatio, static_cast<Float_t>(mvaPIDResult->coreHaloRatio));
+        SetVar(kConicalness, std::min(static_cast<Float_t>(mvaPIDResult->conicalness), 100.f));
+    }
+    else 
+        ReturnEmptyRecord();
+
+    //dEdx
+    if (pShower->dEdx().size() > 0)
+    {
+        SetVar(kdEdxBestPlane, std::max(std::min(static_cast<Float_t>(pShower->dEdx().at(pShower->best_plane())), 20.f), -2.f));
+    }
+    else
+        ReturnEmptyRecord();
+
+    //Displacement
+    SetVar(kDisplacement, std::min(static_cast<Float_t>((pShower->ShowerStart() - nuVertex).Mag()), 100.f));
+
+    //Distance of closest approach
+    double alpha((pShower->ShowerStart() - nuVertex).Dot(pShower->Direction()));
+    TVector3 r(pShower->ShowerStart() + alpha*pShower->Direction());
+    SetVar(kDCA, std::min(static_cast<Float_t>((r-nuVertex).Mag()), 50.f));
+
+    //Wideness
+    Float_t wideness(static_cast<Float_t>(pShower->OpenAngle()/pShower->Length()));
+    if (isnan(wideness))
+        SetVar(kWideness, -0.01f);
+    else
+        SetVar(kWideness, std::min( wideness, 0.1f));
+
+    //Energy density
+    if (pShower->Energy().size() > 0)
+    {
+        Float_t volume(static_cast<Float_t>((M_PI * pShower->Length() * pShower->Length() * pShower->Length() * std::tan(pShower->OpenAngle()))/3.));
+        Float_t energyDensity(std::min(std::max(static_cast<Float_t>(pShower->Energy().at(2))/volume, -0.1f), 5.f));
+        if (isnan(energyDensity))
+            energyDensity = -0.1f;
+        SetVar(kEnergyDensity, energyDensity);
+    }
+    else
+        ReturnEmptyRecord();
+
+    std::cout<< "The MVA is: " << fReader.EvaluateMVA("BDTG") << std::endl;
+    return Record(fInputsToReader);
+}
+
+FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::ReturnEmptyRecord()
+{
+    Reset(fInputsToReader);
+    return Record(fInputsToReader);
 }

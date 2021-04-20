@@ -34,6 +34,7 @@
 //#include "larreco/RecoAlg/ShowerEnergyAlg.h"
 
 // c++
+#include <functional>
 #include <map>
 #include <memory>
 #include <variant>
@@ -54,6 +55,7 @@ namespace FDSelection {
 
 class FDSelection::PandrizzleAlg {
     public:
+
         enum Vars{
             kEvalRatio = 0,
             kConcentration,
@@ -67,21 +69,56 @@ class FDSelection::PandrizzleAlg {
             kTerminatingValue
         };
 
-        PandrizzleAlg(const fhicl::ParameterSet& pset);
-        void Run(const art::Event& evt);
+        using InputVarsToReader = std::map<Vars, std::unique_ptr<Float_t> >;
 
+        class Record {
+            public:
+                Record(const InputVarsToReader &inputVars);
+
+                Float_t GetVar(const FDSelection::PandrizzleAlg::Vars var);
+
+            private:
+                using InputVars = std::map<Vars, Float_t>;
+                InputVars fInputs;
+        };
+
+        PandrizzleAlg(const fhicl::ParameterSet& pset);
+
+        Record Run(const art::Ptr<recob::Shower> pShower, const TVector3 &nuVertex, const art::Event& evt);
 
     private:
+        Float_t* GetVarPtr(const FDSelection::PandrizzleAlg::Vars var);
+        void SetVar(const FDSelection::PandrizzleAlg::Vars var, const Float_t value);
+
+        std::string fPIDModuleLabel;
 
         TMVA::Reader fReader;
-        std::map<Vars, std::unique_ptr<Float_t> >  fInputs;
+        InputVarsToReader fInputsToReader;
 
-        float * GetVarPtr(const Vars var);
+        Record ReturnEmptyRecord();
+
+
 };
 
-float * FDSelection::PandrizzleAlg::GetVarPtr(const FDSelection::PandrizzleAlg::Vars var)
+Float_t FDSelection::PandrizzleAlg::Record::GetVar(const FDSelection::PandrizzleAlg::Vars var)
 {
-    return fInputs.at(var).get();
+    return (fInputs.at(var));
+}
+
+Float_t* FDSelection::PandrizzleAlg::GetVarPtr(const FDSelection::PandrizzleAlg::Vars var)
+{
+    return fInputsToReader.at(var).get();
+}
+
+void FDSelection::PandrizzleAlg::SetVar(const FDSelection::PandrizzleAlg::Vars var, const Float_t value)
+{
+    std::map<Vars, std::unique_ptr<Float_t> >::iterator itr(fInputsToReader.find(var));
+    if (itr != fInputsToReader.end())
+    {
+        *(itr->second.get()) = value;
+        std::cout<<"The value for " << var << " is " << *(itr->second.get()) << std::endl;
+    }
+    return;
 }
 
 #endif
