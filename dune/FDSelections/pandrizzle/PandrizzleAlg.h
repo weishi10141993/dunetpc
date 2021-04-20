@@ -40,6 +40,7 @@
 #include <vector>
 
 // ROOT
+#include "TMVA/Reader.h"
 #include "TTree.h"
 
 //Custom
@@ -53,27 +54,34 @@ namespace FDSelection {
 
 class FDSelection::PandrizzleAlg {
     public:
+        enum Vars{
+            kEvalRatio = 0,
+            kConcentration,
+            kCoreHaloRatio,
+            kConicalness,
+            kdEdxBestPlane,
+            kDisplacement,
+            kDCA,
+            kWideness,
+            kEnergyDensity,
+            kTerminatingValue
+        };
 
         PandrizzleAlg(const fhicl::ParameterSet& pset);
         void Run(const art::Event& evt);
 
-        enum Vars{
-            EvalRatio = 0,
-            Concentration,
-            CoreHaloRatio,
-            Conicalness,
-            dEdxBestPlane,
-            Displacement,
-            DCA,
-            Wideness,
-            EnergyDensity,
-            TerminatingValue
 
-        };
     private:
 
+        TMVA::Reader fReader;
         std::map<Vars, std::unique_ptr<Float_t> >  fInputs;
 
+        float * GetVarPtr(const Vars var);
 };
+
+float * FDSelection::PandrizzleAlg::GetVarPtr(const FDSelection::PandrizzleAlg::Vars var)
+{
+    return fInputs.at(var).get();
+}
 
 #endif
