@@ -1,17 +1,20 @@
 ///////////////////////////////////////////////
 // PandrizzleAlg.cxx
 //
-// Reco and true PID stuff up
-// D Brailsford & M Wallbank, June 2017
+// D Brailsford
 ///////////////////////////////////////////////
 
+//STL
 #include <limits>
 
+//ART
 #include "canvas/Persistency/Common/FindOneP.h"
 
+//LArSoft
+#include "lardataobj/AnalysisBase/MVAPIDResult.h"
+
+//Custom
 #include "PandrizzleAlg.h"
-#include "larsim/Utils/TruthMatchUtils.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 
 namespace
@@ -30,7 +33,9 @@ namespace
     }
 }
 
-FDSelection::PandrizzleAlg::Record::Record(const InputVarsToReader &inputVarsToReader) 
+FDSelection::PandrizzleAlg::Record::Record(const InputVarsToReader &inputVarsToReader, const Float_t mvaScore, const bool isFilled) :
+    fMVAScore(mvaScore),
+    fIsFilled(isFilled)
 {
     for (PandrizzleAlg::Vars var = PandrizzleAlg::kEvalRatio; var < PandrizzleAlg::kTerminatingValue; var=static_cast<PandrizzleAlg::Vars>(static_cast<int>(var)+1)) 
     {
@@ -39,10 +44,8 @@ FDSelection::PandrizzleAlg::Record::Record(const InputVarsToReader &inputVarsToR
 }
 
 FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
-    //fPIDModuleLabel(pset.get<std::string>("ModuleLabels.PIDModuleLabel"))
-    fPIDModuleLabel(""),
+    fPIDModuleLabel(pset.get<std::string>("ModuleLabels.PIDModuleLabel")),
     fReader("",0)
-//fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg"))
 {
     Reset(fInputsToReader);
     fReader.AddVariable("EvalRatio",GetVarPtr(kEvalRatio));
@@ -58,14 +61,13 @@ FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
     std::string weightFilePath;
     cet::search_path sP("FW_SEARCH_PATH");
     sP.find_file(weightFileName, weightFilePath);
-    std::cout<<"The found path is " << weightFilePath << std::endl;
     sP.find_file(weightFileName, weightFilePath);
 
     fReader.BookMVA("BDTG",weightFilePath);
 }
 
 
-FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::Run(const art::Ptr<recob::Shower> pShower, const TVector3& nuVertex, const art::Event& evt) 
+FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::RunPID(const art::Ptr<recob::Shower> pShower, const TVector3& nuVertex, const art::Event& evt) 
 {
     art::FindOneP<anab::MVAPIDResult> findPIDResult(std::vector<art::Ptr<recob::Shower> >{pShower}, evt, "pid");
     art::Ptr<anab::MVAPIDResult> mvaPIDResult(findPIDResult.at(0));
@@ -122,12 +124,11 @@ FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::Run(const art::Pt
     else
         ReturnEmptyRecord();
 
-    std::cout<< "The MVA is: " << fReader.EvaluateMVA("BDTG") << std::endl;
-    return Record(fInputsToReader);
+    return Record(fInputsToReader, fReader.EvaluateMVA("BDTG"), true);
 }
 
 FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::ReturnEmptyRecord()
 {
     Reset(fInputsToReader);
-    return Record(fInputsToReader);
+    return Record(fInputsToReader, kDefValue, false);
 }

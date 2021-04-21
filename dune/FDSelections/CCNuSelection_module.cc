@@ -453,6 +453,18 @@ private:
   double fSelShowerMVAProton;
   double fSelShowerMVAPhoton;
   double fSelShowerRecoEnergy[3];
+  //Pandrizzle
+  double fSelShowerPandrizzleEvalRatio;
+  double fSelShowerPandrizzleConcentration;
+  double fSelShowerPandrizzleCoreHaloRatio;
+  double fSelShowerPandrizzleConicalness;
+  double fSelShowerPandrizzledEdxBestPlane;
+  double fSelShowerPandrizzleDisplacement;
+  double fSelShowerPandrizzleDCA;
+  double fSelShowerPandrizzleWideness;
+  double fSelShowerPandrizzleEnergyDensity;
+  double fSelShowerPandrizzleMVAScore;
+  bool   fSelShowerPandrizzleIsFilled;
 
   //All reco showers
   int fNRecoShowers;
@@ -984,6 +996,18 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelShowerMVAProton",&fSelShowerMVAProton);
     fTree->Branch("SelShowerMVAPhoton",&fSelShowerMVAPhoton);
     fTree->Branch("SelShowerRecoEnergy",&fSelShowerRecoEnergy,"SelShowerRecoEnergy[3]/D");
+    fTree->Branch("SelShowerPandrizzleEvalRatio",&fSelShowerPandrizzleEvalRatio);
+    fTree->Branch("SelShowerPandrizzleConcentration",&fSelShowerPandrizzleConcentration);
+    fTree->Branch("SelShowerPandrizzleCoreHaloRatio",&fSelShowerPandrizzleCoreHaloRatio);
+    fTree->Branch("SelShowerPandrizzleConicalness",&fSelShowerPandrizzleConicalness);
+    fTree->Branch("SelShowerPandrizzledEdxBestPlane",&fSelShowerPandrizzledEdxBestPlane);
+    fTree->Branch("SelShowerPandrizzleDisplacement",&fSelShowerPandrizzleDisplacement);
+    fTree->Branch("SelShowerPandrizzleDCA",&fSelShowerPandrizzleDCA);
+    fTree->Branch("SelShowerPandrizzleWideness",&fSelShowerPandrizzleWideness);
+    fTree->Branch("SelShowerPandrizzleEnergyDensity",&fSelShowerPandrizzleEnergyDensity);
+    fTree->Branch("SelShowerPandrizzleMVAScore",&fSelShowerPandrizzleMVAScore);
+    fTree->Branch("SelShowerPandrizzleIsFilled",&fSelShowerPandrizzleIsFilled);
+
     fTree->Branch("NRecoShowers",&fNRecoShowers);
     fTree->Branch("RecoShowerTruePDG",fRecoShowerTruePDG,"RecoShowerTruePDG[NRecoShowers]/I");
     fTree->Branch("RecoShowerTruePrimary",fRecoShowerTruePrimary,"RecoShowerTruePrimary[NRecoShowers]/O");
@@ -1431,6 +1455,18 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerMVAMuon = kDefDoub;
   fSelShowerMVAProton = kDefDoub;
   fSelShowerMVAPhoton = kDefDoub;
+  fSelShowerPandrizzleEvalRatio     = kDefDoub;
+  fSelShowerPandrizzleConcentration = kDefDoub;
+  fSelShowerPandrizzleCoreHaloRatio = kDefDoub;
+  fSelShowerPandrizzleConicalness   = kDefDoub;
+  fSelShowerPandrizzledEdxBestPlane = kDefDoub;
+  fSelShowerPandrizzleDisplacement  = kDefDoub;
+  fSelShowerPandrizzleDCA           = kDefDoub;
+  fSelShowerPandrizzleWideness      = kDefDoub;
+  fSelShowerPandrizzleEnergyDensity = kDefDoub;
+  fSelShowerPandrizzleMVAScore      = kDefDoub;
+  fSelShowerPandrizzleIsFilled      = kDefDoub;
+
   for (int i_plane = 0; i_plane < 3; i_plane++) 
   {
       fSelShowerRecodEdx[i_plane] = kDefDoub;
@@ -2469,7 +2505,6 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
     return;
   }
 
-  fPandrizzleAlg.Run(sel_shower, TVector3(fRecoNuVtxX, fRecoNuVtxY, fRecoNuVtxZ), evt);
 
   //10/10/18 DBrailsford start assessing PFParticle stuff
   //Now get the PFParticles
@@ -2621,6 +2656,21 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
         fSelShowerRecoEnergy[i_plane] = sel_shower->Energy()[i_plane];
       }
   }
+
+  //Pandrizzle
+  FDSelection::PandrizzleAlg::Record pandrizzleRecord(fPandrizzleAlg.RunPID(sel_shower, TVector3(fRecoNuVtxX, fRecoNuVtxY, fRecoNuVtxZ), evt));
+  fSelShowerPandrizzleEvalRatio     = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kEvalRatio);
+  fSelShowerPandrizzleConcentration = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kConcentration);
+  fSelShowerPandrizzleCoreHaloRatio = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kCoreHaloRatio);
+  fSelShowerPandrizzleConicalness   = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kConicalness);
+  fSelShowerPandrizzledEdxBestPlane = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kdEdxBestPlane);
+  fSelShowerPandrizzleDisplacement  = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kDisplacement);
+  fSelShowerPandrizzleDCA           = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kDCA);
+  fSelShowerPandrizzleWideness      = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kWideness);
+  fSelShowerPandrizzleEnergyDensity = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kEnergyDensity);
+  fSelShowerPandrizzleMVAScore      = pandrizzleRecord.GetMVAScore();
+  fSelShowerPandrizzleIsFilled      = pandrizzleRecord.IsFilled();
+
 }
 
 //double FDSelection::CCNuSelection::CalculateShowerCharge(art::Ptr<recob::Shower> const shower, std::vector< art::Ptr< recob::Hit> > const shower_hits){
