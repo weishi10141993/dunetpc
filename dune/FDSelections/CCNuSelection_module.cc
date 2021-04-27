@@ -1465,7 +1465,7 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerPandrizzleWideness      = kDefDoub;
   fSelShowerPandrizzleEnergyDensity = kDefDoub;
   fSelShowerPandrizzleMVAScore      = kDefDoub;
-  fSelShowerPandrizzleIsFilled      = kDefDoub;
+  fSelShowerPandrizzleIsFilled      = 0;
 
   for (int i_plane = 0; i_plane < 3; i_plane++) 
   {
