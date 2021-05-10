@@ -592,12 +592,13 @@ void FDSelection::PandizzleAlg::CalculateTrackDeflection(const art::Ptr<recob::T
   for (size_t i_angle = 0; i_angle < deflection_angles.size(); i_angle++){
     angle_var = (deflection_angles[i_angle] - angle_mean)*(deflection_angles[i_angle] - angle_mean);
   }
-  if (deflection_angles.size() > 0) angle_var /= (deflection_angles.size()-1);
+  if (deflection_angles.size() > 1) angle_var /= (deflection_angles.size()-1);
   else angle_var = -2.;
+
   //angle_var=sqrt(angle_var);
   fVarHolder.FloatVars["PFPTrackDeflecAngleMean"] = angle_mean;
   fVarHolder.FloatVars["PFPTrackDeflecAngleVar"] = angle_var;
-  fVarHolder.FloatVars["PFPTrackDeflecAngleSD"] = sqrt(angle_var);
+  fVarHolder.FloatVars["PFPTrackDeflecAngleSD"] = (angle_var > 0.0) ? sqrt(angle_var) : -2.f;
   fVarHolder.IntVars["PFPTrackDeflecNAngles"] = deflection_angles.size();
   return;
 }

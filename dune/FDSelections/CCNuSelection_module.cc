@@ -243,7 +243,8 @@ private:
   double fSelTrackRecoEndClosestToVertexY;
   double fSelTrackRecoEndClosestToVertexZ;
   double fSelTrackRecoLength;
-  bool   fSelTrackRecoContained;
+  int   fSelTrackRecoContained;
+  int   fSelTrackRecoMomMethod;
   double fSelTrackRecoCharge;
   double fSelTrackRecoMomMCS;
   double fSelTrackRecoMomContained;
@@ -803,6 +804,7 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelTrackRecoEndClosestToVertexZ",&fSelTrackRecoEndClosestToVertexZ);
     fTree->Branch("SelTrackRecoLength",&fSelTrackRecoLength);
     fTree->Branch("SelTrackRecoContained",&fSelTrackRecoContained);
+    fTree->Branch("SelTrackRecoMomMethod",&fSelTrackRecoMomMethod);
     fTree->Branch("SelTrackRecoCharge",&fSelTrackRecoCharge);
     fTree->Branch("SelTrackRecoMomMCS",&fSelTrackRecoMomMCS);
     fTree->Branch("SelTrackRecoMomContained",&fSelTrackRecoMomContained);
@@ -1248,7 +1250,8 @@ void FDSelection::CCNuSelection::Reset()
   fSelTrackRecoEndClosestToVertexY = kDefDoub;
   fSelTrackRecoEndClosestToVertexZ = kDefDoub;
   fSelTrackRecoLength = kDefDoub;
-  fSelTrackRecoContained = 0;
+  fSelTrackRecoContained = kDefInt;
+  fSelTrackRecoMomMethod = kDefInt;
   fSelTrackRecoCharge = kDefDoub;
   fSelTrackRecoMomMCS = kDefDoub;
   fSelTrackRecoMomContained = kDefDoub;
@@ -2065,6 +2068,8 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   fNumuRecoEHad = energyRecoHandle->fHadLorentzVector.E();
 
   fSelTrackRecoContained = energyRecoHandle->longestTrackContained; 
+  fSelTrackRecoMomMethod = energyRecoHandle->trackMomMethod;
+
   if (energyRecoHandle->trackMomMethod==1){ //momentum by range was used to calculate ENu
     fSelTrackRecoMomContained = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
     fNumuRecoMomLep = fSelTrackRecoMomContained;
@@ -2541,14 +2546,6 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   */
 
 
-
-  //24/07/18 DBrailsford Get the reco energy data product for neutrinos
-  //art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
-  //if (!evt.getByLabel(fNueEnergyRecoModuleLabel, energyRecoHandle)) {
-  //  std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - Not able to find energy reconstruction container with name " << fNueEnergyRecoModuleLabel << std::endl;
-  //  return;
-  //}
-
   //Get the hits for said shower
   art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
   const std::vector<art::Ptr<recob::Hit> > sel_shower_hits = fmhs.at(sel_shower.key());
@@ -2590,6 +2587,14 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
   //fSelShowerRecoContained = IsTrackContained(sel_track, sel_track_hits, evt);
 
+  //24/07/18 DBrailsford Get the reco energy data product for neutrinos
+  //art::Handle<dune::EnergyRecoOutput> energyRecoHandle;
+  //if (!evt.getByLabel(fNueEnergyRecoModuleLabel, energyRecoHandle)) {
+  //std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - Not able to find energy reconstruction container with name " << fNueEnergyRecoModuleLabel << std::endl;
+  //return;
+  //}
+
+  //ISOBEL 
   std::unique_ptr<dune::EnergyRecoOutput> energyRecoHandle(std::make_unique<dune::EnergyRecoOutput>(fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_shower, evt)));
   fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
   fNueRecoEHad = energyRecoHandle->fHadLorentzVector.E();
