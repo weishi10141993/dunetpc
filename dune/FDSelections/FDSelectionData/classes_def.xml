@@ -1,0 +1,11 @@
+<lcgdict>
+  <class name="pandselect::PandSelectParams" ClassVersion="10" >
+   <version ClassVersion="10" checksum="3450341997"/>
+  </class>
+
+
+  <class name="art::Ptr<pandselect::PandSelectParams>" />
+  <class name="art::Wrapper<pandselect::PandSelectParams>" />  
+</lcgdict>
+
+

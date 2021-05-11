@@ -13,6 +13,8 @@ dunefd_cafmaker:
     MVASelectNueLabel:  "mvaselectnue"
     MVASelectNumuLabel: "mvaselectnumu"
 
+    PandSelectLabel:    "pandoraselect"
+
     CVNLabel:           "cvneval"
     RegCVNLabel:        "regcvneval"
 

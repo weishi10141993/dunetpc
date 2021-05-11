@@ -53,6 +53,9 @@
 #include "EVGCore/EventRecord.h"
 #include "GHEP/GHepParticle.h"
 
+// custom
+#include "dune/FDSelections/FDSelectionData/PandSelectParams.h"
+
 constexpr int knShifts = 100; // number of shifts
 constexpr int kmaxRwgts = 100; // Largest number of reweights in a shift
 
@@ -75,6 +78,7 @@ namespace dunemva {
       std::string fMVASelectLabel;
       std::string fMVASelectNueLabel;
       std::string fMVASelectNumuLabel;
+      std::string fPandSelectLabel;
 
       std::string fCVNLabel;
       std::string fRegCVNLabel;
@@ -118,6 +122,9 @@ namespace dunemva {
       double fMVAResultNue;
       double fMVAResultNumu;
 
+      double fSelTrackPandizzleScore;
+      double fSelShowerPandrizzleScore;
+
       // CVN outputs
       double fCVNResultIsAntineutrino;
       double fCVNResultNue, fCVNResultNumu, fCVNResultNutau, fCVNResultNC; // flavour
@@ -152,6 +159,7 @@ namespace dunemva {
     fMVASelectLabel = pset.get<std::string>("MVASelectLabel");
     fMVASelectNueLabel = pset.get<std::string>("MVASelectNueLabel");
     fMVASelectNumuLabel = pset.get<std::string>("MVASelectNumuLabel");
+    fPandSelectLabel = pset.get<std::string>("PandSelectLabel");
     fCVNLabel = pset.get<std::string>("CVNLabel");
     fRegCVNLabel = pset.get<std::string>("RegCVNLabel");
 
@@ -263,6 +271,9 @@ namespace dunemva {
     fTree->Branch("LongestTrackContNumu",  &fLongestTrackContNumu, "LongestTrackContNumu/I");
     fTree->Branch("TrackMomMethodNumu",    &fTrackMomMethodNumu,   "TrackMomMethodNumu/I");
 
+    fTree->Branch("SelTrackPandizzleScore",    &fSelTrackPandizzleScore,   "SelTrackPandizzleScore/D");
+    fTree->Branch("SelShowerPandrizzleScore",    &fSelShowerPandrizzleScore,   "SelShowerPandrizzleScore/D");
+
     fTree->Branch("totpot",       &meta_pot,       "totpot/D");
 
     // make DUNErw variables
@@ -314,6 +325,8 @@ namespace dunemva {
     art::Handle<std::vector<cvn::RegCVNResult>> regcvnin;
     evt.getByLabel(fRegCVNLabel, "regcvnresult", regcvnin);
 
+    art::Handle<pandselect::PandSelectParams> pandSelectParams;;
+    evt.getByLabel(fPandSelectLabel, pandSelectParams);
 
     art::Handle<dune::EnergyRecoOutput> ereconuein;
     evt.getByLabel(fEnergyRecoNueLabel, ereconuein);
@@ -339,6 +352,8 @@ namespace dunemva {
       fRecoMethodNumu    = ereconumuin->recoMethodUsed;
       fLongestTrackContNumu  = ereconumuin->longestTrackContained;
       fTrackMomMethodNumu    = ereconumuin->trackMomMethod;
+      fSelShowerPandrizzleScore = pandSelectParams->selShowerPandrizzleScore;
+      fSelTrackPandizzleScore = pandSelectParams->selTrackPandizzleScore;
     }
 
     if( !pidinnue.failedToGet() ) {
