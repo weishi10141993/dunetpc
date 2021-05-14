@@ -78,7 +78,7 @@ namespace dunemva {
       std::string fMVASelectLabel;
       std::string fMVASelectNueLabel;
       std::string fMVASelectNumuLabel;
-      std::string fPandSelectLabel;
+      std::string fPandSelectParamsLabel;
 
       std::string fCVNLabel;
       std::string fRegCVNLabel;
@@ -155,14 +155,12 @@ namespace dunemva {
   //------------------------------------------------------------------------------
   void CAFMaker::reconfigure(fhicl::ParameterSet const& pset) 
   {
-
     fMVASelectLabel = pset.get<std::string>("MVASelectLabel");
     fMVASelectNueLabel = pset.get<std::string>("MVASelectNueLabel");
     fMVASelectNumuLabel = pset.get<std::string>("MVASelectNumuLabel");
-    fPandSelectLabel = pset.get<std::string>("PandSelectLabel");
     fCVNLabel = pset.get<std::string>("CVNLabel");
     fRegCVNLabel = pset.get<std::string>("RegCVNLabel");
-
+    fPandSelectParamsLabel = pset.get<std::string>("PandSelectParamsLabel");
     fEnergyRecoNueLabel = pset.get<std::string>("EnergyRecoNueLabel");
     fEnergyRecoNumuLabel = pset.get<std::string>("EnergyRecoNumuLabel");
 
@@ -310,6 +308,8 @@ namespace dunemva {
   //------------------------------------------------------------------------------
   void CAFMaker::analyze(art::Event const & evt)
   {
+    ////////////////////////////
+    // these will all go wrong <- that's fine (i think)
     art::Handle<dunemva::MVASelectPID> pidin;
     evt.getByLabel(fMVASelectLabel, pidin);
 
@@ -324,9 +324,10 @@ namespace dunemva {
 
     art::Handle<std::vector<cvn::RegCVNResult>> regcvnin;
     evt.getByLabel(fRegCVNLabel, "regcvnresult", regcvnin);
+    ////////////////////////////
 
     art::Handle<pandselect::PandSelectParams> pandSelectParams;;
-    evt.getByLabel(fPandSelectLabel, pandSelectParams);
+    evt.getByLabel(fPandSelectParamsLabel, pandSelectParams);
 
     art::Handle<dune::EnergyRecoOutput> ereconuein;
     evt.getByLabel(fEnergyRecoNueLabel, ereconuein);
@@ -338,10 +339,9 @@ namespace dunemva {
     fSubrun = evt.id().subRun();
     fEvent = evt.id().event();
 
-    if( !pidin.failedToGet() ) {
-      fMVAResult = pidin->pid;
-
-      //Fill MVA reco stuff
+    if ( !pandSelectParams.failedToGet() )
+    {
+      //Fill reco stuff
       fErecoNue          = ereconuein->fNuLorentzVector.E();
       fRecoLepEnNue      = ereconuein->fLepLorentzVector.E();
       fRecoHadEnNue      = ereconuein->fHadLorentzVector.E();
@@ -354,6 +354,10 @@ namespace dunemva {
       fTrackMomMethodNumu    = ereconumuin->trackMomMethod;
       fSelShowerPandrizzleScore = pandSelectParams->selShowerPandrizzleScore;
       fSelTrackPandizzleScore = pandSelectParams->selTrackPandizzleScore;
+    }
+
+    if( !pidin.failedToGet() ) {
+      fMVAResult = pidin->pid;
     }
 
     if( !pidinnue.failedToGet() ) {
@@ -416,7 +420,7 @@ namespace dunemva {
         fRegCVNNueE = v[0];
       }
     }
-
+  
     art::Handle< std::vector<simb::MCTruth> > mct;
     std::vector< art::Ptr<simb::MCTruth> > truth;
     if( evt.getByLabel("generator", mct) )
