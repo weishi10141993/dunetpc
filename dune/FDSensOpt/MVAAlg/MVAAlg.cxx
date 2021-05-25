@@ -1185,7 +1185,8 @@ void dunemva::MVAAlg::PrepareEvent(const art::Event& evt){
   art::FindManyP<recob::Hit> fmth(trackListHandle, evt, fTrackModuleLabel);
   art::FindManyP<recob::Hit, recob::TrackHitMeta> fmthm(trackListHandle, evt, fTrackModuleLabel);
   art::FindManyP<recob::SpacePoint> fmhs(hitListHandle, evt, fTrackModuleLabel);
-  art::FindMany<anab::Calorimetry>  fmcal(trackListHandle, evt, fCalorimetryModuleLabel);
+  //art::FindMany<anab::Calorimetry>  fmcal(trackListHandle, evt, fCalorimetryModuleLabel);
+  art::FindMany<anab::Calorimetry>  fmcal(trackListHandle, evt, "i want this to break");
 
   // charge from raw digits
   rawcharge = 0;
