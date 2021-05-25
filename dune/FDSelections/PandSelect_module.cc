@@ -62,6 +62,7 @@ private:
   std::string fPFParticleModuleLabel;
   std::string fShowerModuleLabel;
   std::string fTrackModuleLabel;
+  std::string fPandizzleWeightFileName;
 
   // Tools
   std::unique_ptr<FDSelectionTools::RecoShowerSelector> fRecoShowerSelector;
@@ -111,8 +112,10 @@ private:
 
 PandSelect::PandSelect(fhicl::ParameterSet const& p) : 
   EDProducer{p},
+  fPFParticleModuleLabel(p.get< std::string >("ModuleLabels.PFParticleModuleLabel")),
   fShowerModuleLabel(p.get< std::string >("ModuleLabels.ShowerModuleLabel")),
   fTrackModuleLabel(p.get< std::string >("ModuleLabels.TrackModuleLabel")),
+  fPandizzleWeightFileName(p.get< std::string > ("PandizzleWeightFileName")),
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(p.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(p.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fPandizzleAlg(p),
@@ -133,7 +136,7 @@ PandSelect::PandSelect(fhicl::ParameterSet const& p) :
   fPandizzleReader.AddVariable("PFPTrackdEdxStart",&fTMVAPFPTrackdEdxStart);
   fPandizzleReader.AddVariable("PFPTrackdEdxEnd",&fTMVAPFPTrackdEdxEnd);
   fPandizzleReader.AddVariable("PFPTrackdEdxEndRatio",&fTMVAPFPTrackdEdxEndRatio);
-  std::string weight_file_name = "Pandizzle_TMVAClassification_BDTG.weights.xml";
+  std::string weight_file_name = fPandizzleWeightFileName;
   std::string weight_file_path;
   cet::search_path sp("FW_SEARCH_PATH");
   sp.find_file(weight_file_name, weight_file_path);

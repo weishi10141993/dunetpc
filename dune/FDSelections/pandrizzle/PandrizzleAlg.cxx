@@ -45,6 +45,7 @@ FDSelection::PandrizzleAlg::Record::Record(const InputVarsToReader &inputVarsToR
 
 FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
     fPIDModuleLabel(pset.get<std::string>("ModuleLabels.PIDModuleLabel")),
+    fPandrizzleWeightFileName        (pset.get< std::string > ("PandrizzleWeightFileName")),
     fReader("",0)
 {
     Reset(fInputsToReader);
@@ -57,7 +58,8 @@ FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
     fReader.AddVariable("DCA",GetVarPtr(kDCA));
     fReader.AddVariable("Wideness",GetVarPtr(kWideness));
     fReader.AddVariable("EnergyDensity",GetVarPtr(kEnergyDensity));
-    const std::string weightFileName("Pandrizzle_TMVAClassification_BDTG.weights.xml");
+    //const std::string weightFileName("Pandrizzle_TMVAClassification_BDTG.weights.xml");
+    const std::string weightFileName(fPandrizzleWeightFileName);
     std::string weightFilePath;
     cet::search_path sP("FW_SEARCH_PATH");
     sP.find_file(weightFileName, weightFilePath);
@@ -69,7 +71,16 @@ FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
 
 FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::RunPID(const art::Ptr<recob::Shower> pShower, const TVector3& nuVertex, const art::Event& evt) 
 {
-    art::FindOneP<anab::MVAPIDResult> findPIDResult(std::vector<art::Ptr<recob::Shower> >{pShower}, evt, "pid");
+
+
+    const std::string weightFileName(fPandrizzleWeightFileName);
+    std::string weightFilePath;
+    cet::search_path sP("FW_SEARCH_PATH");
+    sP.find_file(weightFileName, weightFilePath);
+    sP.find_file(weightFileName, weightFilePath);
+    std::cout << "pandrizzle file path: " << weightFilePath << std::endl;
+
+    art::FindOneP<anab::MVAPIDResult> findPIDResult(std::vector<art::Ptr<recob::Shower> >{pShower}, evt, fPIDModuleLabel);
     art::Ptr<anab::MVAPIDResult> mvaPIDResult(findPIDResult.at(0));
     //MVAPID vars
     if (mvaPIDResult.isAvailable())

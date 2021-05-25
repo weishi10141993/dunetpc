@@ -567,6 +567,7 @@ private:
   std::string fPOTModuleLabel;
   std::string fNumuEnergyRecoModuleLabel;
   std::string fNueEnergyRecoModuleLabel;
+  std::string fPandizzleWeightFileName;
 
   //Algs
   //PIDAnaAlg fPIDAnaAlg;
@@ -639,6 +640,7 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fPOTModuleLabel          (pset.get< std::string >("ModuleLabels.POTModuleLabel")),
   fNumuEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NumuEnergyRecoModuleLabel")),
   fNueEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NueEnergyRecoModuleLabel")),
+  fPandizzleWeightFileName        (pset.get< std::string > ("PandizzleWeightFileName")),
   fPandizzleAlg(pset) ,
   fPandrizzleAlg(pset),
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
@@ -663,7 +665,8 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fPandizzleReader.AddVariable("PFPTrackdEdxEndRatio",&fHookUpTMVAPFPTrackdEdxEndRatio);
   //fPandizzleReader.AddVariable("PFPTrackPIDA",&fTMVAPFPTrackPIDA);
   //fPandizzleReader.BookMVA("BDTG","/dune/app/users/dbrailsf/oscillation/nu_mu/cutsel/trainings/pandizzle/dataset_pandizzle/weights/TMVAClassification_BDTG.weights.xml");
-  std::string weight_file_name = "Pandizzle_TMVAClassification_BDTG.weights.xml";
+  //std::string weight_file_name = "Pandizzle_TMVAClassification_BDTG.weights.xml";
+  std::string weight_file_name = fPandizzleWeightFileName;
   std::string weight_file_path;
   cet::search_path sp("FW_SEARCH_PATH");
   sp.find_file(weight_file_name, weight_file_path);
@@ -2010,7 +2013,6 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
     art::fill_ptr_vector(hitList, hitListHandle);
   }
 
-
   //Start filling some variables
   recob::Track::Point_t trackStart, trackEnd;
   std::tie(trackStart, trackEnd) = sel_track->Extent(); 
@@ -2059,6 +2061,7 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
     fSelTrackRecoEndClosestToVertexY = fSelTrackRecoDownstreamY;
     fSelTrackRecoEndClosestToVertexZ = fSelTrackRecoDownstreamZ;
   }
+
   //28/11/18 DBrailsford Fill child PFP info
   FillChildPFPInformation(sel_track, evt, fSelTrackRecoNChildPFP, fSelTrackRecoNChildTrackPFP, fSelTrackRecoNChildShowerPFP);
   //24/07/18 DBrailsford Use the data product to get the neutrino energy
@@ -2106,6 +2109,7 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
         fSelTrackTrueEndT = matched_mcparticle->EndPosition().T();
       }
   }
+
   //Now get the pid stuff
   art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
   std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_track.key());
@@ -2127,6 +2131,7 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
           fSelTrackMVAPhoton = mvaOutMap["photon"];
       }
   }
+
   //11/04/19 DBrailsford
   //Get the pandizzle variables
   art::Ptr<recob::PFParticle> track_pfp = GetPFParticleMatchedToTrack(sel_track, evt);

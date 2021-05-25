@@ -12,7 +12,6 @@ pandselect:
       PFParticleModuleLabel:       "pandora"
       TrackModuleLabel:            "pandoraTrack"
       ShowerModuleLabel:           "pandoraShower"
-      PFParticleModuleLabel:       "pandora"
       SpacePointModuleLabel:       "pandora"
       ClusterModuleLabel:          "pandora"
       PIDModuleLabel:              "pid"
@@ -23,6 +22,9 @@ pandselect:
    MichelCandidateDistance:        4                                    #pandizzle
 
    ctpHelper:                      @local::standard_ctphelper
+
+   PandizzleWeightFileName:       "Pandizzle_TMVAClassification_BDTG.weights.xml"
+   PandrizzleWeightFileName:      "Pandrizzle_TMVAClassification_BDTG.weights.xml"
 }
 
 pandselect.RecoTrackSelectorTool.tool_type: "LongestRecoVertexTrackSelector"

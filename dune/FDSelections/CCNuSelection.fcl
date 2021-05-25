@@ -27,6 +27,9 @@ CCNuSelection:
    NueEnergyRecoModuleLabel:    "energyreconue"
 
  }                                
+ PandizzleWeightFileName:  "Pandizzle_TMVAClassification_BDTG.weights.xml"
+ PandrizzleWeightFileName: "Pandrizzle_TMVAClassification_BDTG.weights.xml"
+
  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
  ShowerEnergyAlg:             @local::dune10kt_showerenergy
  ctpHelper:                   @local::standard_ctphelper

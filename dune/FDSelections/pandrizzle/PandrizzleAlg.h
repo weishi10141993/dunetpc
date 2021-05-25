@@ -70,6 +70,7 @@ namespace FDSelection
             void SetVar(const FDSelection::PandrizzleAlg::Vars var, const Float_t value);
 
             std::string fPIDModuleLabel;
+            std::string fPandrizzleWeightFileName;
 
             TMVA::Reader fReader;
             InputVarsToReader fInputsToReader;

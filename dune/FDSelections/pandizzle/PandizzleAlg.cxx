@@ -23,6 +23,17 @@ FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) //:
   fClusterModuleLabel = pset.get<std::string>("ModuleLabels.ClusterModuleLabel");
   fIPMichelCandidateDistance = pset.get<double>("MichelCandidateDistance");
 
+  /*
+  std::cout << "fTrackModuleLabel: " << fTrackModuleLabel << std::endl;
+  std::cout << "fShowerModuleLabel: " << fShowerModuleLabel << std::endl;
+  std::cout << "fPIDModuleLabel: " << fPIDModuleLabel << std::endl;
+  std::cout << "fParticleIDModuleLabel: " << fParticleIDModuleLabel << std::endl;
+  std::cout << "fPFParticleModuleLabel: " << fPFParticleModuleLabel << std::endl;
+  std::cout << "fSpacePointModuleLabel: " << fSpacePointModuleLabel << std::endl;
+  std::cout << "fClusterModuleLabel: " << fClusterModuleLabel << std::endl;
+  std::cout << "fIPMichelCandidateDistance: " << fIPMichelCandidateDistance << std::endl;
+  */
+
   InitialiseTrees();
   ResetTreeVariables();
 }
