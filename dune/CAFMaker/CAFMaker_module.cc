@@ -55,6 +55,9 @@
 
 // custom
 #include "dune/FDSelections/FDSelectionData/PandSelectParams.h"
+#include "canvas/Persistency/Common/FindManyP.h"
+#include "lardataobj/RecoBase/Vertex.h"
+#include "lardataobj/RecoBase/PFParticle.h"
 
 constexpr int knShifts = 100; // number of shifts
 constexpr int kmaxRwgts = 100; // Largest number of reweights in a shift
@@ -124,6 +127,10 @@ namespace dunemva {
 
       double fSelTrackPandizzleScore;
       double fSelShowerPandrizzleScore;
+
+      double fRecoNuVtxX;
+      double fRecoNuVtxY;
+      double fRecoNuVtxZ;
 
       // CVN outputs
       double fCVNResultIsAntineutrino;
@@ -272,7 +279,15 @@ namespace dunemva {
     fTree->Branch("SelTrackPandizzleScore",    &fSelTrackPandizzleScore,   "SelTrackPandizzleScore/D");
     fTree->Branch("SelShowerPandrizzleScore",    &fSelShowerPandrizzleScore,   "SelShowerPandrizzleScore/D");
 
+    fTree->Branch("vtx_x", &fRecoNuVtxX);
+    fTree->Branch("vtx_y", &fRecoNuVtxY);
+    fTree->Branch("vtx_z", &fRecoNuVtxZ);
+
     fTree->Branch("totpot",       &meta_pot,       "totpot/D");
+
+    fRecoNuVtxX = -9999;
+    fRecoNuVtxY = -9999;
+    fRecoNuVtxZ = -9999;
 
     // make DUNErw variables
     for( auto &sp : fSystProviders ) {
@@ -541,6 +556,39 @@ namespace dunemva {
         }
       }
     } // loop through MC truth i
+
+    // Reco stuff
+    art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+    if (evt.getByLabel("pandoraSel", pfparticleListHandle)){
+
+        std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
+        art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
+
+        std::vector<art::Ptr<recob::PFParticle> > nu_pfps;
+
+        for (const art::Ptr<recob::PFParticle> particle : pfparticleList){
+            if ((std::fabs(particle->PdgCode()) == 12) || (std::fabs(particle->PdgCode()) == 14) || (std::fabs(particle->PdgCode()) == 16))
+                nu_pfps.push_back(particle);
+        }
+
+        //Loop over the neutrinos - demand only one
+         if (nu_pfps.size() == 1){
+
+             art::Ptr<recob::PFParticle> nu_pfp = nu_pfps[0];
+
+             art::FindManyP<recob::Vertex> fmvpfp(pfparticleListHandle, evt, "pandoraSel");
+             const std::vector<art::Ptr<recob::Vertex> > sel_pfp_vertices = fmvpfp.at(nu_pfp.key());
+
+             if (sel_pfp_vertices.size() > 0){ //Nothing to do
+
+                 //always take the first vertex, even if there's more than one
+                 art::Ptr<recob::Vertex> matched_vertex = sel_pfp_vertices[0];
+                 fRecoNuVtxX = matched_vertex->position().X();
+                 fRecoNuVtxY = matched_vertex->position().Y();
+                 fRecoNuVtxZ = matched_vertex->position().Z();
+             }
+         }
+    }
 
     fTree->Fill();
     return;
