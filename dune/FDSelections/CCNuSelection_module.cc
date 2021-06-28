@@ -54,6 +54,8 @@
 #include "dune/AnaUtils/DUNEAnaHitUtils.h"
 #include "dune/TrackPID/products/CTPResult.h"
 
+#include "dune/CVN/func/Result.h"
+
 //Custom
 //#include "PIDAnaAlg.h"
 #include "dune/FDSelections/pandizzle/PandizzleAlg.h"
@@ -568,6 +570,7 @@ private:
   std::string fNumuEnergyRecoModuleLabel;
   std::string fNueEnergyRecoModuleLabel;
   std::string fPandizzleWeightFileName;
+  std::string fCVNModuleLabel;
 
   //Algs
   //PIDAnaAlg fPIDAnaAlg;
@@ -616,6 +619,12 @@ private:
   float fHookUpTMVAPFPTrackdEdxEndRatio;
   float fHookUpTMVAPFPTrackPIDA;
 
+
+  // DUNE CVN stuff for comparison
+  double fCVNResultNue;
+  double fCVNResultNumu;
+  double fCVNResultNutau;
+  double fCVNResultNC;
 };
 
 
@@ -641,6 +650,7 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fNumuEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NumuEnergyRecoModuleLabel")),
   fNueEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NueEnergyRecoModuleLabel")),
   fPandizzleWeightFileName        (pset.get< std::string > ("PandizzleWeightFileName")),
+  fCVNModuleLabel (pset.get< std::string > ("CVNModuleLabel")),
   fPandizzleAlg(pset) ,
   fPandrizzleAlg(pset),
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
@@ -1087,7 +1097,10 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoShowerMVAPhoton",fRecoShowerMVAPhoton,"RecoShowerMVAPhoton[NRecoShowers]/D");
     fTree->Branch("RecoShowerRecoEnergy",fRecoShowerRecoEnergy,"RecoShowerRecoEnergy[NRecoShowers][3]/D");
 
-
+    fTree->Branch("CVNResultNue", &fCVNResultNue);
+    fTree->Branch("CVNResultNumu", &fCVNResultNumu);
+    fTree->Branch("CVNResultNutau", &fCVNResultNutau);
+    fTree->Branch("CVNResultNC", &fCVNResultNC);
 
     fTree->Branch("RecoNuVtxX",&fRecoNuVtxX);
     fTree->Branch("RecoNuVtxY",&fRecoNuVtxY);
@@ -1296,6 +1309,11 @@ void FDSelection::CCNuSelection::Reset()
   fTMVAPFPTrackdEdxEnd           = kDefDoub;
   fTMVAPFPTrackdEdxEndRatio      = kDefDoub;
   fTMVAPFPTrackPIDA              = kDefDoub;
+
+  fCVNResultNue = kDefDoub;
+  fCVNResultNumu = kDefDoub;
+  fCVNResultNutau = kDefDoub;
+  fCVNResultNC = kDefDoub;
 
   for (int i_recotrack = 0; i_recotrack < (fNRecoTracks == 0 ? kDefMaxNRecoTracks : fNRecoTracks); i_recotrack++){
     fRecoTrackIsPrimary[i_recotrack] = false;
@@ -1598,6 +1616,24 @@ void FDSelection::CCNuSelection::GetEventInfo(art::Event const & evt){
   //    fRecoEventCharge += hitList[i_hit]->Integral() * fCalorimetryAlg.LifetimeCorrection(hitList[i_hit]->PeakTime(), fT0);
   //  }
   //}
+
+  // Get CVN results
+  art::Handle<std::vector<cvn::Result>> cvnResult;
+  evt.getByLabel(fCVNModuleLabel, "cvnresultSel", cvnResult); //not sure if i need an instance name?? 
+
+  if(!cvnResult->empty()) 
+  {
+      fCVNResultNue = (*cvnResult)[0].GetNueProbability();
+      fCVNResultNumu = (*cvnResult)[0].GetNumuProbability();
+      fCVNResultNutau = (*cvnResult)[0].GetNutauProbability();
+      fCVNResultNC = (*cvnResult)[0].GetNCProbability();
+
+      //std::cout << "fCVNResultNue: " << fCVNResultNue << std::endl;
+      //std::cout << "fCVNResultNumu: " << fCVNResultNumu << std::endl;
+      //std::cout << "fCVNResultNutau: " << fCVNResultNutau << std::endl;
+      //std::cout << "fCVNResultNC: " << fCVNResultNC << std::endl;
+  }
+
   return;
 }
 
@@ -2150,6 +2186,8 @@ void FDSelection::CCNuSelection::RunTrackSelection(art::Event const & evt){
   fTMVAPFPTrackdEdxEndRatio = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEndRatio");
   fTMVAPFPTrackPIDA = fPandizzleAlg.GetFloatVar("PFPTrackPIDA");
 
+
+
   fHookUpTMVAPFPMichelNHits = (fTMVAPFPMichelNHits);
   fHookUpTMVAPFPMichelElectronMVA = (fTMVAPFPMichelElectronMVA);
   fHookUpTMVAPFPMichelRecoEnergyPlane2 = (fTMVAPFPMichelRecoEnergyPlane2);
@@ -2496,60 +2534,45 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
 }
 
 
-void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
+void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
+{
   art::Handle< std::vector<recob::Shower> > showerListHandle;
-  if (!(evt.getByLabel(fShowerModuleLabel, showerListHandle))){
-    std::cout<<"Unable to find std::vector<recob::Shower> with module label: " << fShowerModuleLabel << std::endl;
+  if (!(evt.getByLabel(fShowerModuleLabel, showerListHandle)))
+  {
+    std::cout << "Unable to find std::vector<recob::Shower> with module label: " << fShowerModuleLabel << std::endl;
     return;
   }
-  //std::vector<art::Ptr<recob::Shower> > showers;
-  //art::fill_ptr_vector(showers,showerListHandle);
 
-
-  //Get the selected shower
+  // Get the selected shower
   art::Ptr<recob::Shower> sel_shower = fRecoShowerSelector->FindSelectedShower(evt);
 
-  //If we didn't find a selected track then what's the point?
-  if (!(sel_shower.isAvailable())) {
-    std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - no shower selected by tool"<<std::endl;
+  // If we didn't find a selected shower then what's the point?
+  if (!(sel_shower.isAvailable())) 
+  {
+    std::cout << "FDSelection::CCNuSelection::RunShowerSelection - no shower selected by tool" << std::endl;
     return;
   }
-
 
   //10/10/18 DBrailsford start assessing PFParticle stuff
   //Now get the PFParticles
   art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
   std::vector<art::Ptr<recob::PFParticle > > pfparticleList;
-  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
-    std::cout<<"Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle)))
+  {
+    std::cout << "Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel << std::endl;
     return;
   }
   else art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
 
-  //Get the PFParticle associated with the selected shower
-  //art::FindOneP<recob::PFParticle> fospfp(showerListHandle, evt, fShowerModuleLabel);
-  //const art::Ptr<recob::PFParticle> sel_pfp = fospfp.at(sel_shower.key());
-  art::Ptr<recob::PFParticle> sel_pfp = GetPFParticleMatchedToShower(sel_shower, evt);
-  //if (!(sel_pfp.isAvailable())){
-  //  std::cout<<"Did not find a matched PFPArticle for this shower.  I don't think this should ever happen"<<std::endl;
-  //  return;
-  //}
-  //Get the neutrino parent PFParticle.  To do this we have to build the LArPandoraHelper PFParticle map
-  //lar_pandora::PFParticleMap pfparticleMap;
-  //lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
-  //art::Ptr<recob::PFParticle> nu_pfp = lar_pandora::LArPandoraHelper::GetParentPFParticle(pfparticleMap, sel_pfp);
-  //if (!(nu_pfp.isAvailable())){
-  //  std::cout<<"Was not able to find the primary neutrino PFP after selecting a shower.  I don't think this should ever happen"<<std::endl;
-  //}
-  /*
-  //Now get the associated vertex
-  art::FindOneP<recob::Vertex> fopfpv(pfparticleListHandle, evt, fPFParticleModuleLabel);
-  const art::Ptr<recob::Vertex> nu_vertex = fopfpv.at(nu_pfp.key());
-  if (!(nu_vertex.isAvailable())){
-    std::cout<<"Was not able to find the reco vertex after finding the neutrino PFP.  I don't think this should ever happen"<<std::endl;
+  art::FindManyP<recob::PFParticle> fmpfps(showerListHandle, evt, fShowerModuleLabel);
+  const std::vector<art::Ptr<recob::PFParticle> > sel_shower_pfps = fmpfps.at(sel_shower.key());
+  if (sel_shower_pfps.size() != 1)
+  {
+    std::cout << "CCNuSelection::GetPFParticleMatchedToShower NUMBER OF PFP MATCHED TO A SHOWER DOES NOT EQUAL 1: " << sel_shower_pfps.size() << std::endl;
+    return;
   }
-  */
 
+  art::Ptr<recob::PFParticle> sel_pfp = sel_shower_pfps[0];
 
   //Get the hits for said shower
   art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
@@ -2559,20 +2582,11 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   //Get the hit list handle
   art::Handle< std::vector<recob::Hit> > hitListHandle; 
   std::vector<art::Ptr<recob::Hit> > hitList; 
-  if (evt.getByLabel(fHitsModuleLabel,hitListHandle)){
+  if (evt.getByLabel(fHitsModuleLabel,hitListHandle))
     art::fill_ptr_vector(hitList, hitListHandle);
-  }
-
-  ////Start filling
-  ////Get the reconstructed neutrino vertex position
-  //fRecoNuVtxX = nu_vertex->position().X();
-  //fRecoNuVtxY = nu_vertex->position().Y();
-  //fRecoNuVtxZ = nu_vertex->position().Z();
 
   //Is this PFParticle a primary daughter of the neutrino
   fSelShowerRecoIsPrimaryPFPDaughter = IsPFParticlePrimaryDaughter(sel_pfp, pfparticleList);
-
-
 
   fSelShowerRecoDirX   = sel_shower->Direction().X();
   fSelShowerRecoDirY   = sel_shower->Direction().Y();
@@ -2599,7 +2613,7 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt){
   //return;
   //}
 
-  //ISOBEL 
+  // ISOBEL - Recreate neutrino alg so that I can cheat the selection...
   std::unique_ptr<dune::EnergyRecoOutput> energyRecoHandle(std::make_unique<dune::EnergyRecoOutput>(fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_shower, evt)));
   fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
   fNueRecoEHad = energyRecoHandle->fHadLorentzVector.E();

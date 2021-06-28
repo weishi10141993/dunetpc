@@ -25,10 +25,11 @@ CCNuSelection:
    POTModuleLabel:              "generator"
    NumuEnergyRecoModuleLabel:   "energyreconumu"
    NueEnergyRecoModuleLabel:    "energyreconue"
-
  }                                
  PandizzleWeightFileName:  "Pandizzle_TMVAClassification_BDTG.weights.xml"
  PandrizzleWeightFileName: "Pandrizzle_TMVAClassification_BDTG.weights.xml"
+
+   CVNModuleLabel: "cvnevalSel"
 
  CalorimetryAlg:              @local::dune10kt_calorimetryalgmc
  ShowerEnergyAlg:             @local::dune10kt_showerenergy
