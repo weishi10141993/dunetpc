@@ -78,6 +78,19 @@ dune_pandoraModularShowerCreation.ShowerFinderTools: [
   @local::dune_showertrajpointdedx
 ]
 
+dune_pandoraModularShowerCreation_cheatAll:                                         @local::standard_pandoraModularShowerCreation
+dune_pandoraModularShowerCreation_cheatAll.ShowerFinderTools: [
+  @local::dune_showerstartpositioncheater,
+  @local::showerdirectioncheater,
+  @local::dune_showerlengthpercentile,
+  @local::dune_showernumelectronsenergy,
+  #@local::dune_showertrackfindercheater_first,
+  #@local::dune_showerunidirectiondedx,
+  @local::dune_showertrackfindercheater_second,
+  @local::dune_showerpandoraslidingfittrackfinder,
+  @local::dune_showertrajpointdedx
+]
+
 dune_pandoraShowerCreation:
 {
     module_type:                                                    "LArPandoraShowerCreation"
