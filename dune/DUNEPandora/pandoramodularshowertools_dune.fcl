@@ -5,8 +5,6 @@ BEGIN_PROLOG
 
 #Start position tools
 dune_showerpfpvertexstartposition:                                   @local::showerpfpvertexstartposition
-dune_showerstartpositioncheater:                                     @local::showerstartpositioncheater
-
 
 #Direction tools
 dune_showerpcadirection:                                             @local::showerpcadirection
@@ -21,12 +19,6 @@ dune_showerlengthpercentile:                                         @local::sho
 
 
 #Initial track finding tools
-
-dune_showertrackfindercheater_first: @local::showertrackfindercheater
-dune_showertrackfindercheater_first.InitialTrackHitsOutputLabel:           "InitialTrackHits3DCylinder"
-dune_showertrackfindercheater_first.InitialTrackSpacePointsOutputLabel:    "InitialTrackSpacePoints3DCylinder"
-
-dune_showertrackfindercheater_second: @local::showertrackfindercheater
 
 dune_3dcylindertrackhitfinder:                                       @local::shower3dcylindertrackhitfinder
 dune_3dcylindertrackhitfinder.InitialTrackHitsOutputLabel:           "InitialTrackHits3DCylinder"
@@ -63,9 +55,22 @@ dune_showertrajpointdedx.MinAngleToWire:                             0.0
 dune_showertrajpointdedx.dEdxTrackLength:                            4.6
 dune_showertrajpointdedx.dEdxCut:                                    999.0
 
-
 #Shower energy tools
 dune_showernumelectronsenergy:                                       @local::showernumelectronsenergy
 dune_showernumelectronsenergy.CalorimetryAlg:                        @local::dune10kt_calorimetryalgmc
+
+# cheating things
+
+dune_showerstartpositioncheater:                                     @local::showerstartpositioncheater
+dune_showerdirectioncheater:                                         @local::showerdirectioncheater
+
+dune_showertrackfindercheater_first: @local::showertrackfindercheater
+#dune_showertrackfindercheater_first.InitialTrackHitsOutputLabel:           "InitialTrackHits3DCylinder"
+#dune_showertrackfindercheater_first.InitialTrackSpacePointsOutputLabel:    "InitialTrackSpacePoints3DCylinder"
+
+dune_showerunidirectiondedx_cheat:                                         @local::showerunidirectiondedx
+dune_showerunidirectiondedx_cheat.CalorimetryAlg:                          @local::dune10kt_calorimetryalgmc
+dune_showerunidirectiondedx_cheat.dEdxTrackLength:                         5.7
+
 
 END_PROLOG
