@@ -21,12 +21,13 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoVertexShowerSelector::SelectS
   bool foundSignal(false);
   art::Ptr<recob::Shower> selSignalShower, selShower;
 
-  // For later - to obtain shower hits
+  // Get the showers
   art::Handle< std::vector<recob::Shower> > showerListHandle;
   std::vector<art::Ptr<recob::Shower> > showerList;
   if (evt.getByLabel(fShowerModuleLabel,showerListHandle))
     art::fill_ptr_vector(showerList, showerListHandle);
 
+  // Get the PFParticles
   art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
   std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
   if (evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))
@@ -45,7 +46,9 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoVertexShowerSelector::SelectS
   }
 
   const bool isFHC = (mcList[0]->GetNeutrino().Nu().PdgCode() > 0);
-  //std::cout << "isFHC? " << (isFHC ? "yep" : "no") << std::endl;
+  const bool isNC = mcList[0]->GetNeutrino().CCNC();
+  const bool isNue = (std::abs(mcList[0]->GetNeutrino().Nu().PdgCode()) == 12);
+  const bool isCCNue = (isNue && !isNC);
 
   lar_pandora::PFParticleMap pfparticleMap;
   lar_pandora::LArPandoraHelper::BuildPFParticleMap(pfparticleList, pfparticleMap);
@@ -81,7 +84,6 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoVertexShowerSelector::SelectS
   fRecoNuVtxY = matched_vertex->position().Y();
   fRecoNuVtxZ = matched_vertex->position().Z();
 
-  //Loop over each PFP, find the associated showers and then find which one is the highest energy
   double highestSignalPandrizzleScore = std::numeric_limits<double>::lowest(), highestPandrizzleScore = std::numeric_limits<double>::lowest();
 
   for (int i_child = 0; i_child < nu_pfp->NumDaughters(); i_child++)
@@ -151,7 +153,7 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoVertexShowerSelector::SelectS
   //std::cout << "highestSignalPandrizzleScore: " << highestSignalPandrizzleScore << std::endl;
   //std::cout << "highestPandrizzleScore: " << highestPandrizzleScore << std::endl;
 
-  return (foundSignal ? selSignalShower : selShower);
+  return (isCCNue ? (foundSignal ? selSignalShower : selShower) : selShower);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

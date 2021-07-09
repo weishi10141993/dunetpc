@@ -60,6 +60,9 @@ art::Ptr<recob::Track> FDSelectionTools::CheatRecoVertexTrackSelector::SelectTra
   }
 
   const bool isFHC = (mcList[0]->GetNeutrino().Nu().PdgCode() > 0);
+  const bool isNC = mcList[0]->GetNeutrino().CCNC();
+  const bool isNumu = (std::abs(mcList[0]->GetNeutrino().Nu().PdgCode()) == 14);
+  const bool isCCNumu = (isNumu && !isNC);
 
   // Build PFParticle map
   lar_pandora::PFParticleMap pfparticleMap;
@@ -177,7 +180,7 @@ art::Ptr<recob::Track> FDSelectionTools::CheatRecoVertexTrackSelector::SelectTra
   //std::cout << "highestSignalPandizzleScore: " << highestSignalPandizzleScore << std::endl;
   //std::cout << "highestPandizzleScore: " << highestPandizzleScore << std::endl;
 
-  return (foundSignal ? selSignalTrack : selTrack);
+  return (isCCNumu ? (foundSignal ? selSignalTrack : selTrack) : selTrack);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

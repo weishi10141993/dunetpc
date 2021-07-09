@@ -21,18 +21,19 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoShowerSelector::SelectShower(
   bool foundSignal(false);
   art::Ptr<recob::Shower> selSignalShower, selShower;
 
-  // For later - to obtain shower hits
+  // Get the showers
   art::Handle< std::vector<recob::Shower> > showerListHandle;
   std::vector<art::Ptr<recob::Shower> > showerList;
   if (evt.getByLabel(fShowerModuleLabel,showerListHandle))
     art::fill_ptr_vector(showerList, showerListHandle);
 
+  // Get the PFParticles
   art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
   std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
   if (evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))
     art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
 
-  // Get the generator record (to find whether event is FHC/RHC)
+  // Get the generator record
   art::Handle< std::vector<simb::MCTruth> > mcTruthListHandle;
   std::vector<art::Ptr<simb::MCTruth> > mcList;
   if (evt.getByLabel(fNuGenModuleLabel, mcTruthListHandle))
@@ -45,7 +46,9 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoShowerSelector::SelectShower(
   }
 
   const bool isFHC = (mcList[0]->GetNeutrino().Nu().PdgCode() > 0);
-  //std::cout << "isFHC? " << (isFHC ? "yep" : "no") << std::endl;
+  const bool isNC = mcList[0]->GetNeutrino().CCNC();
+  const bool isNue = (std::abs(mcList[0]->GetNeutrino().Nu().PdgCode()) == 12);
+  const bool isCCNue = (isNue && !isNC);
 
   lar_pandora::PFParticleVector nu_pfps;
   lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(pfparticleList, nu_pfps);
@@ -144,7 +147,7 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoShowerSelector::SelectShower(
   //std::cout << "highestSignalPandrizzleScore: " << highestSignalPandrizzleScore << std::endl;
   //std::cout << "highestPandrizzleScore: " << highestPandrizzleScore << std::endl;
 
-  return (foundSignal ? selSignalShower : selShower);
+  return (isCCNue ? (foundSignal ? selSignalShower : selShower) : selShower);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -5,6 +5,9 @@
 art::Ptr<recob::Shower> FDSelectionTools::HighestEnergyRecoVertexShowerSelector::SelectShower(art::Event const & evt){
   art::Ptr<recob::Shower> myshower;
 
+
+  std::cout << "fShowerModuleLabel: " << fShowerModuleLabel << std::endl;
+
   //Need the associated hits for the showers
   art::Handle< std::vector<recob::Shower> > showerListHandle;
   if (!evt.getByLabel(fShowerModuleLabel, showerListHandle)){

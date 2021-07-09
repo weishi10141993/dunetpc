@@ -1,6 +1,5 @@
 #include "HighestPandizzleScoreRecoVertexTrackSelector.h"
 
-
 FDSelectionTools::HighestPandizzleScoreRecoVertexTrackSelector::HighestPandizzleScoreRecoVertexTrackSelector(fhicl::ParameterSet const& ps) :
     fTrackModuleLabel(ps.get< std::string> ("ModuleLabels.TrackModuleLabel")),
     fPFParticleModuleLabel(ps.get< std::string> ("ModuleLabels.PFParticleModuleLabel")),

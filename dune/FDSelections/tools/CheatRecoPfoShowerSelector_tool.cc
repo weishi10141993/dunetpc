@@ -19,10 +19,6 @@ FDSelectionTools::CheatRecoPfoShowerSelector::CheatRecoPfoShowerSelector(fhicl::
 
 art::Ptr<recob::Shower> FDSelectionTools::CheatRecoPfoShowerSelector::SelectShower(art::Event const & evt)
 {
-
-  //std::cout << "fFittedShowerModuleLabel: " << fFittedShowerModuleLabel << std::endl;
-  //std::cout << "fAllShowerModuleLabel: " << fAllShowerModuleLabel << std::endl;
-
   bool foundSignal(false);
   art::Ptr<recob::Shower> selSignalShower, selShower;
 
@@ -51,7 +47,9 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoPfoShowerSelector::SelectShow
   }
 
   const bool isFHC = (mcList[0]->GetNeutrino().Nu().PdgCode() > 0);
-  //std::cout << "isFHC? " << (isFHC ? "yep" : "no") << std::endl;
+  const bool isNC = mcList[0]->GetNeutrino().CCNC();
+  const bool isNue = (std::abs(mcList[0]->GetNeutrino().Nu().PdgCode()) == 12);
+  const bool isCCNue = (isNue && !isNC);
 
   lar_pandora::PFParticleVector nu_pfps;
   lar_pandora::LArPandoraHelper::SelectNeutrinoPFParticles(pfparticleList, nu_pfps);
@@ -169,7 +167,7 @@ art::Ptr<recob::Shower> FDSelectionTools::CheatRecoPfoShowerSelector::SelectShow
   std::cout << "highestPandrizzleScore: " << highestPandrizzleScore << std::endl;
   */
 
-  return (foundSignal ? selSignalShower : selShower);
+  return (isCCNue ? (foundSignal ? selSignalShower : selShower) : selShower);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

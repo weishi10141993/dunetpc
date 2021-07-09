@@ -60,7 +60,9 @@ art::Ptr<recob::Track> FDSelectionTools::CheatRecoTrackSelector::SelectTrack(art
   }
 
   const bool isFHC = (mcList[0]->GetNeutrino().Nu().PdgCode() > 0);
-  //std::cout << "isFHC? " << (isFHC ? "yep" : "no") << std::endl;
+  const bool isNC = mcList[0]->GetNeutrino().CCNC();
+  const bool isNumu = (std::abs(mcList[0]->GetNeutrino().Nu().PdgCode()) == 14);
+  const bool isCCNumu = (isNumu && !isNC);
 
   // Search for the highest pandizzle signal and global tracks
   double highestPandizzleScore(std::numeric_limits<double>::lowest()), highestSignalPandizzleScore(std::numeric_limits<double>::lowest());
@@ -157,7 +159,7 @@ art::Ptr<recob::Track> FDSelectionTools::CheatRecoTrackSelector::SelectTrack(art
   //std::cout << "highestSignalPandizzleScore: " << highestSignalPandizzleScore << std::endl;
   //std::cout << "highestPandizzleScore: " << highestPandizzleScore << std::endl;
 
-  return (foundSignal ? selSignalTrack : selTrack);
+  return (isCCNumu ? (foundSignal ? selSignalTrack : selTrack) : selTrack);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
