@@ -69,9 +69,8 @@ constexpr int kDefInt = -9999;
 constexpr int kDefDoub = (double)(kDefInt);
 
 constexpr int kDefMaxNTrueVertexParticles = 500;
-constexpr int kDefMaxNRecoTracks = 500;
-constexpr int kDefMaxNRecoShowers = 500;
-
+constexpr int kDefMaxNRecoTracks = 1000;
+constexpr int kDefMaxNRecoShowers = 1000;
 
 namespace FDSelection {
   class CCNuSelection;
@@ -685,22 +684,22 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
 
 void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 {
-
   Reset(); //Reset at the start of the event
   //Get the generic stuff that can be pulled from the top of the record
+
   fRun = evt.run();
   fSubRun = evt.subRun();
   fEvent = evt.event();
   fIsMC = !(evt.isRealData());
 
   GetEventInfo(evt);
+
   if (fIsMC) GetTruthInfo(evt);
   FillVertexInformation(evt);
   GetRecoTrackInfo(evt);
   RunTrackSelection(evt);
   GetRecoShowerInfo(evt);
   RunShowerSelection(evt);
-
 
   //fPIDAnaAlg.Run(evt);
   fPandizzleAlg.Run(evt);
@@ -1742,6 +1741,12 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
       else fNOther++;
     }
 
+    if (fNVertexParticles > kDefMaxNTrueVertexParticles)
+    {
+        std::cout<<"CCNuSelection::GetTruthInfo VERTEX ARRAY IS GOING TO BE OVERFILLED - VERY BAD" << std::endl;
+        throw;
+    }
+
     //do some transverse momentum stuff
     TVector3 beam_axis(0,0,1);
     beam_axis.RotateX(-0.101);
@@ -1840,9 +1845,13 @@ void FDSelection::CCNuSelection::GetRecoTrackInfo(art::Event const & evt){
   //Get the track -> hits assns
   art::FindManyP<recob::Hit> fmht(trackListHandle, evt, fTrackModuleLabel);
 
-  fNRecoTracks = trackList.size();
+  fNRecoTracks = (trackList.size() > kDefMaxNRecoTracks ? kDefMaxNRecoTracks : trackList.size());
+
+  // leave me alone
+  const unsigned int loopLimit = fNRecoTracks;
+
   //Loop-de-loop
-  for (unsigned int i_track = 0; i_track < trackList.size(); i_track++){
+  for (unsigned int i_track = 0; i_track < loopLimit; i_track++){
     art::Ptr<recob::Track> current_track = trackList[i_track];
     art::Ptr<recob::PFParticle> matched_pfp = GetPFParticleMatchedToTrack(current_track, evt);
     //Get the parent PFP of this track
@@ -2372,17 +2381,21 @@ art::Ptr<recob::PFParticle> FDSelection::CCNuSelection::GetPFParticleMatchedToTr
 art::Ptr<recob::PFParticle> FDSelection::CCNuSelection::GetPFParticleMatchedToShower(art::Ptr<recob::Shower> const shower, art::Event const & evt){
   art::Ptr<recob::PFParticle> matched_pfp;
   art::Handle< std::vector<recob::Shower> > showerListHandle;
+
   if (!(evt.getByLabel(fShowerModuleLabel, showerListHandle))){
     std::cout<<"CCNuSelection::GetPFParticleMatchedToShower Unable to find std::vector<recob::Shower> with module label: " << fShowerModuleLabel << std::endl;
     return matched_pfp;
   }
+
   art::FindManyP<recob::PFParticle> fmpfpt(showerListHandle, evt, fShowerModuleLabel);
   const std::vector<art::Ptr<recob::PFParticle> > sel_shower_pfps = fmpfpt.at(shower.key());
   if (sel_shower_pfps.size() != 1){
     std::cout<<"CCNuSelection::GetPFParticleMatchedToShower NUMBER OF PFP MATCHED TO A SHOWER DOES NOT EQUAL 1: " << sel_shower_pfps.size() << std::endl;
     return matched_pfp;
   }
+
   matched_pfp = sel_shower_pfps[0];
+
   return matched_pfp;
 }
 
@@ -2436,15 +2449,19 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
   art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
 
 
-  fNRecoShowers = showerList.size();
+  fNRecoShowers = (showerList.size() > kDefMaxNRecoShowers ? kDefMaxNRecoShowers : showerList.size());
+
+  const unsigned int loopLimit = fNRecoShowers;
+
   //Loop
-  for (unsigned int i_shower = 0; i_shower < showerList.size(); i_shower++){
+  for (unsigned int i_shower = 0; i_shower < loopLimit; i_shower++){
     art::Ptr<recob::Shower> current_shower = showerList[i_shower];
     const std::vector<art::Ptr<recob::Hit> > current_shower_hits = fmhs.at(current_shower.key());
 
     fRecoShowerRecoNHits[i_shower] = current_shower_hits.size();
 
     art::Ptr<recob::PFParticle> current_shower_pfp = GetPFParticleMatchedToShower(current_shower, evt);
+
     //Is this PFParticle a primary daughter of the neutrino
     fRecoShowerRecoIsPrimaryPFPDaughter[i_shower] = IsPFParticlePrimaryDaughter(current_shower_pfp, pfparticleList);
 
@@ -2499,6 +2516,7 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
           fRecoShowerTrueEndT[i_shower] = matched_mcparticle->EndPosition().T();
         }
     }
+
     //Now get the pid stuff
     art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
     std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(current_shower.key());
@@ -2520,6 +2538,7 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
             fRecoShowerMVAPhoton[i_shower] = mvaOutMap["photon"];
         }
     }
+
     if (current_shower->dEdx().size() > 0)
     {
         for (int i_plane = 0; i_plane < 3; i_plane++){

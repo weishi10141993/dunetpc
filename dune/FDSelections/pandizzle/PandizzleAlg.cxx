@@ -8,10 +8,11 @@
 #include "PandizzleAlg.h"
 #include "larsim/Utils/TruthMatchUtils.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 
-FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) //:
-  //fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg"))
+FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) :
+  fShowerEnergyAlg(pset.get<fhicl::ParameterSet>("ShowerEnergyAlg"))
 {
   fTrackModuleLabel  = pset.get<std::string>("ModuleLabels.TrackModuleLabel");
   fShowerModuleLabel = pset.get<std::string>("ModuleLabels.ShowerModuleLabel");
@@ -22,6 +23,7 @@ FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) //:
   fSpacePointModuleLabel = pset.get<std::string>("ModuleLabels.SpacePointModuleLabel");
   fClusterModuleLabel = pset.get<std::string>("ModuleLabels.ClusterModuleLabel");
   fIPMichelCandidateDistance = pset.get<double>("MichelCandidateDistance");
+  fMakeTree = pset.get<bool>("MakeTree", false);
 
   /*
   std::cout << "fTrackModuleLabel: " << fTrackModuleLabel << std::endl;
@@ -34,8 +36,12 @@ FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) //:
   std::cout << "fIPMichelCandidateDistance: " << fIPMichelCandidateDistance << std::endl;
   */
 
-  InitialiseTrees();
-  ResetTreeVariables();
+  if (fMakeTree)
+  {
+      InitialiseTrees();
+      ResetTreeVariables();
+  }
+
 }
 
 void FDSelection::PandizzleAlg::InitialiseTrees() {
@@ -468,13 +474,16 @@ void FDSelection::PandizzleAlg::FillMichelElectronVariables(const art::Ptr<recob
   fVarHolder.FloatVars["PFPMichelElectronMVA"] = mvaOutMap["electron"];
 
   //Reco energy
-  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 0);
-  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 1);
-  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = fShowerEnergyAlg.ShowerEnergy(michel_hits, 2);
+  //auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
+  auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataForJob(clockData);
 
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = -999;
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = -999;
-  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = -999;
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = fShowerEnergyAlg.ShowerEnergy(clockData, detProp, michel_hits, 0);
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = fShowerEnergyAlg.ShowerEnergy(clockData, detProp, michel_hits, 1);
+  fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = fShowerEnergyAlg.ShowerEnergy(clockData, detProp, michel_hits, 2);
+
+  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane0"] = -999;
+  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane1"] = -999;
+  //fVarHolder.FloatVars["PFPMichelRecoEnergyPlane2"] = -999;
 
   return;
 }
@@ -512,6 +521,7 @@ void FDSelection::PandizzleAlg::FillTrackVariables(const art::Ptr<recob::PFParti
   //PID
   art::FindManyP<anab::MVAPIDResult> fmpidt(trackListHandle, evt, fPIDModuleLabel);
   std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(pfp_track.key());
+
   art::Ptr<anab::MVAPIDResult> pid = pids[0];
   fVarHolder.FloatVars["PFPTrackEvalRatio"] = pid->evalRatio;
   fVarHolder.FloatVars["PFPTrackConcentration"] = pid->concentration;
