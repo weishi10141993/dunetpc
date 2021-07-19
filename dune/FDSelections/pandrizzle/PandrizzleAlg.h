@@ -10,10 +10,25 @@
 #include "art/Framework/Principal/Event.h"
 #include "fhiclcpp/ParameterSet.h" 
 #include "canvas/Persistency/Common/Ptr.h" 
+#include "art_root_io/TFileService.h"
+#include "art_root_io/TFileDirectory.h"
 #include "canvas/Persistency/Common/PtrVector.h" 
+#include "messagefacility/MessageLogger/MessageLogger.h" 
 
 // LArSoft
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
+#include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/Vertex.h"
+#include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
+#include "lardataobj/RecoBase/Cluster.h"
+#include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/AnalysisBase/MVAPIDResult.h"
+#include "lardataobj/AnalysisBase/ParticleID.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
+#include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 
 // c++
 #include <map>
@@ -22,6 +37,7 @@
 
 // ROOT
 #include "TMVA/Reader.h"
+#include "TTree.h"
 
 namespace FDSelection
 {
@@ -63,21 +79,55 @@ namespace FDSelection
 
             PandrizzleAlg(const fhicl::ParameterSet& pset);
 
+            void Run(const art::Event& evt);
             Record RunPID(const art::Ptr<recob::Shower> pShower, const TVector3 &nuVertex, const art::Event& evt);
 
         private:
             Float_t* GetVarPtr(const FDSelection::PandrizzleAlg::Vars var);
             void SetVar(const FDSelection::PandrizzleAlg::Vars var, const Float_t value);
 
+            void InitialiseTrees();
+            void BookTreeInt(TTree *tree, std::string branch_name);
+            void BookTreeFloat(TTree *tree, std::string branch_name);
+            std::vector<art::Ptr<recob::PFParticle> > SelectChildPFParticles(const art::Ptr<recob::PFParticle> parent_pfp, const lar_pandora::PFParticleMap & pfp_map);
+            void ProcessPFParticle(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
+            void FillTree();
+            void ResetTreeVariables();
+            std::vector<art::Ptr<recob::Hit> > GetPFPHits(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
+
+            std::string fNuGenModuleLabel;
+            std::string fPFParticleModuleLabel;
+            std::string fShowerModuleLabel;
+            std::string fCheatShowerModuleLabel;
+            std::string fClusterModuleLabel;
             std::string fPIDModuleLabel;
+            std::string fCheatPIDModuleLabel;
             std::string fPandrizzleWeightFileName;
+            std::vector<int> fShowerPDGToCheat;
+            bool fCheatCharacterisation;
 
             TMVA::Reader fReader;
             InputVarsToReader fInputsToReader;
 
             Record ReturnEmptyRecord();
 
+            // Training Stuff
+            // tree
+            bool fMakeTree;
+            TTree *fSignalShowerTree;
+            TTree *fBackgroundShowerTree;
 
+             //This thing holds all variables to be handed to the trees
+            struct VarHolder
+            {
+                std::map<std::string, int> IntVars;
+                std::map<std::string, float> FloatVars;
+            };
+
+            VarHolder fVarHolder;
+
+            //services
+            art::ServiceHandle<art::TFileService> tfs;
     };
 }
 

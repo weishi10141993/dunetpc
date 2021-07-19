@@ -560,9 +560,11 @@ private:
   std::string fWireModuleLabel;
   std::string fTrackModuleLabel;
   std::string fShowerModuleLabel;
+  std::string fCheatShowerModuleLabel;
   std::string fPFParticleModuleLabel;
   std::string fVertexModuleLabel;
   std::string fPIDModuleLabel;
+  std::string fCheatPIDModuleLabel;
   std::string fParticleIDModuleLabel;
   std::string fHitsModuleLabel;
   std::string fPOTModuleLabel;
@@ -570,6 +572,8 @@ private:
   std::string fNueEnergyRecoModuleLabel;
   std::string fPandizzleWeightFileName;
   std::string fCVNModuleLabel;
+  std::vector<int> fShowerPDGToCheat;
+  bool fCheatCharacterisation;
 
   //Algs
   //PIDAnaAlg fPIDAnaAlg;
@@ -579,6 +583,7 @@ private:
   //shower::ShowerEnergyAlg fShowerEnergyAlg;
   ctp::CTPHelper fConvTrackPID;
   dune::NeutrinoEnergyRecoAlg fNeutrinoEnergyRecoAlg;
+  dune::NeutrinoEnergyRecoAlg fCheatNeutrinoEnergyRecoAlg;
 
   //Processing flags
   bool fUsePandoraVertex;
@@ -650,16 +655,28 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fNueEnergyRecoModuleLabel   (pset.get< std::string >("ModuleLabels.NueEnergyRecoModuleLabel")),
   fPandizzleWeightFileName        (pset.get< std::string > ("PandizzleWeightFileName")),
   fCVNModuleLabel (pset.get< std::string > ("CVNModuleLabel")),
+  fCheatCharacterisation (pset.get<bool>("CheatCharacterisation", false)),
   fPandizzleAlg(pset) ,
   fPandrizzleAlg(pset),
   fCalorimetryAlg          (pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
   fConvTrackPID(pset.get<fhicl::ParameterSet>("ctpHelper")),
   fNeutrinoEnergyRecoAlg(pset.get<fhicl::ParameterSet>("NeutrinoEnergyRecoAlg"),fTrackModuleLabel,fShowerModuleLabel,
         fHitsModuleLabel,fWireModuleLabel,fTrackModuleLabel,fShowerModuleLabel,fPFParticleModuleLabel),
+    fCheatNeutrinoEnergyRecoAlg(pset.get<fhicl::ParameterSet>("NeutrinoEnergyRecoAlg"),fTrackModuleLabel,pset.get<bool>("CheatCharacterisation", false) ? fCheatShowerModuleLabel : fShowerModuleLabel,
+                              fHitsModuleLabel,fWireModuleLabel,fTrackModuleLabel,pset.get<bool>("CheatCharacterisation", false) ? fCheatShowerModuleLabel : fShowerModuleLabel,fPFParticleModuleLabel),
   fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")),
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
-  fPandizzleReader("") {
+  fPandizzleReader("") 
+{
+
+  if (fCheatCharacterisation)
+  {
+      fCheatShowerModuleLabel = pset.get< std::string >("ModuleLabels.CheatShowerModuleLabel");
+      fCheatPIDModuleLabel = pset.get< std::string >("ModuleLabels.CheatPIDModuleLabel");
+      fShowerPDGToCheat = pset.get<std::vector<int>> ("ShowerPDGToCheat");
+  }
+
   fPandizzleReader.AddVariable("PFPMichelNHits",&fHookUpTMVAPFPMichelNHits);
   fPandizzleReader.AddVariable("PFPMichelElectronMVA",&fHookUpTMVAPFPMichelElectronMVA);
   fPandizzleReader.AddVariable("PFPMichelRecoEnergyPlane2",&fHookUpTMVAPFPMichelRecoEnergyPlane2);
@@ -703,6 +720,7 @@ void FDSelection::CCNuSelection::analyze(art::Event const & evt)
 
   //fPIDAnaAlg.Run(evt);
   fPandizzleAlg.Run(evt);
+  fPandrizzleAlg.Run(evt);
 
   fTree->Fill();
 }
@@ -1666,6 +1684,8 @@ void FDSelection::CCNuSelection::GetTruthInfo(art::Event const & evt){
     //Get the associated g4 particles so that we can find the stop position of the lepton
     const std::vector<art::Ptr<simb::MCParticle> > associated_particles = fmpt.at(mcList[i_mctruth].key());
 
+    //std::cout << "->T(): " << mcList[i_mctruth]->GetNeutrino().Nu().T() << std::endl;
+
     fNuPdg    = mcList[i_mctruth]->GetNeutrino().Nu().PdgCode();
     if (mcFluxListHandle.isValid()) fBeamPdg  = mcFlux[i_mctruth]->fntype;
     fNC       = mcList[i_mctruth]->GetNeutrino().CCNC();
@@ -2556,11 +2576,13 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
 void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
 {
   art::Handle< std::vector<recob::Shower> > showerListHandle;
+  std::vector <art::Ptr<recob::Shower>> showerList;
   if (!(evt.getByLabel(fShowerModuleLabel, showerListHandle)))
   {
     std::cout << "Unable to find std::vector<recob::Shower> with module label: " << fShowerModuleLabel << std::endl;
     return;
-  }
+  } 
+  else art::fill_ptr_vector(showerList, showerListHandle);
 
   // Get the selected shower
   art::Ptr<recob::Shower> sel_shower = fRecoShowerSelector->FindSelectedShower(evt);
@@ -2570,6 +2592,20 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
   {
     std::cout << "FDSelection::CCNuSelection::RunShowerSelection - no shower selected by tool" << std::endl;
     return;
+  }
+
+  // For cheating characterisation studies
+  bool cheat(false);
+  art::Handle< std::vector<recob::Shower> > cheatShowerListHandle;
+  if (fCheatCharacterisation && (std::find(showerList.begin(), showerList.end(), sel_shower) == showerList.end()))
+  {
+    if (!(evt.getByLabel(fCheatShowerModuleLabel, cheatShowerListHandle)))
+    {
+      std::cout << "Unable to find std::vector<recob::Shower> with module label: " << fCheatShowerModuleLabel << std::endl;
+      return;
+    }  
+
+    cheat = true;
   }
 
   //10/10/18 DBrailsford start assessing PFParticle stuff
@@ -2583,7 +2619,7 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
   }
   else art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
 
-  art::FindManyP<recob::PFParticle> fmpfps(showerListHandle, evt, fShowerModuleLabel);
+  art::FindManyP<recob::PFParticle> fmpfps(cheat ? cheatShowerListHandle : showerListHandle, evt, cheat ? fCheatShowerModuleLabel : fShowerModuleLabel);
   const std::vector<art::Ptr<recob::PFParticle> > sel_shower_pfps = fmpfps.at(sel_shower.key());
   if (sel_shower_pfps.size() != 1)
   {
@@ -2594,7 +2630,7 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
   art::Ptr<recob::PFParticle> sel_pfp = sel_shower_pfps[0];
 
   //Get the hits for said shower
-  art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
+  art::FindManyP<recob::Hit> fmhs(cheat ? cheatShowerListHandle : showerListHandle, evt, cheat ? fCheatShowerModuleLabel : fShowerModuleLabel);
   const std::vector<art::Ptr<recob::Hit> > sel_shower_hits = fmhs.at(sel_shower.key());
   fSelShowerRecoNHits = sel_shower_hits.size();
 
@@ -2632,8 +2668,9 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
   //return;
   //}
 
-  // ISOBEL - Recreate neutrino alg so that I can cheat the selection...
-  std::unique_ptr<dune::EnergyRecoOutput> energyRecoHandle(std::make_unique<dune::EnergyRecoOutput>(fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_shower, evt)));
+  // Luckily can do this in cheating characterisation since enery split into leading lepton and hadronic
+  std::unique_ptr<dune::EnergyRecoOutput> energyRecoHandle(std::make_unique<dune::EnergyRecoOutput>(cheat ? fCheatNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_shower, evt) : 
+      fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_shower, evt)));
   fNueRecoENu = energyRecoHandle->fNuLorentzVector.E();
   fNueRecoEHad = energyRecoHandle->fHadLorentzVector.E();
   fNueRecoMomLep = sqrt(energyRecoHandle->fLepLorentzVector.Vect().Mag2());
@@ -2668,7 +2705,7 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
       }
   }
   //Now get the pid stuff
-  art::FindManyP<anab::MVAPIDResult> fmpidt(showerListHandle, evt, fPIDModuleLabel);
+  art::FindManyP<anab::MVAPIDResult> fmpidt(cheat ? cheatShowerListHandle : showerListHandle, evt, cheat ? fCheatPIDModuleLabel : fPIDModuleLabel);
   std::vector<art::Ptr<anab::MVAPIDResult> > pids = fmpidt.at(sel_shower.key());
   if (pids.at(0).isAvailable()){
       fSelShowerMVAEvalRatio = pids.at(0)->evalRatio;
