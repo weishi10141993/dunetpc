@@ -68,6 +68,23 @@ simple_plugin(HighestPandrizzleScoreRecoVertexShowerSelector "tool"
                 #dune_FDSelections_pandizzle
              )
 
+simple_plugin(HighestPandrizzleScoreRecoVertexShowerSelectorCheatCut "tool"
+    	  	        lardataobj_RecoBase
+    	  	        larpandora_LArPandoraInterface
+                ${ROOT_BASIC_LIB_LIST}
+                ${ART_FRAMEWORK_PRINCIPAL}
+                ${ART_FRAMEWORK_CORE}
+ 	  	           art_Persistency_Common canvas
+ 	  	           art_Persistency_Provenance canvas
+
+ 	  	           art_Utilities canvas
+
+                   FDSelection
+                   PandrizzleAlg
+
+                #dune_FDSelections_pandizzle
+             )
+
 simple_plugin(CheatRecoVertexTrackSelector "tool"
     	  	        lardataobj_RecoBase
     	  	        larpandora_LArPandoraInterface
