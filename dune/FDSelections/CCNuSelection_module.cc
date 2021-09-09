@@ -542,6 +542,18 @@ private:
   double fRecoShowerMVAProton[kDefMaxNRecoShowers];
   double fRecoShowerMVAPhoton[kDefMaxNRecoShowers];
   double fRecoShowerRecoEnergy[kDefMaxNRecoShowers][3];
+  double fRecoShowerPandrizzleEvalRatio[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleConcentration[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleCoreHaloRatio[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleConicalness[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzledEdxBestPlane[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleDisplacement[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleDCA[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleWideness[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleEnergyDensity[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleMVAScore[kDefMaxNRecoShowers];
+  bool   fRecoShowerPandrizzleIsFilled[kDefMaxNRecoShowers];
+
 
   //reco energy bits
   double fNueRecoMomLep; //Reco lepton momentum
@@ -662,8 +674,7 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
   fConvTrackPID(pset.get<fhicl::ParameterSet>("ctpHelper")),
   fNeutrinoEnergyRecoAlg(pset.get<fhicl::ParameterSet>("NeutrinoEnergyRecoAlg"),fTrackModuleLabel,fShowerModuleLabel,
         fHitsModuleLabel,fWireModuleLabel,fTrackModuleLabel,fShowerModuleLabel,fPFParticleModuleLabel),
-    fCheatNeutrinoEnergyRecoAlg(pset.get<fhicl::ParameterSet>("NeutrinoEnergyRecoAlg"),fTrackModuleLabel,pset.get<bool>("CheatCharacterisation", false) ? fCheatShowerModuleLabel : fShowerModuleLabel,
-                              fHitsModuleLabel,fWireModuleLabel,fTrackModuleLabel,pset.get<bool>("CheatCharacterisation", false) ? fCheatShowerModuleLabel : fShowerModuleLabel,fPFParticleModuleLabel),
+    fCheatNeutrinoEnergyRecoAlg(pset.get<fhicl::ParameterSet>("NeutrinoEnergyRecoAlg"),fTrackModuleLabel,pset.get<bool>("CheatCharacterisation", false) ?pset.get< std::string >("ModuleLabels.CheatShowerModuleLabel") : fShowerModuleLabel, fHitsModuleLabel,fWireModuleLabel,fTrackModuleLabel,pset.get<bool>("CheatCharacterisation", false) ? pset.get< std::string >("ModuleLabels.CheatShowerModuleLabel") : fShowerModuleLabel,fPFParticleModuleLabel),
   fUsePandoraVertex        (pset.get< bool >("UsePandoraVertex")),
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(pset.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(pset.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
@@ -672,6 +683,8 @@ FDSelection::CCNuSelection::CCNuSelection(fhicl::ParameterSet const & pset)
 
   if (fCheatCharacterisation)
   {
+      //std::cout << "CCNuSelection - fCheatCharacterisation is true" << std::endl;
+
       fCheatShowerModuleLabel = pset.get< std::string >("ModuleLabels.CheatShowerModuleLabel");
       fCheatPIDModuleLabel = pset.get< std::string >("ModuleLabels.CheatPIDModuleLabel");
       fShowerPDGToCheat = pset.get<std::vector<int>> ("ShowerPDGToCheat");
@@ -1113,6 +1126,17 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoShowerMVAProton",fRecoShowerMVAProton,"RecoShowerMVAProton[NRecoShowers]/D");
     fTree->Branch("RecoShowerMVAPhoton",fRecoShowerMVAPhoton,"RecoShowerMVAPhoton[NRecoShowers]/D");
     fTree->Branch("RecoShowerRecoEnergy",fRecoShowerRecoEnergy,"RecoShowerRecoEnergy[NRecoShowers][3]/D");
+    fTree->Branch("RecoShowerPandrizzleEvalRatio",&fRecoShowerPandrizzleEvalRatio,"RecoShowerPandrizzleEvalRatio[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleConcentration",&fRecoShowerPandrizzleConcentration,"RecoShowerPandrizzleConcentration[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleCoreHaloRatio",&fRecoShowerPandrizzleCoreHaloRatio, "RecoShowerPandrizzleCoreHaloRatio[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleConicalness",&fRecoShowerPandrizzleConicalness, "RecoShowerPandrizzleConicalness[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzledEdxBestPlane",&fRecoShowerPandrizzledEdxBestPlane, "RecoShowerPandrizzledEdxBestPlane[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleDisplacement",&fRecoShowerPandrizzleDisplacement, "RecoShowerPandrizzleDisplacement[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleDCA",&fRecoShowerPandrizzleDCA, "RecoShowerPandrizzleDCA[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleWideness",&fRecoShowerPandrizzleWideness, "RecoShowerPandrizzleWideness[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleEnergyDensity",&fRecoShowerPandrizzleEnergyDensity, "RecoShowerPandrizzleEnergyDensity[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleMVAScore",&fRecoShowerPandrizzleMVAScore, "RecoShowerPandrizzleMVAScore[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleIsFilled",&fRecoShowerPandrizzleIsFilled, "RecoShowerPandrizzleIsFilled[NRecoShowers]/O");
 
     fTree->Branch("CVNResultNue", &fCVNResultNue);
     fTree->Branch("CVNResultNumu", &fCVNResultNumu);
@@ -1589,6 +1613,17 @@ void FDSelection::CCNuSelection::Reset()
         fRecoShowerRecodEdx[i_shower][i_plane] = kDefDoub;
         fRecoShowerRecoEnergy[i_shower][i_plane] = kDefDoub;
     }
+    fRecoShowerPandrizzleEvalRatio[i_shower]     = kDefDoub;
+    fRecoShowerPandrizzleConcentration[i_shower] = kDefDoub;
+    fRecoShowerPandrizzleCoreHaloRatio[i_shower] = kDefDoub;
+    fRecoShowerPandrizzleConicalness[i_shower]   = kDefDoub;
+    fRecoShowerPandrizzledEdxBestPlane[i_shower] = kDefDoub;
+    fRecoShowerPandrizzleDisplacement[i_shower]  = kDefDoub;
+    fRecoShowerPandrizzleDCA[i_shower]           = kDefDoub;
+    fRecoShowerPandrizzleWideness[i_shower]      = kDefDoub;
+    fRecoShowerPandrizzleEnergyDensity[i_shower] = kDefDoub;
+    fRecoShowerPandrizzleMVAScore[i_shower]      = kDefDoub;
+    fRecoShowerPandrizzleIsFilled[i_shower]      = 0;
   }
   fNRecoShowers = 0;
   //Reco nu bits
@@ -2567,6 +2602,20 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
           fRecoShowerRecoEnergy[i_shower][i_plane] = current_shower->Energy()[i_plane];
         }
     }
+
+    // fill pandrizzle variables
+    FDSelection::PandrizzleAlg::Record pandrizzleRecord(fPandrizzleAlg.RunPID(current_shower, TVector3(fRecoNuVtxX, fRecoNuVtxY, fRecoNuVtxZ), evt));
+    fRecoShowerPandrizzleEvalRatio[i_shower]     = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kEvalRatio);
+    fRecoShowerPandrizzleConcentration[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kConcentration);
+    fRecoShowerPandrizzleCoreHaloRatio[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kCoreHaloRatio);
+    fRecoShowerPandrizzleConicalness[i_shower]   = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kConicalness);
+    fRecoShowerPandrizzledEdxBestPlane[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kdEdxBestPlane);
+    fRecoShowerPandrizzleDisplacement[i_shower]  = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kDisplacement);
+    fRecoShowerPandrizzleDCA[i_shower]           = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kDCA);
+    fRecoShowerPandrizzleWideness[i_shower]      = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kWideness);
+    fRecoShowerPandrizzleEnergyDensity[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kEnergyDensity);
+    fRecoShowerPandrizzleMVAScore[i_shower]      = pandrizzleRecord.GetMVAScore();
+    fRecoShowerPandrizzleIsFilled[i_shower]      = pandrizzleRecord.IsFilled();
   }
 
   return;
@@ -2594,7 +2643,7 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
     return;
   }
 
-  // For cheating characterisation studies
+  // For characterisation cheating characterisation studies - if selected shower has been cheated, grab appropriate list
   bool cheat(false);
   art::Handle< std::vector<recob::Shower> > cheatShowerListHandle;
   if (fCheatCharacterisation && (std::find(showerList.begin(), showerList.end(), sel_shower) == showerList.end()))
@@ -2607,6 +2656,11 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
 
     cheat = true;
   }
+
+  //std::cout << "CCNuSelection - Is selected shower cheated? " << (cheat ? "yes" : "no" ) << std::endl;
+  //std::cout << "fCheatShowerModuleLabel: " << fCheatShowerModuleLabel << std::endl;
+  //std::cout << "fCheatPIDModuleLabel: " << fCheatPIDModuleLabel << std::endl;
+
 
   //10/10/18 DBrailsford start assessing PFParticle stuff
   //Now get the PFParticles
