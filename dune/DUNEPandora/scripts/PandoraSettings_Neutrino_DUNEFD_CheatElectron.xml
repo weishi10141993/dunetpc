@@ -18,7 +18,7 @@
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
         <ClusterListName>LClustersU</ClusterListName>
@@ -31,7 +31,7 @@
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
         <ClusterListName>LClustersV</ClusterListName>
@@ -44,7 +44,7 @@
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
         <ClusterListName>LClustersW</ClusterListName>
@@ -151,7 +151,7 @@
         <InputClusterListNames>ClustersU ClustersV ClustersW LClustersU LClustersV LClustersW</InputClusterListNames>
         <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
         <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
-        <MvaFileName>PandoraMVAData/PandoraBdt_v03_20_00.xml</MvaFileName>
+        <MvaFileName>PandoraBdt_cheatElectron.xml</MvaFileName>
         <RegionMvaName>DUNEFD_VertexSelectionRegion</RegionMvaName>
         <VertexMvaName>DUNEFD_VertexSelectionVertex</VertexMvaName>
         <FeatureTools>
@@ -433,9 +433,9 @@
         <MCParticleListName>Input</MCParticleListName>
         <CaloHitListName>CaloHitList2D</CaloHitListName>
         <UseThreeDInformation>true</UseThreeDInformation>
-        <MvaFileName>PandoraMVAData/PandoraBdt_v03_20_00.xml</MvaFileName>
+        <MvaFileName>PandoraBdt_cheatElectron.xml</MvaFileName>
         <MvaName>PfoCharacterisation</MvaName>
-        <MvaFileNameNoChargeInfo>PandoraMVAData/PandoraBdt_v03_20_00.xml</MvaFileNameNoChargeInfo>
+        <MvaFileNameNoChargeInfo>PandoraBdt_cheatElectron.xml</MvaFileNameNoChargeInfo>
         <MvaNameNoChargeInfo>PfoCharacterisationNoChargeInfo</MvaNameNoChargeInfo>
         <TrainingSetMode>false</TrainingSetMode>
         <TrainingOutputFileName>training_output</TrainingOutputFileName>

@@ -13,12 +13,136 @@
         <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
     </algorithm>
 
+    <!-- USUAL RECO TO GET VERTEX -->
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
+        <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
+        <ClusterListName>ClustersU</ClusterListName>
+        <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+    <algorithm type = "LArLayerSplitting"/>
+    <algorithm type = "LArLongitudinalAssociation"/>
+    <algorithm type = "LArTransverseAssociation"/>
+    <algorithm type = "LArLongitudinalExtension"/>
+    <algorithm type = "LArTransverseExtension"/>
+    <algorithm type = "LArCrossGapsAssociation"/>
+    <algorithm type = "LArCrossGapsExtension"/>
+    <algorithm type = "LArOvershootSplitting"/>
+    <algorithm type = "LArBranchSplitting"/>
+    <algorithm type = "LArKinkSplitting"/>
+    <algorithm type = "LArTrackConsolidation">
+        <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
+    </algorithm>
+    <algorithm type = "LArHitWidthClusterMerging"/>
+
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
+        <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
+        <ClusterListName>ClustersV</ClusterListName>
+        <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+    <algorithm type = "LArLayerSplitting"/>
+    <algorithm type = "LArLongitudinalAssociation"/>
+    <algorithm type = "LArTransverseAssociation"/>
+    <algorithm type = "LArLongitudinalExtension"/>
+    <algorithm type = "LArTransverseExtension"/>
+    <algorithm type = "LArCrossGapsAssociation"/>
+    <algorithm type = "LArCrossGapsExtension"/>
+    <algorithm type = "LArOvershootSplitting"/>
+    <algorithm type = "LArBranchSplitting"/>
+    <algorithm type = "LArKinkSplitting"/>
+    <algorithm type = "LArTrackConsolidation">
+        <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
+    </algorithm>
+    <algorithm type = "LArHitWidthClusterMerging"/>
+
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
+        <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
+        <ClusterListName>ClustersW</ClusterListName>
+        <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+    <algorithm type = "LArLayerSplitting"/>
+    <algorithm type = "LArLongitudinalAssociation"/>
+    <algorithm type = "LArTransverseAssociation"/>
+    <algorithm type = "LArLongitudinalExtension"/>
+    <algorithm type = "LArTransverseExtension"/>
+    <algorithm type = "LArCrossGapsAssociation"/>
+    <algorithm type = "LArCrossGapsExtension"/>
+    <algorithm type = "LArOvershootSplitting"/>
+    <algorithm type = "LArBranchSplitting"/>
+    <algorithm type = "LArKinkSplitting"/>
+    <algorithm type = "LArTrackConsolidation">
+        <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
+    </algorithm>
+    <algorithm type = "LArHitWidthClusterMerging"/>
+
+    <algorithm type = "LArCutClusterCharacterisation">
+        <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+        <MaxShowerLengthCut>500.</MaxShowerLengthCut>
+        <VertexDistanceRatioCut>500.</VertexDistanceRatioCut>
+        <PathLengthRatioCut>1.012</PathLengthRatioCut>
+        <ShowerWidthRatioCut>0.2</ShowerWidthRatioCut>
+    </algorithm>
+    <algorithm type = "LArCandidateVertexCreation">
+        <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+        <OutputVertexListName>CandidateVertices3D</OutputVertexListName>
+        <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
+        <EnableCrossingCandidates>false</EnableCrossingCandidates>
+        <ReducedCandidates>true</ReducedCandidates>
+    </algorithm>
+    <algorithm type = "LArBdtVertexSelection">
+        <InputCaloHitListNames>CaloHitListU CaloHitListV CaloHitListW</InputCaloHitListNames>
+        <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+        <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
+        <ReplaceCurrentVertexList>false</ReplaceCurrentVertexList>
+        <MvaFileName>PandoraMVAData/PandoraBdt_v03_20_00.xml</MvaFileName>
+        <RegionMvaName>DUNEFD_VertexSelectionRegion</RegionMvaName>
+        <VertexMvaName>DUNEFD_VertexSelectionVertex</VertexMvaName>
+        <FeatureTools>
+            <tool type = "LArEnergyKickFeature"/>
+            <tool type = "LArLocalAsymmetryFeature"/>
+            <tool type = "LArGlobalAsymmetryFeature"/>
+            <tool type = "LArShowerAsymmetryFeature"/>
+            <tool type = "LArRPhiFeature"/>
+        </FeatureTools>
+    </algorithm>
+
+   <!--algorithm type = "LArCheatingVertexCreation">
+        <OutputVertexListName>Cheat3D</OutputVertexListName>
+        <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
+    </algorithm-->
+
+    <!--algorithm type = "LArVisualMonitoring">
+        <CaloHitListNames>CaloHitListW CaloHitListU CaloHitListV</CaloHitListNames>
+        <ClusterListNames>ClustersU ClustersV ClustersW</ClusterListNames>
+        <VertexListNames>NeutrinoVertices3D Cheat3D</VertexListNames>
+        <ShowDetector>true</ShowDetector>
+    </algorithm-->     
+
+    <algorithm type = "LArListDeletion">
+        <ClusterListNames>ClustersU ClustersV ClustersW</ClusterListNames>
+    </algorithm>
+
+    <algorithm type = "LArVisualMonitoring">
+        <CaloHitListNames>CaloHitListW CaloHitListU CaloHitListV</CaloHitListNames>
+        <ClusterListNames>ClustersU ClustersV ClustersW</ClusterListNames>
+        <VertexListNames>NeutrinoVertices3D Cheat3D</VertexListNames>
+        <ShowDetector>true</ShowDetector>
+    </algorithm>     
+
+
+   <!-- NOW BEGIN PANDORA AGAIN -->
+
    <!-- Cheat CC primary lepton clustering, U View -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11 22</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
         <ClusterListName>LClustersU</ClusterListName>
@@ -31,7 +155,7 @@
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11 22</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
         <ClusterListName>LClustersV</ClusterListName>
@@ -44,17 +168,13 @@
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11 22</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
         <ClusterListName>LClustersW</ClusterListName>
         <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
         <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
     </algorithm>
-
-    <!--algorithm type = "LArVisualMonitoring">
-      <ClusterListNames>LClustersW LClustersU LClustersV</ClusterListNames>
-    </algorithm-->
 
     <!-- TwoDReconstruction -->
     <algorithm type = "LArClusteringParent">
@@ -130,38 +250,13 @@
     </algorithm>
 
     <!-- VertexAlgorithms -->
-    <algorithm type = "LArCutClusterCharacterisation">
-        <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
-        <MaxShowerLengthCut>500.</MaxShowerLengthCut>
-        <VertexDistanceRatioCut>500.</VertexDistanceRatioCut>
-        <PathLengthRatioCut>1.012</PathLengthRatioCut>
-        <ShowerWidthRatioCut>0.2</ShowerWidthRatioCut>
-    </algorithm>
-    <algorithm type = "LArCandidateVertexCreation">
-        <!--InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames-->
-        <InputClusterListNames>ClustersU ClustersV ClustersW LClustersU LClustersV LClustersW</InputClusterListNames>
-        <OutputVertexListName>CandidateVertices3D</OutputVertexListName>
-        <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
-        <EnableCrossingCandidates>false</EnableCrossingCandidates>
-        <ReducedCandidates>true</ReducedCandidates>
-    </algorithm>
-    <algorithm type = "LArBdtVertexSelection">
-        <InputCaloHitListNames>CaloHitListU CaloHitListV CaloHitListW</InputCaloHitListNames>
-        <!--InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames-->
-        <InputClusterListNames>ClustersU ClustersV ClustersW LClustersU LClustersV LClustersW</InputClusterListNames>
-        <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
-        <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
-        <MvaFileName>PandoraMVAData/PandoraBdt_v03_20_00.xml</MvaFileName>
-        <RegionMvaName>DUNEFD_VertexSelectionRegion</RegionMvaName>
-        <VertexMvaName>DUNEFD_VertexSelectionVertex</VertexMvaName>
-        <FeatureTools>
-            <tool type = "LArEnergyKickFeature"/>
-            <tool type = "LArLocalAsymmetryFeature"/>
-            <tool type = "LArGlobalAsymmetryFeature"/>
-            <tool type = "LArShowerAsymmetryFeature"/>
-            <tool type = "LArRPhiFeature"/>
-        </FeatureTools>
-    </algorithm>
+    <algorithm type = "LArVisualMonitoring">
+        <CaloHitListNames>CaloHitListW CaloHitListU CaloHitListV</CaloHitListNames>
+        <ClusterListNames>LClustersU LClustersV LClustersW ClustersU ClustersV ClustersW</ClusterListNames>
+        <VertexListNames>NeutrinoVertices3D</VertexListNames>
+        <ShowDetector>true</ShowDetector>
+    </algorithm>     
+
     <algorithm type = "LArCutClusterCharacterisation">
         <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
         <ZeroMode>true</ZeroMode>
@@ -177,6 +272,7 @@
         <OutputVertexListName>LVertices3D</OutputVertexListName>
         <MCParticleListName>Input</MCParticleListName>
         <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+        <AddVertices>false</AddVertices>
    </algorithm>
 
     <!-- ThreeDTrackAlgorithms -->
@@ -383,6 +479,17 @@
         </HitCreationTools>
     </algorithm>
 
+   <algorithm type = "LArCheatingVisibleVertexCreation">
+        <InputPfoListNames>LParticles3D</InputPfoListNames>
+        <OutputVertexListName>LVertices3D</OutputVertexListName>
+   </algorithm>
+
+    <algorithm type = "LArVisualMonitoring">
+        <PfoListNames>LParticles3D</PfoListNames>
+        <VertexListNames>NeutrinoVertices3D LVertices3D</VertexListNames>
+        <ShowDetector>true</ShowDetector>
+    </algorithm>
+
     <!-- ThreeDMopUpAlgorithms -->
     <algorithm type = "LArSlidingConePfoMopUp">
         <InputPfoListNames>TrackParticles3D ShowerParticles3D</InputPfoListNames>
@@ -478,7 +585,7 @@
         <!--PfoListNames>NeutrinoParticles3D TrackParticles3D ShowerParticles3D</PfoListNames-->
         <PfoListNames>NeutrinoParticles3D TrackParticles3D ShowerParticles3D LParticles3D</PfoListNames>
         <!--VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D</VertexListNames-->
-        <VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D LVertices3D</VertexListNames>
+        <VertexListNames>NeutrinoVertices3D DaughterVertices3D LVertices3D</VertexListNames>
         <!--ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D</ClusterListNames-->
         <ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D LClustersU LClustersV LClustersUW LClusters3D</ClusterListNames>
         <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D</CaloHitListNames>

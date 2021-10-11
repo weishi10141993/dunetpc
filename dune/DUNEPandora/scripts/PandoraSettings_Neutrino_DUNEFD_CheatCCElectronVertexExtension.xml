@@ -13,49 +13,6 @@
         <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
     </algorithm>
 
-   <!-- Cheat CC primary lepton clustering, U View -->
-    <algorithm type = "LArClusteringParent">
-        <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
-            <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
-        </algorithm>
-        <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
-        <ClusterListName>LClustersU</ClusterListName>
-        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
-        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
-    </algorithm>
-
-    <!-- Cheat CC primary lepton clustering, V View -->
-    <algorithm type = "LArClusteringParent">
-        <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
-            <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
-        </algorithm>
-        <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
-        <ClusterListName>LClustersV</ClusterListName>
-        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
-        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
-    </algorithm>
-
-    <!-- Cheat CC primary lepton clustering, W View -->
-    <algorithm type = "LArClusteringParent">
-        <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
-            <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
-        </algorithm>
-        <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
-        <ClusterListName>LClustersW</ClusterListName>
-        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
-        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
-    </algorithm>
-
-    <!--algorithm type = "LArVisualMonitoring">
-      <ClusterListNames>LClustersW LClustersU LClustersV</ClusterListNames>
-    </algorithm-->
-
     <!-- TwoDReconstruction -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
@@ -123,12 +80,6 @@
     </algorithm>
     <algorithm type = "LArHitWidthClusterMerging"/>
 
-    <!-- Cheat CC primary lepton cluster characterisation -->
-    <algorithm type = "LArCheatingClusterCharacterisation">
-        <InputClusterListNames>LClustersU LClustersV LClustersW</InputClusterListNames>
-        <OverwriteExistingId>true</OverwriteExistingId>
-    </algorithm>
-
     <!-- VertexAlgorithms -->
     <algorithm type = "LArCutClusterCharacterisation">
         <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
@@ -138,8 +89,7 @@
         <ShowerWidthRatioCut>0.2</ShowerWidthRatioCut>
     </algorithm>
     <algorithm type = "LArCandidateVertexCreation">
-        <!--InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames-->
-        <InputClusterListNames>ClustersU ClustersV ClustersW LClustersU LClustersV LClustersW</InputClusterListNames>
+        <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
         <OutputVertexListName>CandidateVertices3D</OutputVertexListName>
         <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
         <EnableCrossingCandidates>false</EnableCrossingCandidates>
@@ -147,8 +97,7 @@
     </algorithm>
     <algorithm type = "LArBdtVertexSelection">
         <InputCaloHitListNames>CaloHitListU CaloHitListV CaloHitListW</InputCaloHitListNames>
-        <!--InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames-->
-        <InputClusterListNames>ClustersU ClustersV ClustersW LClustersU LClustersV LClustersW</InputClusterListNames>
+        <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
         <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
         <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
         <MvaFileName>PandoraMVAData/PandoraBdt_v03_20_00.xml</MvaFileName>
@@ -169,15 +118,6 @@
     <algorithm type = "LArVertexSplitting">
         <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
     </algorithm>
-
-    <!-- Cheat CC primary lepton pfo creation including vertexing and track/shower ID -->
-   <algorithm type = "LArCheatingPfoCreation">
-        <InputClusterListNames>LClustersU LClustersV LClustersW</InputClusterListNames>
-        <OutputPfoListName>LParticles3D</OutputPfoListName>
-        <OutputVertexListName>LVertices3D</OutputVertexListName>
-        <MCParticleListName>Input</MCParticleListName>
-        <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
-   </algorithm>
 
     <!-- ThreeDTrackAlgorithms -->
     <algorithm type = "LArThreeDTransverseTracks">
@@ -329,24 +269,13 @@
         <DaughterListNames>ClustersU ClustersV ClustersW</DaughterListNames>
     </algorithm>
 
-    <!-- CC primary lepton 3D hit creation -->
-    <algorithm type = "LArThreeDHitCreation">
-        <InputPfoListName>LParticles3D</InputPfoListName>
-        <OutputCaloHitListName>LCaloHitList3D</OutputCaloHitListName>
-        <OutputClusterListName>LClusters3D</OutputClusterListName>
-        <HitCreationTools>
-            <tool type = "LArClearTransverseTrackHits"><MinViews>3</MinViews></tool>
-            <tool type = "LArClearLongitudinalTrackHits"><MinViews>3</MinViews></tool>
-            <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>3</MinViews></tool>
-            <tool type = "LArMultiValuedTransverseTrackHits"><MinViews>3</MinViews></tool>
-            <tool type = "LArClearTransverseTrackHits"><MinViews>2</MinViews></tool>
-            <tool type = "LArClearLongitudinalTrackHits"><MinViews>2</MinViews></tool>
-            <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>2</MinViews></tool>
-            <tool type = "LArThreeViewShowerHits"/>
-            <tool type = "LArTwoViewShowerHits"/>
-            <tool type = "LArDeltaRayShowerHits"/>
-        </HitCreationTools>
-    </algorithm>
+<algorithm type = "LArCheatingCCElectronRefinement">
+<MCParticleListName>Input</MCParticleListName>
+<PfoListName>ShowerParticles3D</PfoListName>
+<TrackPfoListName>TrackParticles3D</TrackPfoListName>
+<CaloHitListName>CaloHitList2D</CaloHitListName>
+<ClusterListNames>ClustersU ClustersV ClustersW</ClusterListNames>
+</algorithm>
 
     <!-- ThreeDHitAlgorithms -->
     <algorithm type = "LArCutPfoCharacterisation">
@@ -403,14 +332,6 @@
        <InputVertexListName>NeutrinoVertices3D</InputVertexListName>
        <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
     </algorithm>
-
-    <!-- CC primary lepton hierarchy building -->
-    <algorithm type = "LArCheatingNeutrinoHierarchy">
-        <MCParticleListName>Input</MCParticleListName>
-        <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
-        <DaughterPfoListNames>LParticles3D</DaughterPfoListNames>
-    </algorithm>
-
     <algorithm type = "LArNeutrinoHierarchy">
         <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
         <DaughterPfoListNames>TrackParticles3D ShowerParticles3D</DaughterPfoListNames>
@@ -424,7 +345,6 @@
     <algorithm type = "LArNeutrinoDaughterVertices">
         <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
         <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
-        <CheatedPfoListName>LParticles3D</CheatedPfoListName>
     </algorithm>
 
     <algorithm type = "LArBdtPfoCharacterisation">
@@ -475,12 +395,9 @@
 
     <!-- Output list management -->
     <algorithm type = "LArPostProcessing">
-        <!--PfoListNames>NeutrinoParticles3D TrackParticles3D ShowerParticles3D</PfoListNames-->
-        <PfoListNames>NeutrinoParticles3D TrackParticles3D ShowerParticles3D LParticles3D</PfoListNames>
-        <!--VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D</VertexListNames-->
-        <VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D LVertices3D</VertexListNames>
-        <!--ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D</ClusterListNames-->
-        <ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D LClustersU LClustersV LClustersUW LClusters3D</ClusterListNames>
+        <PfoListNames>NeutrinoParticles3D TrackParticles3D ShowerParticles3D</PfoListNames>
+        <VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D</VertexListNames>
+        <ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D</ClusterListNames>
         <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D</CaloHitListNames>
         <CurrentPfoListReplacement>NeutrinoParticles3D</CurrentPfoListReplacement>
     </algorithm>

@@ -18,7 +18,7 @@
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
         <ClusterListName>LClustersU</ClusterListName>
@@ -31,7 +31,7 @@
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
         <ClusterListName>LClustersV</ClusterListName>
@@ -44,7 +44,7 @@
         <algorithm type = "LArCheatingCCLeptonClusterCreation" description = "ClusterFormation">
             <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
-            <ParticleIdList>11 13</ParticleIdList>
+            <ParticleIdList>11</ParticleIdList>
         </algorithm>
         <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
         <ClusterListName>LClustersW</ClusterListName>
@@ -139,6 +139,7 @@
     </algorithm>
     <algorithm type = "LArCandidateVertexCreation">
         <!--InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames-->
+        <NuToCheatList>12</NuToCheatList>
         <InputClusterListNames>ClustersU ClustersV ClustersW LClustersU LClustersV LClustersW</InputClusterListNames>
         <OutputVertexListName>CandidateVertices3D</OutputVertexListName>
         <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
@@ -146,6 +147,7 @@
         <ReducedCandidates>true</ReducedCandidates>
     </algorithm>
     <algorithm type = "LArBdtVertexSelection">
+        <NuToCheatList>12</NuToCheatList>
         <InputCaloHitListNames>CaloHitListU CaloHitListV CaloHitListW</InputCaloHitListNames>
         <!--InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames-->
         <InputClusterListNames>ClustersU ClustersV ClustersW LClustersU LClustersV LClustersW</InputClusterListNames>
@@ -161,6 +163,11 @@
             <tool type = "LArShowerAsymmetryFeature"/>
             <tool type = "LArRPhiFeature"/>
         </FeatureTools>
+    </algorithm>
+   <algorithm type = "LArCheatingVertexCreation">
+        <NuToCheatList>12</NuToCheatList>
+        <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
+        <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
     </algorithm>
     <algorithm type = "LArCutClusterCharacterisation">
         <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
