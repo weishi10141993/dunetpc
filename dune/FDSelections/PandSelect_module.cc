@@ -35,6 +35,8 @@
 #include "dune/FDSelections/pandrizzle/PandrizzleAlg.h"
 #include "tools/RecoShowerSelector.h"
 #include "tools/RecoTrackSelector.h"
+#include "dune/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
+#include "dune/FDSensOpt/NeutrinoEnergyRecoAlg/NeutrinoEnergyRecoAlg.h"
 
 constexpr int kDefInt = -9999;
 constexpr int kDefDoub = (double)(kDefInt);
@@ -52,9 +54,11 @@ public:
   void beginJob() override;
   void endJob() override;
 
-  double GetPandizzleScore(art::Event& e);
+  bool GetSelectedTrack(art::Event& e, art::Ptr<recob::Track>& sel_track);
+  double GetPandizzleScore(art::Event& e, art::Ptr<recob::Track> sel_track);
   art::Ptr<recob::PFParticle> GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & e);
-  double GetPandrizzleScore(art::Event& e);
+  bool GetSelectedShower(art::Event& e, art::Ptr<recob::Shower>& sel_shower);
+  double GetPandrizzleScore(art::Event& e, art::Ptr<recob::Shower> sel_shower);
   void FillVertexInformation(art::Event const & e);
 
 private:
@@ -62,6 +66,8 @@ private:
   std::string fPFParticleModuleLabel;
   std::string fShowerModuleLabel;
   std::string fTrackModuleLabel;
+  std::string fHitsModuleLabel;
+  std::string fWireModuleLabel;
   std::string fPandizzleWeightFileName;
 
   // Tools
@@ -106,6 +112,9 @@ private:
   double fRecoNuVtxX;
   double fRecoNuVtxY;
   double fRecoNuVtxZ;
+
+  // Neutrino Energy Stuff
+  dune::NeutrinoEnergyRecoAlg fNeutrinoEnergyRecoAlg;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -115,12 +124,16 @@ PandSelect::PandSelect(fhicl::ParameterSet const& p) :
   fPFParticleModuleLabel(p.get< std::string >("ModuleLabels.PFParticleModuleLabel")),
   fShowerModuleLabel(p.get< std::string >("ModuleLabels.ShowerModuleLabel")),
   fTrackModuleLabel(p.get< std::string >("ModuleLabels.TrackModuleLabel")),
+  fHitsModuleLabel(p.get< std::string >("ModuleLabels.HitsModuleLabel")),
+  fWireModuleLabel(p.get< std::string >("ModuleLabels.WireModuleLabel")),
   fPandizzleWeightFileName(p.get< std::string > ("PandizzleWeightFileName")),
   fRecoShowerSelector{art::make_tool<FDSelectionTools::RecoShowerSelector>(p.get<fhicl::ParameterSet>("RecoShowerSelectorTool"))},
   fRecoTrackSelector{art::make_tool<FDSelectionTools::RecoTrackSelector>(p.get<fhicl::ParameterSet>("RecoTrackSelectorTool"))},
   fPandizzleAlg(p),
   fPandrizzleAlg(p),
-  fPandizzleReader("")
+  fPandizzleReader(""),
+  fNeutrinoEnergyRecoAlg(p.get<fhicl::ParameterSet>("NeutrinoEnergyRecoAlg"),fTrackModuleLabel,fShowerModuleLabel,
+        fHitsModuleLabel,fWireModuleLabel,fTrackModuleLabel,fShowerModuleLabel,fPFParticleModuleLabel)
 {
   produces<pandselect::PandSelectParams>();
 
@@ -148,29 +161,66 @@ PandSelect::PandSelect(fhicl::ParameterSet const& p) :
 void PandSelect::produce(art::Event& e)
 {
   std::unique_ptr<pandselect::PandSelectParams> outputPandSelectParams = std::make_unique<pandselect::PandSelectParams>();
-  outputPandSelectParams->selTrackPandizzleScore = GetPandizzleScore(e);
-  outputPandSelectParams->selShowerPandrizzleScore = GetPandrizzleScore(e);
+
+  art::Ptr<recob::Track> sel_track;
+
+  if (GetSelectedTrack(e, sel_track))
+  {
+      outputPandSelectParams->selTrackPandizzleScore = GetPandizzleScore(e, sel_track);
+      outputPandSelectParams->energyRecoNumu = fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_track, e);
+
+      //std::cout << "Numu energy: " << outputPandSelectParams->energyRecoNumu.fNuLorentzVector.E() << std::endl;
+  }
+  else
+  {
+      outputPandSelectParams->selTrackPandizzleScore = kDefDoub;
+  }
+
+  art::Ptr<recob::Shower> sel_shower;
+
+  if (GetSelectedShower(e, sel_shower))
+  {
+      outputPandSelectParams->selShowerPandrizzleScore = GetPandrizzleScore(e, sel_shower);
+      outputPandSelectParams->energyRecoNue = fNeutrinoEnergyRecoAlg.CalculateNeutrinoEnergy(sel_shower, e);
+  }
+  else
+  {
+      outputPandSelectParams->selShowerPandrizzleScore = kDefDoub;
+
+      //std::cout << "Nue energy: " << outputPandSelectParams->energyRecoNue.fNuLorentzVector.E() << std::endl;
+  }
+
+  //std::cout << "PANDIZZLE SCORE: " << outputPandSelectParams->selTrackPandizzleScore << std::endl;
+  //std::cout << "PANDRIZZLE SCORE: " << outputPandSelectParams->selShowerPandrizzleScore << std::endl;
+
   e.put(std::move(outputPandSelectParams));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-double PandSelect::GetPandizzleScore(art::Event& e)
+bool PandSelect::GetSelectedTrack(art::Event& e, art::Ptr<recob::Track>& sel_track)
 {
   art::Handle< std::vector<recob::Track> > trackListHandle;
   if (!(e.getByLabel(fTrackModuleLabel, trackListHandle))){
     std::cout<<"Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel << std::endl;
-    return kDefDoub;
+    return false;
   }
-  //Get the selected track
-  art::Ptr<recob::Track> sel_track = fRecoTrackSelector->FindSelectedTrack(e);
 
-  //If we didn't find a selected track then what's the point?
+  //Get the selected track
+  sel_track = fRecoTrackSelector->FindSelectedTrack(e);
+
   if (!(sel_track.isAvailable())) {
     std::cout<<"FDSelection::CCNuSelection::RunTrackSelection - no track returned from selection" << std::endl; 
-    return kDefDoub;
+    return false;
   }
 
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+double PandSelect::GetPandizzleScore(art::Event& e, art::Ptr<recob::Track> sel_track)
+{
   art::Ptr<recob::PFParticle> track_pfp = GetPFParticleMatchedToTrack(sel_track, e);
 
   fPandizzleAlg.ProcessPFParticle(track_pfp, e);
@@ -189,6 +239,7 @@ double PandSelect::GetPandizzleScore(art::Event& e)
   f_TMVAPFPTrackdEdxEndRatio = fPandizzleAlg.GetFloatVar("PFPTrackdEdxEndRatio");
   f_TMVAPFPTrackPIDA = fPandizzleAlg.GetFloatVar("PFPTrackPIDA");
 
+  
   fTMVAPFPMichelNHits = f_TMVAPFPMichelNHits;
   fTMVAPFPMichelElectronMVA = f_TMVAPFPMichelElectronMVA;
   fTMVAPFPMichelRecoEnergyPlane2 = f_TMVAPFPMichelRecoEnergyPlane2;
@@ -201,48 +252,74 @@ double PandSelect::GetPandizzleScore(art::Event& e)
   fTMVAPFPTrackdEdxStart = f_TMVAPFPTrackdEdxStart;
   fTMVAPFPTrackdEdxEnd = f_TMVAPFPTrackdEdxEnd;
   fTMVAPFPTrackdEdxEndRatio = f_TMVAPFPTrackdEdxEndRatio;
+  
+  /*
+  std::cout << "f_PFPMichelNHits: " << f_TMVAPFPMichelNHits << std::endl;
+  std::cout << "f_PFPMichelElectronMVA: " << f_TMVAPFPMichelElectronMVA << std::endl;
+  std::cout << "f_PFPMichelRecoEnergyPlane2: " << f_TMVAPFPMichelRecoEnergyPlane2 << std::endl;
+  std::cout << "f_PFPTrackDeflecAngleSD: " << f_TMVAPFPTrackDeflecAngleSD << std::endl;
+  std::cout << "f_PFPTrackLength: " <<f_TMVAPFPTrackLength << std::endl;
+  std::cout << "f_PFPTrackEvalRatio: " << f_TMVAPFPTrackEvalRatio << std::endl;
+  std::cout << "f_PFPTrackConcentration: " << f_TMVAPFPTrackConcentration << std::endl;
+  std::cout << "f_PFPTrackCoreHaloRatio: " << f_TMVAPFPTrackCoreHaloRatio << std::endl;
+  std::cout << "f_PFPTrackConicalness: " << f_TMVAPFPTrackConicalness << std::endl;
+  std::cout << "f_PFPTrackdEdxStart: " << f_TMVAPFPTrackdEdxStart << std::endl;
+  std::cout << "f_PFPTrackdEdxEnd: " << f_TMVAPFPTrackdEdxEnd << std::endl;
+  std::cout << "f_PFPTrackdEdxEndRatio: " << f_TMVAPFPTrackdEdxEndRatio << std::endl;
+  */
 
   return fPandizzleReader.EvaluateMVA("BDTG");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-art::Ptr<recob::PFParticle> PandSelect::GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & e){
+art::Ptr<recob::PFParticle> PandSelect::GetPFParticleMatchedToTrack(art::Ptr<recob::Track> const track, art::Event const & e)
+{
   art::Ptr<recob::PFParticle> matched_pfp;
+
   art::Handle< std::vector<recob::Track> > trackListHandle;
   if (!(e.getByLabel(fTrackModuleLabel, trackListHandle))){
     std::cout<<"CCNuSelection::GetPFParticleMatchedToTrack Unable to find std::vector<recob::Track> with module label: " << fTrackModuleLabel << std::endl;
     return matched_pfp;
   }
+
   art::FindManyP<recob::PFParticle> fmpfpt(trackListHandle, e, fTrackModuleLabel);
   const std::vector<art::Ptr<recob::PFParticle> > sel_track_pfps = fmpfpt.at(track.key());
   if (sel_track_pfps.size() != 1){
     std::cout<<"CCNuSelection::GetPFParticleMatchedToTrack NUMBER OF PFP MATCHED TO A TRACK DOES NOT EQUAL 1: " << sel_track_pfps.size() << std::endl;
     return matched_pfp;
   }
+
   matched_pfp = sel_track_pfps[0];
+
   return matched_pfp;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-double PandSelect::GetPandrizzleScore(art::Event& e)
+bool PandSelect::GetSelectedShower(art::Event& e, art::Ptr<recob::Shower>& sel_shower)
 {
   art::Handle< std::vector<recob::Shower> > showerListHandle;
   if (!(e.getByLabel(fShowerModuleLabel, showerListHandle))){
     std::cout<<"Unable to find std::vector<recob::Shower> with module label: " << fShowerModuleLabel << std::endl;
-    return kDefDoub;
+    return false;
   }
 
   //Get the selected shower
-  art::Ptr<recob::Shower> sel_shower = fRecoShowerSelector->FindSelectedShower(e);
+  sel_shower = fRecoShowerSelector->FindSelectedShower(e);
 
-  //If we didn't find a selected track then what's the point?
   if (!(sel_shower.isAvailable())) {
     std::cout<<"FDSelection::CCNuSelection::RunShowerSelection - no shower selected by tool"<<std::endl;
-    return kDefDoub;
+    return false;
   }
 
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+double PandSelect::GetPandrizzleScore(art::Event& e, art::Ptr<recob::Shower> sel_shower)
+{
   FillVertexInformation(e);
 
   FDSelection::PandrizzleAlg::Record pandrizzleRecord(fPandrizzleAlg.RunPID(sel_shower, TVector3(fRecoNuVtxX, fRecoNuVtxY, fRecoNuVtxZ), e));
