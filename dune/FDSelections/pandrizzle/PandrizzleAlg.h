@@ -93,6 +93,8 @@ namespace FDSelection
             void ProcessPFParticle(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
             void FillTree();
             void ResetTreeVariables();
+            art::Ptr<recob::PFParticle> GetPFParticle(const art::Ptr<recob::Shower> pShower, const art::Event& evt);
+
             std::vector<art::Ptr<recob::Hit> > GetPFPHits(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt);
 
             std::string fNuGenModuleLabel;

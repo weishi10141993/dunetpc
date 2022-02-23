@@ -12,12 +12,14 @@
 
 //LArSoft
 #include "lardataobj/AnalysisBase/MVAPIDResult.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
 
 //Custom
 #include "PandrizzleAlg.h"
 #include "larsim/Utils/TruthMatchUtils.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
 
 namespace
 {
@@ -59,6 +61,8 @@ FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
 {
     if (fCheatCharacterisation)
     {
+        //std::cout << "PandrizzleAlg - fCheatCharacterisation is true" << std::endl; 
+
         fCheatShowerModuleLabel = pset.get< std::string >("ModuleLabels.CheatShowerModuleLabel");
         fCheatPIDModuleLabel = pset.get<std::string>("ModuleLabels.CheatPIDModuleLabel");
         fNuGenModuleLabel = pset.get<std::string>("ModuleLabels.NuGenModuleLabel");
@@ -203,6 +207,14 @@ void FDSelection::PandrizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParti
     if (evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))
         art::fill_ptr_vector(pfparticleList, pfparticleListHandle);
 
+    /*
+    art::Handle< std::vector<larpandoraobj::PFParticleMetadata> > pfpMetadataListHandle;
+    std::vector<art::Ptr<larpandoraobj::PFParticleMetadata> > pfpMetadataList; 
+    if (evt.getByLabel("pandoraSel", pfpMetadataListHandle)){
+      art::fill_ptr_vector(pfpMetadataList, pfpMetadataListHandle);
+    }
+    */
+
     //Get the matched MCParticle
     simb::MCParticle* matched_mcparticle(nullptr);
     std::vector<art::Ptr<recob::Hit> > pfp_hits = GetPFPHits(pfp, evt);
@@ -217,11 +229,11 @@ void FDSelection::PandrizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParti
     std::string showerModuleLabel(fShowerModuleLabel);
     std::string pidModuleLabel(fPIDModuleLabel);
 
+
+    // for cheating characterisation studies
     if (matched_mcparticle && !fShowerPDGToCheat.empty())
     {
         const int absPdg(std::abs(matched_mcparticle->PdgCode()));
-
-        std::cout << "absPdg: " << absPdg << std::endl;
 
         for (int cheatPDG : fShowerPDGToCheat)
         {
@@ -260,14 +272,7 @@ void FDSelection::PandrizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParti
                 if (absPdg != absCheatPdg)
                     continue;
 
-                if (absPdg == 11 && isCCNue)
-                {
-                    showerModuleLabel = fCheatShowerModuleLabel;
-                    pidModuleLabel = fCheatPIDModuleLabel;
-                    break;
-                }
-
-                if (absPdg == 13 && isCCNumu)
+                if ((absPdg == 11 && isCCNue) || (absPdg == 13 && isCCNumu))
                 {
                     showerModuleLabel = fCheatShowerModuleLabel;
                     pidModuleLabel = fCheatPIDModuleLabel;
@@ -275,10 +280,13 @@ void FDSelection::PandrizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParti
                 }
             }
         }
+
+        //if (showerModuleLabel == "pandoraShowerSelCheat")
+        //std::cout << "PandrizzleAlg - Am cheating shower with abs(PDG): " << absPdg << std::endl;
     }
 
-    std::cout << "showerModuleLabel: " << showerModuleLabel << std::endl;
-    std::cout << "pidModuleLabel: " << pidModuleLabel << std::endl;
+    //std::cout << "PandrizzleAlg - showerModuleLabel: " << showerModuleLabel << std::endl;
+    //std::cout << "PandrizzleAlg - pidModuleLabel: " << pidModuleLabel << std::endl;
 
     art::FindManyP<recob::Shower> fmspfp(pfparticleListHandle, evt, showerModuleLabel);
     const std::vector<art::Ptr<recob::Shower> > pfp_shower_vector = fmspfp.at(pfp.key());
@@ -324,6 +332,34 @@ void FDSelection::PandrizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParti
     //always take the first vertex, even if there's more than one
     TVector3 nuVertex = TVector3(nu_vertices[0]->position().X(), nu_vertices[0]->position().Y(), nu_vertices[0]->position().Z());
 
+
+    // SIGNED STUFF
+    /*
+    double displacementX = pShower->ShowerStart().X() - nu_vertices[0]->position().X();
+    double displacementY = pShower->ShowerStart().Y() - nu_vertices[0]->position().Y();
+    double displacementZ = pShower->ShowerStart().Z() - nu_vertices[0]->position().Z();
+
+    double displacement = std::sqrt((displacementX * displacementX) + (displacementY * displacementY) + (displacementZ * displacementZ));
+
+
+
+    double dot = (pShower->Direction().X() * displacementX) + (pShower->Direction().Y() * displacementY) + (pShower->Direction().Z() * displacementZ);
+    double showerDirectionMag = std::sqrt((pShower->Direction().X() * pShower->Direction().X()) + (pShower->Direction().Y() * pShower->Direction().Y()) +
+                                          (pShower->Direction().Z() * pShower->Direction().Z()));
+
+    if (std::fabs(showerDirectionMag) < std::numeric_limits<float>::epsilon())
+        std::cout << "displacement: (" << displacementX << ", " << displacementY << ", " << displacementZ << ")" << std::endl;
+
+    double cosOpeningAngle = dot / (showerDirectionMag * displacement);
+    bool nuVertexDownstream(false);
+
+    if (cosOpeningAngle < 0.f)
+        nuVertexDownstream = true;
+
+    if (nuVertexDownstream)
+        displacement = displacement * (-1.f);
+    */
+
     art::FindOneP<anab::MVAPIDResult> findPIDResult(std::vector<art::Ptr<recob::Shower> >{pShower}, evt, pidModuleLabel);
     art::Ptr<anab::MVAPIDResult> mvaPIDResult(findPIDResult.at(0));
 
@@ -356,7 +392,25 @@ void FDSelection::PandrizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParti
         fVarHolder.FloatVars["dEdxBestPlane"] = std::max(std::min(static_cast<Float_t>(pShower->dEdx().at(pShower->best_plane())), 20.f), -2.f);
 
     //Displacement
-    fVarHolder.FloatVars["Displacement"] = std::min(static_cast<Float_t>((pShower->ShowerStart() - nuVertex).Mag()), 100.f);
+    TVector3 showerVertex = pShower->ShowerStart();
+    art::FindManyP<larpandoraobj::PFParticleMetadata> metadataAssn(pfparticleListHandle, evt, "pandoraSel");
+    std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> pfpMetadata = metadataAssn.at(pfp.key());
+    if (pfpMetadata.size() == 1)
+    {
+      larpandoraobj::PFParticleMetadata::PropertiesMap propertiesMap(pfpMetadata[0]->GetPropertiesMap());
+
+      if ((propertiesMap.find("ShowerVertexX") != propertiesMap.end()) && (propertiesMap.find("ShowerVertexY") != propertiesMap.end()) && 
+          (propertiesMap.find("ShowerVertexZ") != propertiesMap.end()))
+      {
+          showerVertex = TVector3(propertiesMap.at("ShowerVertexX"), propertiesMap.at("ShowerVertexY"), propertiesMap.at("ShowerVertexZ"));
+          std::cout << "ShowerVertexX: " << propertiesMap.at("ShowerVertexX") << std::endl;
+          std::cout << "ShowerVertexY: " << propertiesMap.at("ShowerVertexY") << std::endl;
+          std::cout << "ShowerVertexZ: " << propertiesMap.at("ShowerVertexZ") << std::endl;
+          std::cout << "JAM JAM JAM JAM JAM JAM!" << std::endl;
+      }
+    }
+
+    fVarHolder.FloatVars["Displacement"] = std::min(static_cast<Float_t>((showerVertex - nuVertex).Mag()), 100.f);
 
     //Distance of closest approach
     double alpha((pShower->ShowerStart() - nuVertex).Dot(pShower->Direction()));
@@ -449,9 +503,31 @@ std::vector<art::Ptr<recob::Hit> > FDSelection::PandrizzleAlg::GetPFPHits(const 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+art::Ptr<recob::PFParticle> FDSelection::PandrizzleAlg::GetPFParticle(const art::Ptr<recob::Shower> pShower, const art::Event& evt)
+{
+    art::Ptr<recob::PFParticle> matchedPFParticle;
+
+    art::Handle< std::vector<recob::Shower> > showerListHandle;
+    if (!evt.getByLabel(fShowerModuleLabel, showerListHandle))
+        return matchedPFParticle;
+
+    art::FindManyP<recob::PFParticle> showerAssn(showerListHandle, evt, fShowerModuleLabel);
+    std::vector<art::Ptr<recob::PFParticle>> matchedPFParticleVector = showerAssn.at(pShower.key());
+
+    if (matchedPFParticleVector.size() != 1)
+        return matchedPFParticle;
+
+    return matchedPFParticleVector[0];
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::RunPID(const art::Ptr<recob::Shower> pShower, const TVector3& nuVertex, const art::Event& evt) 
 {
+    art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
+    std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
+    evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle);
+
   art::Handle< std::vector<recob::Shower> > showerListHandle;
   std::vector <art::Ptr<recob::Shower>> showerList;
   if (evt.getByLabel(fShowerModuleLabel, showerListHandle))
@@ -461,6 +537,9 @@ FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::RunPID(const art:
   art::Handle< std::vector<recob::Shower> > cheatShowerListHandle;
   if (fCheatCharacterisation && (std::find(showerList.begin(), showerList.end(), pShower) == showerList.end()))
     cheat = true;
+
+  //if (cheat)
+  //std::cout << "Run PID, selected shower is in the cheating file" << std::endl;
 
   art::FindOneP<anab::MVAPIDResult> findPIDResult(std::vector<art::Ptr<recob::Shower> >{pShower}, evt, cheat ? fCheatPIDModuleLabel : fPIDModuleLabel);
     art::Ptr<anab::MVAPIDResult> mvaPIDResult(findPIDResult.at(0));
@@ -491,7 +570,46 @@ FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::RunPID(const art:
         ReturnEmptyRecord();
 
     //Displacement
-    SetVar(kDisplacement, std::min(static_cast<Float_t>((pShower->ShowerStart() - nuVertex).Mag()), 100.f));
+    TVector3 showerVertex = pShower->ShowerStart();
+
+    art::Ptr<recob::PFParticle> matchedPFParticle = GetPFParticle(pShower, evt);
+    art::FindManyP<larpandoraobj::PFParticleMetadata> metadataAssn(pfparticleListHandle, evt, "pandoraSel");
+    std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> pfpMetadata = metadataAssn.at(matchedPFParticle.key());
+
+    if (pfpMetadata.size() == 1)
+    {
+      larpandoraobj::PFParticleMetadata::PropertiesMap propertiesMap(pfpMetadata[0]->GetPropertiesMap());
+
+      if ((propertiesMap.find("ShowerVertexX") != propertiesMap.end()) && (propertiesMap.find("ShowerVertexY") != propertiesMap.end()) && 
+          (propertiesMap.find("ShowerVertexZ") != propertiesMap.end()))
+      {
+          showerVertex = TVector3(propertiesMap.at("ShowerVertexX"), propertiesMap.at("ShowerVertexY"), propertiesMap.at("ShowerVertexZ"));
+          std::cout << "ShowerVertexX: " << propertiesMap.at("ShowerVertexX") << std::endl;
+          std::cout << "ShowerVertexY: " << propertiesMap.at("ShowerVertexY") << std::endl;
+          std::cout << "ShowerVertexZ: " << propertiesMap.at("ShowerVertexZ") << std::endl;
+          std::cout << "JAM JAM JAM JAM JAM JAM!" << std::endl;
+      }
+    }
+
+    std::cout << "showerVertex.X(): " << showerVertex.X() << std::endl;
+    std::cout << "showerVertex.Y(): " << showerVertex.Y() << std::endl;
+    std::cout << "showerVertex.Z(): " << showerVertex.Z() << std::endl;
+
+    std::cout << "nuVertex.GetX(): " << nuVertex.X() << std::endl;
+    std::cout << "nuVertex.GetY(): " << nuVertex.Y() << std::endl;
+    std::cout << "nuVertex.GetZ(): " << nuVertex.Z() << std::endl;
+
+
+    TVector3 displacement1 = showerVertex - nuVertex;
+    std::cout << "displacement1.X(): " << displacement1.X() << std::endl;
+    std::cout << "displacement1.Y(): " << displacement1.Y() << std::endl;
+    std::cout << "displacement1.Z(): " << displacement1.Z() << std::endl;
+
+    std::cout << "(showerVertex - nuVertex).Mag(): " << (showerVertex - nuVertex).Mag() << std::endl;
+
+    std::cout << "static_cast<Float_t>((showerVertex - nuVertex).Mag()): " << (static_cast<Float_t>((showerVertex - nuVertex).Mag())) << std::endl;
+
+    SetVar(kDisplacement, std::min(static_cast<Float_t>((showerVertex - nuVertex).Mag()), 100.f));
 
     //Distance of closest approach
     double alpha((pShower->ShowerStart() - nuVertex).Dot(pShower->Direction()));
