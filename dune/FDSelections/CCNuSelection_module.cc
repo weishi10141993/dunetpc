@@ -35,12 +35,14 @@
 #include "larcoreobj/SummaryData/POTSummary.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/AnalysisBase/MVAPIDResult.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "larreco/RecoAlg/TrackMomentumCalculator.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+#include "larpandora/LArPandoraInterface/LArPandoraGeometry.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 //#include "larreco/RecoAlg/ShowerEnergyAlg.h"
@@ -55,6 +57,7 @@
 #include "dune/TrackPID/products/CTPResult.h"
 
 #include "dune/CVN/func/Result.h"
+#include "dune/AnaUtils/DUNEAnaHitUtils.h"
 
 //Custom
 //#include "PIDAnaAlg.h"
@@ -126,7 +129,10 @@ private:
 
   TVector3 ProjectVectorOntoPlane(TVector3 vector_to_project, TVector3 plane_norm_vector); //Returns a projection o a vector onto a plane
 
-
+  double DistanceToNuVertex(art::Event const & evt, std::vector< art::Ptr<recob::Hit> > const artHitList, const TVector3 &nuVertex);
+  double YZtoU(const geo::WireID &hit_WireID, double y, double x);
+  double YZtoV(const geo::WireID &hit_WireID, double y, double x);
+  double YZtoW(const geo::WireID &hit_WireID, double y, double x);
 
   // Declare member data here.
 
@@ -467,6 +473,9 @@ private:
   double fSelShowerPandrizzleEnergyDensity;
   double fSelShowerPandrizzleMVAScore;
   bool   fSelShowerPandrizzleIsFilled;
+  double fSelShowerDistanceToNuVertexU;
+  double fSelShowerDistanceToNuVertexV;
+  double fSelShowerDistanceToNuVertexW;
 
   //All reco showers
   int fNRecoShowers;
@@ -553,7 +562,9 @@ private:
   double fRecoShowerPandrizzleEnergyDensity[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleMVAScore[kDefMaxNRecoShowers];
   bool   fRecoShowerPandrizzleIsFilled[kDefMaxNRecoShowers];
-
+  double fRecoShowerDistanceToNuVertexU[kDefMaxNRecoShowers];
+  double fRecoShowerDistanceToNuVertexV[kDefMaxNRecoShowers];
+  double fRecoShowerDistanceToNuVertexW[kDefMaxNRecoShowers];
 
   //reco energy bits
   double fNueRecoMomLep; //Reco lepton momentum
@@ -1052,6 +1063,9 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelShowerPandrizzleEnergyDensity",&fSelShowerPandrizzleEnergyDensity);
     fTree->Branch("SelShowerPandrizzleMVAScore",&fSelShowerPandrizzleMVAScore);
     fTree->Branch("SelShowerPandrizzleIsFilled",&fSelShowerPandrizzleIsFilled);
+    fTree->Branch("SelShowerDistanceToNuVertexU", &fSelShowerDistanceToNuVertexU);
+    fTree->Branch("SelShowerDistanceToNuVertexV", &fSelShowerDistanceToNuVertexV);
+    fTree->Branch("SelShowerDistanceToNuVertexW", &fSelShowerDistanceToNuVertexW);
 
     fTree->Branch("NRecoShowers",&fNRecoShowers);
     fTree->Branch("RecoShowerTruePDG",fRecoShowerTruePDG,"RecoShowerTruePDG[NRecoShowers]/I");
@@ -1137,6 +1151,9 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("RecoShowerPandrizzleEnergyDensity",&fRecoShowerPandrizzleEnergyDensity, "RecoShowerPandrizzleEnergyDensity[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleMVAScore",&fRecoShowerPandrizzleMVAScore, "RecoShowerPandrizzleMVAScore[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleIsFilled",&fRecoShowerPandrizzleIsFilled, "RecoShowerPandrizzleIsFilled[NRecoShowers]/O");
+    fTree->Branch("RecoShowerDistanceToNuVertexU", &fRecoShowerDistanceToNuVertexU, "RecoShowerDistanceToNuVertexU[NRecoShowers]/D");
+    fTree->Branch("RecoShowerDistanceToNuVertexV", &fRecoShowerDistanceToNuVertexV, "RecoShowerDistanceToNuVertexV[NRecoShowers]/D");
+    fTree->Branch("RecoShowerDistanceToNuVertexW", &fRecoShowerDistanceToNuVertexW, "RecoShowerDistanceToNuVertexW[NRecoShowers]/D");
 
     fTree->Branch("CVNResultNue", &fCVNResultNue);
     fTree->Branch("CVNResultNumu", &fCVNResultNumu);
@@ -1531,6 +1548,9 @@ void FDSelection::CCNuSelection::Reset()
   fSelShowerPandrizzleEnergyDensity = kDefDoub;
   fSelShowerPandrizzleMVAScore      = kDefDoub;
   fSelShowerPandrizzleIsFilled      = 0;
+  fSelShowerDistanceToNuVertexU     = kDefDoub;
+  fSelShowerDistanceToNuVertexV     = kDefDoub;
+  fSelShowerDistanceToNuVertexW     = kDefDoub;
 
   for (int i_plane = 0; i_plane < 3; i_plane++) 
   {
@@ -1624,6 +1644,9 @@ void FDSelection::CCNuSelection::Reset()
     fRecoShowerPandrizzleEnergyDensity[i_shower] = kDefDoub;
     fRecoShowerPandrizzleMVAScore[i_shower]      = kDefDoub;
     fRecoShowerPandrizzleIsFilled[i_shower]      = 0;
+    fRecoShowerDistanceToNuVertexU[i_shower]     = kDefDoub;
+    fRecoShowerDistanceToNuVertexV[i_shower]     = kDefDoub;
+    fRecoShowerDistanceToNuVertexW[i_shower]     = kDefDoub;
   }
   fNRecoShowers = 0;
   //Reco nu bits
@@ -2616,7 +2639,19 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
     fRecoShowerPandrizzleEnergyDensity[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kEnergyDensity);
     fRecoShowerPandrizzleMVAScore[i_shower]      = pandrizzleRecord.GetMVAScore();
     fRecoShowerPandrizzleIsFilled[i_shower]      = pandrizzleRecord.IsFilled();
+
+
+    std::vector<art::Ptr<recob::Hit>> hitListU = dune_ana::DUNEAnaHitUtils::GetHitsOnPlane(current_shower_hits, 0);
+    std::vector<art::Ptr<recob::Hit>> hitListV = dune_ana::DUNEAnaHitUtils::GetHitsOnPlane(current_shower_hits, 1);
+    std::vector<art::Ptr<recob::Hit>> hitListW = dune_ana::DUNEAnaHitUtils::GetHitsOnPlane(current_shower_hits, 2);
+
+    // Fill vertex separation info
+    fRecoShowerDistanceToNuVertexU[i_shower] = DistanceToNuVertex(evt, hitListU, TVector3(fNuX, fNuY, fNuZ));
+    fRecoShowerDistanceToNuVertexV[i_shower] = DistanceToNuVertex(evt, hitListV, TVector3(fNuX, fNuY, fNuZ));
+    fRecoShowerDistanceToNuVertexW[i_shower] = DistanceToNuVertex(evt, hitListW, TVector3(fNuX, fNuY, fNuZ));
   }
+
+    
 
   return;
 }
@@ -2799,11 +2834,21 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
   fSelShowerPandrizzleConicalness   = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kConicalness);
   fSelShowerPandrizzledEdxBestPlane = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kdEdxBestPlane);
   fSelShowerPandrizzleDisplacement  = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kDisplacement);
+  std::cout << "fSelShowerPandrizzleDisplacement: " << fSelShowerPandrizzleDisplacement << std::endl;
   fSelShowerPandrizzleDCA           = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kDCA);
   fSelShowerPandrizzleWideness      = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kWideness);
   fSelShowerPandrizzleEnergyDensity = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kEnergyDensity);
   fSelShowerPandrizzleMVAScore      = pandrizzleRecord.GetMVAScore();
   fSelShowerPandrizzleIsFilled      = pandrizzleRecord.IsFilled();
+
+  std::vector<art::Ptr<recob::Hit>> hitListU = dune_ana::DUNEAnaHitUtils::GetHitsOnPlane(sel_shower_hits, 0);
+  std::vector<art::Ptr<recob::Hit>> hitListV = dune_ana::DUNEAnaHitUtils::GetHitsOnPlane(sel_shower_hits, 1);
+  std::vector<art::Ptr<recob::Hit>> hitListW = dune_ana::DUNEAnaHitUtils::GetHitsOnPlane(sel_shower_hits, 2);
+
+  // Fill vertex separation info
+  fSelShowerDistanceToNuVertexU = DistanceToNuVertex(evt, hitListU, TVector3(fNuX, fNuY, fNuZ));
+  fSelShowerDistanceToNuVertexV = DistanceToNuVertex(evt, hitListV, TVector3(fNuX, fNuY, fNuZ));
+  fSelShowerDistanceToNuVertexW = DistanceToNuVertex(evt, hitListW, TVector3(fNuX, fNuY, fNuZ));
 
 }
 
@@ -2832,8 +2877,102 @@ TVector3 FDSelection::CCNuSelection::ProjectVectorOntoPlane(TVector3 vector_to_p
   return projected_vector;
 }
 
+//////////////////////////////////////////////////////////////////
 
+double FDSelection::CCNuSelection::DistanceToNuVertex(art::Event const & evt, std::vector<art::Ptr<recob::Hit>> const artHitList, const TVector3 &nuVertex)
+{
+    art::ServiceHandle<geo::Geometry const> theGeometry;
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
 
+    double closestDistanceSquared(std::numeric_limits<double>::max());
 
+    for (art::Ptr<recob::Hit> hit : artHitList)
+    {
+        const geo::WireID hit_WireID(hit->WireID());
+        const double hit_Time(hit->PeakTime());
+        const geo::View_t hit_View(hit->View());
+
+        const geo::View_t pandora_View(lar_pandora::LArPandoraGeometry::GetGlobalView(hit_WireID.Cryostat, hit_WireID.TPC, hit_View));
+
+        if (pandora_View == geo::kY)
+            std::cout << "IZZIE HIT IS IN THE Y VIEW!! AHHHH" << std::endl;
+
+        double hitXYZ[3]; TVector3 vertexXYZ = nuVertex;
+        theGeometry->Cryostat(hit_WireID.Cryostat).TPC(hit_WireID.TPC).Plane(hit_WireID.Plane).Wire(hit_WireID.Wire).GetCenter(hitXYZ);
+        const double hitY(hitXYZ[1]);
+        const double hitZ(hitXYZ[2]);
+
+        double hitPosition[3];
+        hitPosition[0] = detProp.ConvertTicksToX(hit_Time, hit_WireID.Plane, hit_WireID.TPC, hit_WireID.Cryostat);
+        hitPosition[1] = 0.0;
+
+        double nuVertexPosition[3];
+        nuVertexPosition[0] = nuVertex[0];
+        nuVertexPosition[1] = 0.0;
+
+        if (pandora_View == geo::kW)
+        {
+            hitPosition[2] = YZtoW(hit_WireID, hitY, hitZ);
+            nuVertexPosition[2] = YZtoW(hit_WireID, vertexXYZ[1], vertexXYZ[2]);
+        }
+        else if (pandora_View == geo::kU)
+        {
+            hitPosition[2] = YZtoU(hit_WireID, hitY, hitZ);
+            nuVertexPosition[2] = YZtoU(hit_WireID, vertexXYZ[1], vertexXYZ[2]);
+        }
+        else if (pandora_View == geo::kV) 
+        {
+            hitPosition[2] = YZtoV(hit_WireID, hitY, hitZ);
+            nuVertexPosition[2] = YZtoV(hit_WireID, vertexXYZ[1], vertexXYZ[2]);
+        }
+        else 
+        {
+            throw cet::exception("LArPandora")
+                << "CreatePandoraHits2D - this wire view not recognised (View=" << hit_View << ") ";
+        }
+
+        double deltaX = hitPosition[0] - nuVertexPosition[0];
+        double deltaY = hitPosition[1] - nuVertexPosition[1];
+        double deltaZ = hitPosition[2] - nuVertexPosition[2];
+        double separationSquared = (deltaX * deltaX) + (deltaY * deltaY) + (deltaZ * deltaZ);
+
+        if (separationSquared < closestDistanceSquared)
+            closestDistanceSquared = separationSquared;
+    }
+
+    return std::sqrt(closestDistanceSquared);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+double FDSelection::CCNuSelection::YZtoU(const geo::WireID &hit_WireID, double y, double z)
+{
+    art::ServiceHandle<geo::Geometry const> theGeometry;
+    //const double wireAngleU(0.5f * M_PI - theGeometry->WireAngleToVertical(geo::kU, hit_WireID.TPC, hit_WireID.Cryostat));
+    const double wireAngleU(0.623257);
+    return (z * std::cos(wireAngleU) - y * std::sin(wireAngleU));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+double FDSelection::CCNuSelection::YZtoV(const geo::WireID &hit_WireID, double y, double z)
+{
+    art::ServiceHandle<geo::Geometry const> theGeometry;
+    //const double wireAngleV(0.5f * M_PI - theGeometry->WireAngleToVertical(geo::kV, hit_WireID.TPC, hit_WireID.Cryostat));
+    const double wireAngleV(-0.623257);
+    return (z * std::cos(wireAngleV) - y * std::sin(wireAngleV));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+double FDSelection::CCNuSelection::YZtoW(const geo::WireID &hit_WireID, double y, double z)
+{
+    art::ServiceHandle<geo::Geometry const> theGeometry;
+    //const double wireAngleW(0.5f * M_PI - theGeometry->WireAngleToVertical(geo::kW, hit_WireID.TPC, hit_WireID.Cryostat));
+    const double wireAngleW(0.0);
+    return (z * std::cos(wireAngleW) - y * std::sin(wireAngleW));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
 
 DEFINE_ART_MODULE(FDSelection::CCNuSelection)
