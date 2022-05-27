@@ -37,6 +37,8 @@ namespace FDSelectionTools{
       std::string fCheatShowerModuleLabel;
       std::string fPFParticleModuleLabel;
       bool fCheatCharacterisation;
+      unsigned int fPFParticleHitCut;
+      bool fDemandBDTScore;
       FDSelection::PandrizzleAlg fPandrizzleAlg;
       std::vector<int> fShowerPDGToCheat;
 

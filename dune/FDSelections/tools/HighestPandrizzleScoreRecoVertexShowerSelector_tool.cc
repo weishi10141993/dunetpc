@@ -3,11 +3,14 @@
 #include "larsim/Utils/TruthMatchUtils.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
 
 FDSelectionTools::HighestPandrizzleScoreRecoVertexShowerSelector::HighestPandrizzleScoreRecoVertexShowerSelector(fhicl::ParameterSet const& ps) :
     fShowerModuleLabel(ps.get< std::string> ("ModuleLabels.ShowerModuleLabel")),
     fPFParticleModuleLabel(ps.get< std::string> ("ModuleLabels.PFParticleModuleLabel")),
     fCheatCharacterisation(ps.get<bool>("CheatCharacterisation", false)),
+    fPFParticleHitCut(ps.get<unsigned int>("PFParticleHitCut", 0)),
+    fDemandBDTScore(ps.get<bool>("DemandBDTScore", false)),
     fPandrizzleAlg(ps),
     fRecoNuVtxX(-9999),
     fRecoNuVtxY(-9999),
@@ -15,6 +18,8 @@ FDSelectionTools::HighestPandrizzleScoreRecoVertexShowerSelector::HighestPandriz
 {
     if (fCheatCharacterisation)
     {
+        //std::cout << "HighestPandrizzleScoreRecoVertexShowerSelector - fCheatCharacterisation is true" << std::endl; 
+
         fCheatShowerModuleLabel = ps.get< std::string >("ModuleLabels.CheatShowerModuleLabel");
         fNuGenModuleLabel = ps.get<std::string>("ModuleLabels.NuGenModuleLabel");
         fClusterModuleLabel = ps.get<std::string>("ModuleLabels.ClusterModuleLabel");
@@ -27,6 +32,7 @@ FDSelectionTools::HighestPandrizzleScoreRecoVertexShowerSelector::HighestPandriz
 art::Ptr<recob::Shower> FDSelectionTools::HighestPandrizzleScoreRecoVertexShowerSelector::SelectShower(art::Event const & evt){
 
   art::Ptr<recob::Shower> selShower;
+  art::Ptr<recob::Shower> backupSelShower;
 
   art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
   std::vector<art::Ptr<recob::PFParticle> > pfparticleList;
@@ -68,7 +74,9 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestPandrizzleScoreRecoVertexShower
   fRecoNuVtxZ = matched_vertex->position().Z();
 
   //Loop over each PFP, find the associated showers and then find which one is the highest energy
+  double highestJamPandrizzleScore = std::numeric_limits<double>::lowest();
   double highestPandrizzleScore = std::numeric_limits<double>::lowest();
+  bool found = false;
 
   for (int i_child = 0; i_child < nu_pfp->NumDaughters(); i_child++)
   {
@@ -94,8 +102,7 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestPandrizzleScoreRecoVertexShower
         if (matched_mcparticle)
         {
             const int absPdg(std::abs(matched_mcparticle->PdgCode()));
-
-            std::cout << "absPdg: " << absPdg << std::endl;
+            //std::cout << "HighestEnergyRecoVertexShowerSelector - absPdg: " << absPdg << std::endl; 
 
             for (int cheatPDG : fShowerPDGToCheat)
             {
@@ -126,6 +133,12 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestPandrizzleScoreRecoVertexShower
                 const bool isCCNue = (isNue && !isNC);
                 const bool isCCNumu = (isNumu && !isNC);
 
+                //std::cout << "isNC ? " << (isNC ? "yes" : "no") << std::endl;
+                //std::cout << "isNue ? " << (isNue ? "yes" : "no") <<std::endl;
+                //std::cout << "isNumu ? " << (isNumu ? "yes" : "no") <<std::endl;
+                //std::cout << "isCCNue ? " << (isCCNue ? "yes" : "no") <<std::endl;
+                //std::cout << "isCCNumu ? " << (isCCNumu ? "yes" : "no") <<std::endl;
+
                 for (int cheatPDG : fShowerPDGToCheat)
                 {
                     const int absCheatPdg(std::abs(cheatPDG));
@@ -140,10 +153,12 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestPandrizzleScoreRecoVertexShower
                     }
                 }
             }
+            //if (cheatCharacterisation)
+            //std::cout << "HighestPandrizzleScore - Am cheating shower with abs(PDG): " << absPdg << std::endl;
         }
     }
 
-    std::cout << "showerModuleLabel: " << (cheatCharacterisation ? fCheatShowerModuleLabel : fShowerModuleLabel) << std::endl;
+    //std::cout << "showerModuleLabel: " << (cheatCharacterisation ? fCheatShowerModuleLabel : fShowerModuleLabel) << std::endl;
     ////////////////////////////////
 
     //Now get the associated shower 
@@ -164,17 +179,54 @@ art::Ptr<recob::Shower> FDSelectionTools::HighestPandrizzleScoreRecoVertexShower
 
     const art::Ptr<recob::Shower> shower = pfp_shower_vector[0];
 
+    art::Handle< std::vector<recob::Shower> > showerListHandle;
+    if (!(evt.getByLabel(fShowerModuleLabel, showerListHandle)))
+    {
+        std::cout<<"Unable to find std::vector<recob::Shower> with module label: " << fShowerModuleLabel << std::endl;
+        continue;
+    }
+    art::FindManyP<recob::Hit> fmhs(showerListHandle, evt, fShowerModuleLabel);
+    const std::vector<art::Ptr<recob::Hit> > current_hits = fmhs.at(shower.key());
+
+    if (current_hits.size() < fPFParticleHitCut)
+        continue;
+
+    // get the metadata here...
+    art::FindManyP<larpandoraobj::PFParticleMetadata> metadataAssn(pfparticleListHandle, evt, "pandoraSel");
+    std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> pfpMetadata = metadataAssn.at(child_pfp.key());
+
+    if (fDemandBDTScore)
+    {
+        if (pfpMetadata.size() != 1)
+            continue;
+
+        larpandoraobj::PFParticleMetadata::PropertiesMap propertiesMap(pfpMetadata[0]->GetPropertiesMap());
+
+        if (propertiesMap.find("ElectronConnectionPathwayScore") == propertiesMap.end())
+            continue;
+    }
+
     FDSelection::PandrizzleAlg::Record pandrizzleRecord(fPandrizzleAlg.RunPID(shower, TVector3(fRecoNuVtxX, fRecoNuVtxY, fRecoNuVtxZ), evt));
+    float pandrizzleBDTMethod = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kBDTMethod);
     double pandrizzleScore = pandrizzleRecord.GetMVAScore();
 
-    if (pandrizzleScore > highestPandrizzleScore)
+    if ((std::fabs(pandrizzleBDTMethod - 2.0) < std::numeric_limits<float>::epsilon()) && (pandrizzleScore > highestJamPandrizzleScore))
+    {
+        highestJamPandrizzleScore = pandrizzleScore;
+        selShower = shower;
+        found = true;
+    }
+
+    if ((std::fabs(pandrizzleBDTMethod - 1.0) < std::numeric_limits<float>::epsilon()) && (pandrizzleScore > highestPandrizzleScore))
     {
         highestPandrizzleScore = pandrizzleScore;
-        selShower = shower;
+        backupSelShower = shower;
     }
   }
 
-  return selShower;
+  //return ((highestJamPandrizzleScore > highestPandrizzleScore) ? selShower : backupSelShower);
+
+  return (found ? selShower : backupSelShower);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

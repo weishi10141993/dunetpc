@@ -55,6 +55,21 @@ namespace FDSelection
                 kDCA,
                 kWideness,
                 kEnergyDensity,
+                kPathwayLengthMin,
+                kPathwayMaxScatteringAngle,
+                kMaxShowerStartPathwayScatteringAngle2D,
+                kPathwayMaxEnergySigma,
+                kMaxNPostShowerStartHits,
+                kMaxPostShowerStartScatterAngle,
+                kMaxPostShowerStartNuVertexEnergyAsymmetry,
+                kMaxPostShowerStartShowerStartEnergyAsymmetry,
+                kMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance,
+                kMinPostShowerStartShowerStartMoliereRadius,
+                kMaxOpeningAngleW,
+                kInitialRegionDistanceToNuVertex,
+                kNViewsWithAmbiguousHits,
+                kAmbiguousHitMaxUnaccountedEnergy,
+                kBDTMethod,
                 kTerminatingValue //terminates the enum and not an actual variable
             };
 
@@ -105,10 +120,14 @@ namespace FDSelection
             std::string fPIDModuleLabel;
             std::string fCheatPIDModuleLabel;
             std::string fPandrizzleWeightFileName;
+            std::string fJamPandrizzleWeightFileName;
             std::vector<int> fShowerPDGToCheat;
             bool fCheatCharacterisation;
+            bool fShiftDisplacement;
+            bool fShiftdEdX;
 
             TMVA::Reader fReader;
+            TMVA::Reader fJamReader;
             InputVarsToReader fInputsToReader;
 
             Record ReturnEmptyRecord();
@@ -118,6 +137,9 @@ namespace FDSelection
             bool fMakeTree;
             TTree *fSignalShowerTree;
             TTree *fBackgroundShowerTree;
+
+            bool fUseDCA;
+            bool fUseBDTVariables;
 
              //This thing holds all variables to be handed to the trees
             struct VarHolder
