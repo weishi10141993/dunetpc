@@ -25,23 +25,21 @@ FDSelection::PandizzleAlg::PandizzleAlg(const fhicl::ParameterSet& pset) :
   fIPMichelCandidateDistance = pset.get<double>("MichelCandidateDistance");
   fMakeTree = pset.get<bool>("MakeTree", false);
 
-  /*
-  std::cout << "fTrackModuleLabel: " << fTrackModuleLabel << std::endl;
-  std::cout << "fShowerModuleLabel: " << fShowerModuleLabel << std::endl;
-  std::cout << "fPIDModuleLabel: " << fPIDModuleLabel << std::endl;
-  std::cout << "fParticleIDModuleLabel: " << fParticleIDModuleLabel << std::endl;
-  std::cout << "fPFParticleModuleLabel: " << fPFParticleModuleLabel << std::endl;
-  std::cout << "fSpacePointModuleLabel: " << fSpacePointModuleLabel << std::endl;
-  std::cout << "fClusterModuleLabel: " << fClusterModuleLabel << std::endl;
-  std::cout << "fIPMichelCandidateDistance: " << fIPMichelCandidateDistance << std::endl;
-  */
-
   if (fMakeTree)
   {
       InitialiseTrees();
       ResetTreeVariables();
   }
 
+  //std::cout << "ShowerEnergyAlg: " << (pset.get<fhicl::ParameterSet>("ShowerEnergyAlg")) << std::endl;
+  //std::cout << "fTrackModuleLabel: " << fTrackModuleLabel << std::endl;
+  //std::cout << "fShowerModuleLabel: " << fShowerModuleLabel << std::endl;
+  //std::cout << "fPIDModuleLabel: " << fPIDModuleLabel << std::endl; 
+  //std::cout << "fParticleIDModuleLabel: " << fParticleIDModuleLabel << std::endl;
+  //std::cout << "fPFParticleModuleLabel: " << fPFParticleModuleLabel << std::endl;
+  //std::cout << "fSpacePointModuleLabel: " << fSpacePointModuleLabel << std::endl;
+  //std::cout << "fClusterModuleLabel: " << fClusterModuleLabel << std::endl;
+  //std::cout << "fIPMichelCandidateDistance: " << fIPMichelCandidateDistance << std::endl; 
 }
 
 void FDSelection::PandizzleAlg::InitialiseTrees() {
@@ -148,9 +146,12 @@ void FDSelection::PandizzleAlg::Run(const art::Event& evt) {
 
 }
 
-std::vector<art::Ptr<recob::PFParticle> > FDSelection::PandizzleAlg::SelectChildPFParticles(const art::Ptr<recob::PFParticle> parent_pfp, const lar_pandora::PFParticleMap & pfp_map){
+std::vector<art::Ptr<recob::PFParticle> > FDSelection::PandizzleAlg::SelectChildPFParticles(const art::Ptr<recob::PFParticle> parent_pfp, const lar_pandora::PFParticleMap & pfp_map)
+{
   std::vector<art::Ptr<recob::PFParticle> > child_pfps;
-  for (int i_child = 0; i_child < parent_pfp->NumDaughters(); i_child++){
+
+  for (int i_child = 0; i_child < parent_pfp->NumDaughters(); i_child++)
+  {
     int child_id = parent_pfp->Daughter(i_child);
     art::Ptr<recob::PFParticle> child_pfp = pfp_map.at(child_id);
     child_pfps.push_back(child_pfp);
@@ -158,7 +159,8 @@ std::vector<art::Ptr<recob::PFParticle> > FDSelection::PandizzleAlg::SelectChild
   return child_pfps;
 }
 
-void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt){
+void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParticle> pfp, const art::Event& evt)
+{
   //Get event,subrun,run
   fVarHolder.IntVars["Run"] = evt.run();
   fVarHolder.IntVars["SubRun"] = evt.subRun();
@@ -166,7 +168,8 @@ void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFPartic
 
   //Get the PFPs out of the event
   art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
-  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle))){
+  if (!(evt.getByLabel(fPFParticleModuleLabel, pfparticleListHandle)))
+  {
     mf::LogWarning("PandizzleAlg") << "Unable to find std::vector<recob::PFParticle> with module label: " << fPFParticleModuleLabel;
     return;
   }
@@ -180,20 +183,20 @@ void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFPartic
   //PDG
   fVarHolder.IntVars["PFPPDG"] = pfp->PdgCode();
 
-
   //Get the PFP hits
   std::vector<art::Ptr<recob::Hit> > pfp_hits = GetPFPHits(pfp, evt);
   fVarHolder.IntVars["PFPNHits"] = pfp_hits.size();
-  //if (pfp_hits.size() == 0) std::cout<<"PDG: " << pfp->PdgCode() << "  NHits: " << pfp_hits.size() << "  ID: " << pfp->Self() << "  NDau" << pfp->NumDaughters() << "  Parent " << pfp->Parent()  << std::endl;
 
   //Get the true PDG
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   int g4id = TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, pfp_hits, 1); 
-  if (g4id > 0){
+  if (g4id > 0)
+  {
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     const simb::MCParticle* matched_mcparticle = pi_serv->ParticleList().at(g4id);
 
-    if (matched_mcparticle){
+    if (matched_mcparticle)
+    {
       fVarHolder.IntVars["PFPTrueID"] = g4id;
       fVarHolder.IntVars["PFPTruePDG"] = matched_mcparticle->PdgCode();
       fVarHolder.IntVars["PFPTrueMotherID"] = matched_mcparticle->Mother();
@@ -201,20 +204,20 @@ void FDSelection::PandizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFPartic
       fVarHolder.FloatVars["PFPTrueMomY"] = matched_mcparticle->Momentum(0).Y();
       fVarHolder.FloatVars["PFPTrueMomZ"] = matched_mcparticle->Momentum(0).Z();
       fVarHolder.FloatVars["PFPTrueMomT"] = matched_mcparticle->Momentum(0).T();
-      if (std::abs(fVarHolder.IntVars["PFPTruePDG"]) == 13){
+      if (std::abs(fVarHolder.IntVars["PFPTruePDG"]) == 13)
+      {
         bool has_electron = 0;
         bool has_numu = 0;
         bool has_nue = 0;
-        for (int i_child = 0; i_child < matched_mcparticle->NumberDaughters(); i_child++){
+        for (int i_child = 0; i_child < matched_mcparticle->NumberDaughters(); i_child++)
+        {
           const simb::MCParticle* child_particle = pi_serv->ParticleList().at(matched_mcparticle->Daughter(i_child));
           int abs_pdg = std::abs(child_particle->PdgCode());
           if (abs_pdg == 11) has_electron = 1;
           else if (abs_pdg == 12) has_nue = 1;
           else if (abs_pdg == 14) has_numu = 1;
         }
-        //std::cout<<has_electron << " " << has_nue << " " << has_numu << std::endl;
         if (has_electron && has_nue && has_numu) fVarHolder.BoolVars["PFPTrueIsMichelDecay"] = 1;
-        //std::cout<<"Michel decay: " << fVarHolder.BoolVars["PFPTrueIsMichelDecay"] << std::endl;
       }
     }
   }

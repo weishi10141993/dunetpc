@@ -22,6 +22,7 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Cluster.h"
@@ -121,16 +122,6 @@ class FDSelection::PandizzleAlg {
   };
 
   VarHolder fVarHolder;
-  /*
-  int fRun;
-  int fSubRun;
-  int fEvent;
-  int fPFPPDG;
-  int fPFPNChildren;
-  int fPFPNShowerChildren;
-  int fPFPNTrackChildren;
-  int fPFPNHits;
-  */
 
   // services
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
