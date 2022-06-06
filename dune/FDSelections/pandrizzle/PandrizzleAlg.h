@@ -56,17 +56,17 @@ namespace FDSelection
                 kWideness,
                 kEnergyDensity,
                 kPathwayLengthMin,
-                kPathwayMaxScatteringAngle,
                 kMaxShowerStartPathwayScatteringAngle2D,
-                kPathwayMaxEnergySigma,
                 kMaxNPostShowerStartHits,
                 kMaxPostShowerStartScatterAngle,
                 kMaxPostShowerStartNuVertexEnergyAsymmetry,
                 kMaxPostShowerStartShowerStartEnergyAsymmetry,
                 kMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance,
                 kMinPostShowerStartShowerStartMoliereRadius,
-                kMaxOpeningAngleW,
-                kInitialRegionDistanceToNuVertex,
+                kMaxPostShowerStartOpeningAngle,
+                kMaxFoundHitRatio,
+                kMaxInitialGapSize,
+                kMinLargestProjectedGapSize,
                 kNViewsWithAmbiguousHits,
                 kAmbiguousHitMaxUnaccountedEnergy,
                 kBDTMethod,
@@ -146,6 +146,10 @@ namespace FDSelection
             {
                 std::map<std::string, int> IntVars;
                 std::map<std::string, float> FloatVars;
+
+                std::vector<float> m_trajPositionX;
+                std::vector<float> m_trajPositionY;
+                std::vector<float> m_trajPositionZ;
             };
 
             VarHolder fVarHolder;

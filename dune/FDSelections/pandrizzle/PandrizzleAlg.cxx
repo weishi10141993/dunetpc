@@ -106,15 +106,16 @@ FDSelection::PandrizzleAlg::PandrizzleAlg(const fhicl::ParameterSet& pset) :
     {
         fJamReader.AddVariable("PathwayLengthMin", GetVarPtr(kPathwayLengthMin));
         fJamReader.AddVariable("MaxShowerStartPathwayScatteringAngle2D", GetVarPtr(kMaxShowerStartPathwayScatteringAngle2D));
-        fJamReader.AddVariable("PathwayMaxEnergySigma", GetVarPtr(kPathwayMaxEnergySigma));
         fJamReader.AddVariable("MaxNPostShowerStartHits", GetVarPtr(kMaxNPostShowerStartHits));
         fJamReader.AddVariable("MaxPostShowerStartScatterAngle", GetVarPtr(kMaxPostShowerStartScatterAngle));
         fJamReader.AddVariable("MaxPostShowerStartNuVertexEnergyAsymmetry", GetVarPtr(kMaxPostShowerStartNuVertexEnergyAsymmetry));
         fJamReader.AddVariable("MaxPostShowerStartShowerStartEnergyAsymmetry", GetVarPtr(kMaxPostShowerStartShowerStartEnergyAsymmetry));
         fJamReader.AddVariable("MaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance", GetVarPtr(kMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance));
         fJamReader.AddVariable("MinPostShowerStartShowerStartMoliereRadius", GetVarPtr(kMinPostShowerStartShowerStartMoliereRadius));
-        fJamReader.AddVariable("MaxOpeningAngleW", GetVarPtr(kMaxOpeningAngleW));
-        fJamReader.AddVariable("InitialRegionDistanceToNuVertex", GetVarPtr(kInitialRegionDistanceToNuVertex));
+        fJamReader.AddVariable("MaxPostShowerStartOpeningAngle", GetVarPtr(kMaxPostShowerStartOpeningAngle));
+        fJamReader.AddVariable("MaxFoundHitRatio", GetVarPtr(kMaxFoundHitRatio));
+        fJamReader.AddVariable("MaxInitialGapSize", GetVarPtr(kMaxInitialGapSize));
+        fJamReader.AddVariable("MinLargestProjectedGapSize", GetVarPtr(kMinLargestProjectedGapSize));
         fJamReader.AddVariable("NViewsWithAmbiguousHits", GetVarPtr(kNViewsWithAmbiguousHits));
         fJamReader.AddVariable("AmbiguousHitMaxUnaccountedEnergy", GetVarPtr(kAmbiguousHitMaxUnaccountedEnergy));
 
@@ -183,6 +184,27 @@ void FDSelection::PandrizzleAlg::InitialiseTrees() {
     BookTreeFloat(tree, "MinLargestProjectedGapSize");
     BookTreeFloat(tree, "NViewsWithAmbiguousHits");
     BookTreeFloat(tree, "AmbiguousHitMaxUnaccountedEnergy");
+
+    // For drawing purposes
+    BookTreeFloat(tree, "StartX");
+    BookTreeFloat(tree, "StartY");
+    BookTreeFloat(tree, "StartZ");
+    BookTreeFloat(tree, "EndX");
+    BookTreeFloat(tree, "EndY");
+    BookTreeFloat(tree, "EndZ");
+    BookTreeFloat(tree, "StartPX");
+    BookTreeFloat(tree, "StartPY");
+    BookTreeFloat(tree, "StartPZ");
+    BookTreeFloat(tree, "EndPX");
+    BookTreeFloat(tree, "EndPY");
+    BookTreeFloat(tree, "EndPZ");
+
+    fVarHolder.m_trajPositionX = std::vector<float>();
+    fVarHolder.m_trajPositionY = std::vector<float>();
+    fVarHolder.m_trajPositionZ = std::vector<float>();
+    tree->Branch("TrajPositionX", &fVarHolder.m_trajPositionX);
+    tree->Branch("TrajPositionY", &fVarHolder.m_trajPositionY);
+    tree->Branch("TrajPositionZ", &fVarHolder.m_trajPositionZ);
   }
 }
 
@@ -550,6 +572,41 @@ void FDSelection::PandrizzleAlg::ProcessPFParticle(const art::Ptr<recob::PFParti
         fVarHolder.FloatVars["NViewsWithAmbiguousHits"] = -100.0; 
         fVarHolder.FloatVars["AmbiguousHitMaxUnaccountedEnergy"] = -100.0; 
     }
+
+
+    art::Handle< std::vector<recob::Shower> > showerListHandle;
+    evt.getByLabel(fShowerModuleLabel, showerListHandle);
+    art::FindManyP<recob::Track> initialTrackAssn(showerListHandle, evt, fShowerModuleLabel);
+    std::vector<art::Ptr<recob::Track>> initialTrackStub = initialTrackAssn.at(pShower.key());
+
+    std::cout << "initialTrackStub.size(): " << initialTrackStub.size() << std::endl;
+
+    if (initialTrackStub.size() == 1)
+    {
+        fVarHolder.FloatVars["StartX"] = initialTrackStub.at(0)->Start().X();
+        fVarHolder.FloatVars["StartY"] = initialTrackStub.at(0)->Start().Y();
+        fVarHolder.FloatVars["StartZ"] = initialTrackStub.at(0)->Start().Z();
+        fVarHolder.FloatVars["EndX"] = initialTrackStub.at(0)->End().X();
+        fVarHolder.FloatVars["EndY"] = initialTrackStub.at(0)->End().Y();
+        fVarHolder.FloatVars["EndZ"] = initialTrackStub.at(0)->End().Z();
+        fVarHolder.FloatVars["StartPX"] = initialTrackStub.at(0)->StartDirection().X();
+        fVarHolder.FloatVars["StartPY"] = initialTrackStub.at(0)->StartDirection().Y();
+        fVarHolder.FloatVars["StartPZ"] = initialTrackStub.at(0)->StartDirection().Z();
+        fVarHolder.FloatVars["EndPX"] = initialTrackStub.at(0)->EndDirection().X();
+        fVarHolder.FloatVars["EndPY"] = initialTrackStub.at(0)->EndDirection().Y();
+        fVarHolder.FloatVars["EndPZ"] = initialTrackStub.at(0)->EndDirection().Z();
+
+        /*
+        int nTrajectoryPoints(initialTrackStub.at(0)->NumberTrajectoryPoints());
+
+        for (int i = 0; i < nTrajectoryPoints; ++i)
+        {
+            fVarHolder.m_trajPositionX.push_back(initialTrackStub.at(0)->LocationAtPoint(i).X());
+            fVarHolder.m_trajPositionY.push_back(initialTrackStub.at(0)->LocationAtPoint(i).Y());
+            fVarHolder.m_trajPositionZ.push_back(initialTrackStub.at(0)->LocationAtPoint(i).Z());
+        }
+        */
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -757,10 +814,8 @@ FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::RunPID(const art:
     if (fUseBDTVariables && (pfpMetadata.size() == 1) && (propertiesMap.find("PathwayLengthMin") != propertiesMap.end()))
     {
         SetVar(kPathwayLengthMin, propertiesMap.find("PathwayLengthMin") != propertiesMap.end() ? propertiesMap.at("PathwayLengthMin") : -100.0);
-        SetVar(kPathwayMaxScatteringAngle, propertiesMap.find("PathwayMaxScatteringAngle") != propertiesMap.end() ? propertiesMap.at("PathwayMaxScatteringAngle") : -100.0);
         SetVar(kMaxShowerStartPathwayScatteringAngle2D, propertiesMap.find("MaxShowerStartPathwayScatteringAngle2D") != propertiesMap.end() ?
           propertiesMap.at("MaxShowerStartPathwayScatteringAngle2D") : -100.0);
-        SetVar(kPathwayMaxEnergySigma, propertiesMap.find("PathwayMaxEnergySigma") != propertiesMap.end() ? propertiesMap.at("PathwayMaxEnergySigma") : -100.0);
         SetVar(kMaxNPostShowerStartHits, propertiesMap.find("MaxNPostShowerStartHits") != propertiesMap.end() ? propertiesMap.at("MaxNPostShowerStartHits") : -100.0);
         SetVar(kMaxPostShowerStartScatterAngle, propertiesMap.find("MaxPostShowerStartScatterAngle") != propertiesMap.end() ? propertiesMap.at("MaxPostShowerStartScatterAngle") : -100.0);
         SetVar(kMaxPostShowerStartNuVertexEnergyAsymmetry, propertiesMap.find("MaxPostShowerStartNuVertexEnergyAsymmetry") != propertiesMap.end() ?
@@ -771,12 +826,12 @@ FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::RunPID(const art:
           propertiesMap.at("MaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance") : -100.0);
         SetVar(kMinPostShowerStartShowerStartMoliereRadius, propertiesMap.find("MinPostShowerStartShowerStartMoliereRadius") != propertiesMap.end() ?
           propertiesMap.at("MinPostShowerStartShowerStartMoliereRadius") : -100.0);
-        SetVar(kMaxOpeningAngleW, propertiesMap.find("MaxOpeningAngleW") != propertiesMap.end() ? propertiesMap.at("MaxOpeningAngleW") : -100.0);
-        SetVar(kInitialRegionDistanceToNuVertex, propertiesMap.find("InitialRegionDistanceToNuVertex") != propertiesMap.end() ?
-          propertiesMap.at("InitialRegionDistanceToNuVertex") : -100.0);
+        SetVar(kMaxPostShowerStartOpeningAngle, propertiesMap.find("MaxPostShowerStartOpeningAngle") != propertiesMap.end() ? propertiesMap.at("MaxPostShowerStartOpeningAngle") : -100.0);
+        SetVar(kMaxFoundHitRatio, propertiesMap.find("MaxFoundHitRatio") != propertiesMap.end() ? propertiesMap.at("MaxFoundHitRatio") : -100.0);
+        SetVar(kMaxInitialGapSize, propertiesMap.find("MaxInitialGapSize") != propertiesMap.end() ? propertiesMap.at("MaxInitialGapSize") : -100.0);
+        SetVar(kMinLargestProjectedGapSize, propertiesMap.find("MinLargestProjectedGapSize") != propertiesMap.end() ? propertiesMap.at("MinLargestProjectedGapSize") : -100.0);
         SetVar(kNViewsWithAmbiguousHits, propertiesMap.find("NViewsWithAmbiguousHits") != propertiesMap.end() ? propertiesMap.at("NViewsWithAmbiguousHits") : -100.0);
-        SetVar(kAmbiguousHitMaxUnaccountedEnergy, propertiesMap.find("AmbiguousHitMaxUnaccountedEnergy") != propertiesMap.end() ?
-          propertiesMap.at("AmbiguousHitMaxUnaccountedEnergy") : -100.0);
+        SetVar(kAmbiguousHitMaxUnaccountedEnergy, propertiesMap.find("AmbiguousHitMaxUnaccountedEnergy") != propertiesMap.end() ? propertiesMap.at("AmbiguousHitMaxUnaccountedEnergy") : -100.0);
         SetVar(kBDTMethod, 2);
 
         return Record(fInputsToReader, fJamReader.EvaluateMVA("BDTG"), true);
@@ -784,17 +839,17 @@ FDSelection::PandrizzleAlg::Record FDSelection::PandrizzleAlg::RunPID(const art:
     else
     {
         SetVar(kPathwayLengthMin, -100.0);
-        SetVar(kPathwayMaxScatteringAngle, -100.0);
         SetVar(kMaxShowerStartPathwayScatteringAngle2D, -100.0);
-        SetVar(kPathwayMaxEnergySigma, -100.0);
         SetVar(kMaxNPostShowerStartHits, -100.0);
         SetVar(kMaxPostShowerStartScatterAngle, -100.0);
         SetVar(kMaxPostShowerStartNuVertexEnergyAsymmetry, -100.0);
         SetVar(kMaxPostShowerStartShowerStartEnergyAsymmetry, -100.0);
         SetVar(kMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance, -100.0);
         SetVar(kMinPostShowerStartShowerStartMoliereRadius, -100.0);
-        SetVar(kMaxOpeningAngleW, -100.0);
-        SetVar(kInitialRegionDistanceToNuVertex, -100.0);
+        SetVar(kMaxPostShowerStartOpeningAngle, -100.0);
+        SetVar(kMaxFoundHitRatio, -100.0);
+        SetVar(kMaxInitialGapSize, -100.0);
+        SetVar(kMinLargestProjectedGapSize, -100.0);
         SetVar(kNViewsWithAmbiguousHits, -100.0);
         SetVar(kAmbiguousHitMaxUnaccountedEnergy, -100.0);
     }

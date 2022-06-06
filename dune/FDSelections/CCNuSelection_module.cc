@@ -464,18 +464,17 @@ private:
   //Pandrizzle
   double fSelShowerPandrizzleConnectionBDTScore;
   double fSelShowerPandrizzlePathwayLengthMin;
-  double fSelShowerPandrizzlePathwayMaxScatteringAngle;
   double fSelShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D;
-  double fSelShowerPandrizzlePathwayMaxEnergySigma;
   double fSelShowerPandrizzleMaxNPostShowerStartHits;
   double fSelShowerPandrizzleMaxPostShowerStartScatterAngle;
   double fSelShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry;
   double fSelShowerPandrizzleMaxPostShowerStartShowerStartEnergyAsymmetry;
   double fSelShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance;
   double fSelShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius;
-  double fSelShowerPandrizzleMaxOpeningAngleW;
-  double fSelShowerPandrizzleFitShowerStartLW;
-  double fSelShowerPandrizzleInitialRegionDistanceToNuVertex;
+  double fSelShowerPandrizzleMaxPostShowerStartOpeningAngle;
+  double fSelShowerPandrizzleMaxFoundHitRatio;
+  double fSelShowerPandrizzleMaxInitialGapSize;
+  double fSelShowerPandrizzleMinLargestProjectedGapSize;
   double fSelShowerPandrizzleNViewsWithAmbiguousHits;
   double fSelShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy;
   double fSelShowerPandrizzleEvalRatio;
@@ -575,18 +574,17 @@ private:
   double fRecoShowerRecoEnergy[kDefMaxNRecoShowers][3];
   double fRecoShowerPandrizzleConnectionBDTScore[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzlePathwayLengthMin[kDefMaxNRecoShowers];
-  double fRecoShowerPandrizzlePathwayMaxScatteringAngle[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D[kDefMaxNRecoShowers];
-  double fRecoShowerPandrizzlePathwayMaxEnergySigma[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleMaxNPostShowerStartHits[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleMaxPostShowerStartScatterAngle[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleMaxPostShowerStartShowerStartEnergyAsymmetry[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius[kDefMaxNRecoShowers];
-  double fRecoShowerPandrizzleMaxOpeningAngleW[kDefMaxNRecoShowers];
-  double fRecoShowerPandrizzleFitShowerStartLW[kDefMaxNRecoShowers];
-  double fRecoShowerPandrizzleInitialRegionDistanceToNuVertex[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleMaxPostShowerStartOpeningAngle[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleMaxFoundHitRatio[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleMaxInitialGapSize[kDefMaxNRecoShowers];
+  double fRecoShowerPandrizzleMinLargestProjectedGapSize[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleNViewsWithAmbiguousHits[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy[kDefMaxNRecoShowers];
   double fRecoShowerPandrizzleEvalRatio[kDefMaxNRecoShowers];
@@ -1094,18 +1092,17 @@ void FDSelection::CCNuSelection::beginJob()
     fTree->Branch("SelShowerRecoEnergy",&fSelShowerRecoEnergy,"SelShowerRecoEnergy[3]/D");
     fTree->Branch("SelShowerPandrizzleConnectionBDTScore", &fSelShowerPandrizzleConnectionBDTScore);
     fTree->Branch("SelShowerPandrizzlePathwayLengthMin", &fSelShowerPandrizzlePathwayLengthMin);
-    fTree->Branch("SelShowerPandrizzlePathwayMaxScatteringAngle", &fSelShowerPandrizzlePathwayMaxScatteringAngle);
     fTree->Branch("SelShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D", &fSelShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D);
-    fTree->Branch("SelShowerPandrizzlePathwayMaxEnergySigma", &fSelShowerPandrizzlePathwayMaxEnergySigma);
     fTree->Branch("SelShowerPandrizzleMaxNPostShowerStartHits", &fSelShowerPandrizzleMaxNPostShowerStartHits);
     fTree->Branch("SelShowerPandrizzleMaxPostShowerStartScatterAngle", &fSelShowerPandrizzleMaxPostShowerStartScatterAngle);
     fTree->Branch("SelShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry", &fSelShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry);
     fTree->Branch("SelShowerPandrizzleMaxPostShowerStartShowerStartEnergyAsymmetry", &fSelShowerPandrizzleMaxPostShowerStartShowerStartEnergyAsymmetry);
     fTree->Branch("SelShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance", &fSelShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance);
     fTree->Branch("SelShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius", &fSelShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius);
-    fTree->Branch("SelShowerPandrizzleMaxOpeningAngleW", &fSelShowerPandrizzleMaxOpeningAngleW);
-    fTree->Branch("SelShowerPandrizzleFitShowerStartLW", &fSelShowerPandrizzleFitShowerStartLW);
-    fTree->Branch("SelShowerPandrizzleInitialRegionDistanceToNuVertex", &fSelShowerPandrizzleInitialRegionDistanceToNuVertex);
+    fTree->Branch("SelShowerPandrizzleMaxPostShowerStartOpeningAngle", &fSelShowerPandrizzleMaxPostShowerStartOpeningAngle);
+    fTree->Branch("SelShowerPandrizzleMaxFoundHitRatio", &fSelShowerPandrizzleMaxFoundHitRatio);
+    fTree->Branch("SelShowerPandrizzleMaxInitialGapSize", &fSelShowerPandrizzleMaxInitialGapSize);
+    fTree->Branch("SelShowerPandrizzleMinLargestProjectedGapSize", &fSelShowerPandrizzleMinLargestProjectedGapSize);
     fTree->Branch("SelShowerPandrizzleNViewsWithAmbiguousHits", &fSelShowerPandrizzleNViewsWithAmbiguousHits);
     fTree->Branch("SelShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy", &fSelShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy);
     fTree->Branch("SelShowerPandrizzleEvalRatio",&fSelShowerPandrizzleEvalRatio);
@@ -1205,10 +1202,8 @@ void FDSelection::CCNuSelection::beginJob()
 
     fTree->Branch("RecoShowerPandrizzleConnectionBDTScore", &fRecoShowerPandrizzleConnectionBDTScore, "RecoShowerPandrizzleConnectionBDTScore[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzlePathwayLengthMin", &fRecoShowerPandrizzlePathwayLengthMin, "RecoShowerPandrizzlePathwayLengthMin[NRecoShowers]/D");
-    fTree->Branch("RecoShowerPandrizzlePathwayMaxScatteringAngle", &fRecoShowerPandrizzlePathwayMaxScatteringAngle, "RecoShowerPandrizzlePathwayMaxScatteringAngle[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D", &fRecoShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D, 
       "RecoShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D[NRecoShowers]/D");
-    fTree->Branch("RecoShowerPandrizzlePathwayMaxEnergySigma", &fRecoShowerPandrizzlePathwayMaxEnergySigma, "RecoShowerPandrizzlePathwayMaxEnergySigma[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleMaxNPostShowerStartHits", &fRecoShowerPandrizzleMaxNPostShowerStartHits, "RecoShowerPandrizzleMaxNPostShowerStartHits[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleMaxPostShowerStartScatterAngle", &fRecoShowerPandrizzleMaxPostShowerStartScatterAngle, "RecoShowerPandrizzleMaxPostShowerStartScatterAngle[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry", &fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry, 
@@ -1219,13 +1214,12 @@ void FDSelection::CCNuSelection::beginJob()
       "RecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius", &fRecoShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius, 
       "RecoShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius[NRecoShowers]/D");
-    fTree->Branch("RecoShowerPandrizzleMaxOpeningAngleW", &fRecoShowerPandrizzleMaxOpeningAngleW, "RecoShowerPandrizzleMaxOpeningAngleW[NRecoShowers]/D");
-    fTree->Branch("RecoShowerPandrizzleFitShowerStartLW", &fRecoShowerPandrizzleFitShowerStartLW, "RecoShowerPandrizzleFitShowerStartLW[NRecoShowers]/D");
-    fTree->Branch("RecoShowerPandrizzleInitialRegionDistanceToNuVertex", &fRecoShowerPandrizzleInitialRegionDistanceToNuVertex, "RecoShowerPandrizzleInitialRegionDistanceToNuVertex[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleMaxPostShowerStartOpeningAngle", &fRecoShowerPandrizzleMaxPostShowerStartOpeningAngle, "RecoShowerPandrizzleMaxPostShowerStartOpeningAngle[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleMaxFoundHitRatio", &fRecoShowerPandrizzleMaxFoundHitRatio, "RecoShowerPandrizzleMaxFoundHitRatio[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleMaxInitialGapSize", &fRecoShowerPandrizzleMaxInitialGapSize, "RecoShowerPandrizzleMaxInitialGapSize[NRecoShowers]/D");
+    fTree->Branch("RecoShowerPandrizzleMinLargestProjectedGapSize", &fRecoShowerPandrizzleMinLargestProjectedGapSize, "RecoShowerPandrizzleMinLargestProjectedGapSize[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleNViewsWithAmbiguousHits", &fRecoShowerPandrizzleNViewsWithAmbiguousHits, "RecoShowerPandrizzleNViewsWithAmbiguousHits[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy", &fRecoShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy, "RecoShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy[NRecoShowers]/D");
-
-
     fTree->Branch("RecoShowerPandrizzleEvalRatio",&fRecoShowerPandrizzleEvalRatio,"RecoShowerPandrizzleEvalRatio[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleConcentration",&fRecoShowerPandrizzleConcentration,"RecoShowerPandrizzleConcentration[NRecoShowers]/D");
     fTree->Branch("RecoShowerPandrizzleCoreHaloRatio",&fRecoShowerPandrizzleCoreHaloRatio, "RecoShowerPandrizzleCoreHaloRatio[NRecoShowers]/D");
@@ -1645,21 +1639,19 @@ void FDSelection::CCNuSelection::Reset()
 
   fSelShowerPandrizzleConnectionBDTScore = kDefDoub;
   fSelShowerPandrizzlePathwayLengthMin = kDefDoub;
-  fSelShowerPandrizzlePathwayMaxScatteringAngle = kDefDoub;
   fSelShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D = kDefDoub;
-  fSelShowerPandrizzlePathwayMaxEnergySigma = kDefDoub;
   fSelShowerPandrizzleMaxNPostShowerStartHits = kDefDoub;
   fSelShowerPandrizzleMaxPostShowerStartScatterAngle = kDefDoub;
   fSelShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry = kDefDoub;
   fSelShowerPandrizzleMaxPostShowerStartShowerStartEnergyAsymmetry = kDefDoub;
   fSelShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance = kDefDoub;
   fSelShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius = kDefDoub;
-  fSelShowerPandrizzleMaxOpeningAngleW = kDefDoub;
-  fSelShowerPandrizzleFitShowerStartLW = kDefDoub;
-  fSelShowerPandrizzleInitialRegionDistanceToNuVertex = kDefDoub;
+  fSelShowerPandrizzleMaxPostShowerStartOpeningAngle = kDefDoub;
+  fSelShowerPandrizzleMaxFoundHitRatio = kDefDoub;
+  fSelShowerPandrizzleMaxInitialGapSize = kDefDoub;
+  fSelShowerPandrizzleMinLargestProjectedGapSize = kDefDoub;
   fSelShowerPandrizzleNViewsWithAmbiguousHits = kDefDoub;
   fSelShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy = kDefDoub;
-
 
   for (int i_plane = 0; i_plane < 3; i_plane++) 
   {
@@ -1749,18 +1741,17 @@ void FDSelection::CCNuSelection::Reset()
 
     fRecoShowerPandrizzleConnectionBDTScore[i_shower] = kDefDoub;
     fRecoShowerPandrizzlePathwayLengthMin[i_shower] = kDefDoub;
-    fRecoShowerPandrizzlePathwayMaxScatteringAngle[i_shower] = kDefDoub;
     fRecoShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D[i_shower] = kDefDoub;
-    fRecoShowerPandrizzlePathwayMaxEnergySigma[i_shower] = kDefDoub;
     fRecoShowerPandrizzleMaxNPostShowerStartHits[i_shower] = kDefDoub;
     fRecoShowerPandrizzleMaxPostShowerStartScatterAngle[i_shower] = kDefDoub;
     fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry[i_shower] = kDefDoub;
     fRecoShowerPandrizzleMaxPostShowerStartShowerStartEnergyAsymmetry[i_shower] = kDefDoub;
     fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance[i_shower] = kDefDoub;
     fRecoShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius[i_shower] = kDefDoub;
-    fRecoShowerPandrizzleMaxOpeningAngleW[i_shower] = kDefDoub;
-    fRecoShowerPandrizzleFitShowerStartLW[i_shower] = kDefDoub;
-    fRecoShowerPandrizzleInitialRegionDistanceToNuVertex[i_shower] = kDefDoub;
+    fRecoShowerPandrizzleMaxPostShowerStartOpeningAngle[i_shower] = kDefDoub;
+    fRecoShowerPandrizzleMaxFoundHitRatio[i_shower] = kDefDoub;
+    fRecoShowerPandrizzleMaxInitialGapSize[i_shower] = kDefDoub;
+    fRecoShowerPandrizzleMinLargestProjectedGapSize[i_shower] = kDefDoub;
     fRecoShowerPandrizzleNViewsWithAmbiguousHits[i_shower] = kDefDoub;
     fRecoShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy[i_shower] = kDefDoub;
 
@@ -2779,10 +2770,9 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
     fRecoShowerPandrizzleDCA[i_shower]           = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kDCA);
     fRecoShowerPandrizzleWideness[i_shower]      = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kWideness);
     fRecoShowerPandrizzleEnergyDensity[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kEnergyDensity);
+
     fRecoShowerPandrizzlePathwayLengthMin[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kPathwayLengthMin);
-    fRecoShowerPandrizzlePathwayMaxScatteringAngle[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kPathwayMaxScatteringAngle);
     fRecoShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxShowerStartPathwayScatteringAngle2D);
-    fRecoShowerPandrizzlePathwayMaxEnergySigma[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kPathwayMaxEnergySigma);
     fRecoShowerPandrizzleMaxNPostShowerStartHits[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxNPostShowerStartHits);
     fRecoShowerPandrizzleMaxPostShowerStartScatterAngle[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxPostShowerStartScatterAngle);
     fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxPostShowerStartNuVertexEnergyAsymmetry);
@@ -2790,34 +2780,18 @@ void FDSelection::CCNuSelection::GetRecoShowerInfo(art::Event const & evt){
     fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance[i_shower] = 
       pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance);
     fRecoShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMinPostShowerStartShowerStartMoliereRadius);
-    fRecoShowerPandrizzleMaxOpeningAngleW[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxOpeningAngleW);
-    fRecoShowerPandrizzleInitialRegionDistanceToNuVertex[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kInitialRegionDistanceToNuVertex);
+    fRecoShowerPandrizzleMaxPostShowerStartOpeningAngle[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxPostShowerStartOpeningAngle);
+    fRecoShowerPandrizzleMaxFoundHitRatio[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxFoundHitRatio);
+    fRecoShowerPandrizzleMaxInitialGapSize[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxInitialGapSize);
+    fRecoShowerPandrizzleMinLargestProjectedGapSize[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMinLargestProjectedGapSize);
     fRecoShowerPandrizzleNViewsWithAmbiguousHits[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kNViewsWithAmbiguousHits);
     fRecoShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kAmbiguousHitMaxUnaccountedEnergy);
+
     fRecoShowerPandrizzleBDTMethod[i_shower] = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kBDTMethod);
     float pandrizzleScore(pandrizzleRecord.GetMVAScore());
     fRecoShowerPandrizzleMVAScore[i_shower] = (std::fabs(fRecoShowerPandrizzleBDTMethod[i_shower] - 1.0) < std::numeric_limits<float>::epsilon()) ? pandrizzleScore : -9999.f;
     fRecoShowerJamPandrizzleMVAScore[i_shower] = (std::fabs(fRecoShowerPandrizzleBDTMethod[i_shower] - 2.0) < std::numeric_limits<float>::epsilon()) ? pandrizzleScore : -9999.f;
     fRecoShowerPandrizzleIsFilled[i_shower] = pandrizzleRecord.IsFilled();
-
-
-    //fRecoShowerPandrizzleConnectionBDTScore[i_shower] = (propertiesMap.find("ElectronConnectionPathwayScore") != propertiesMap.end() ? );
-    //fRecoShowerPandrizzlePathwayLengthMin[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzlePathwayMaxScatteringAngle[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzlePathwayMaxEnergySigma[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleMaxNPostShowerStartHits[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleMaxPostShowerStartScatterAngle[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleMaxPostShowerStartShowerStartEnergyAsymmetry[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleMaxOpeningAngleW[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleFitShowerStartLW[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleInitialRegionDistanceToNuVertex[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleNViewsWithAmbiguousHits[i_shower] = (propertiesMap.find(""));
-    //fRecoShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy[i_shower] = (propertiesMap.find(""));
-
 
     std::vector<art::Ptr<recob::Hit>> hitListU = dune_ana::DUNEAnaHitUtils::GetHitsOnPlane(current_shower_hits, 0);
     std::vector<art::Ptr<recob::Hit>> hitListV = dune_ana::DUNEAnaHitUtils::GetHitsOnPlane(current_shower_hits, 1);
@@ -3024,10 +2998,9 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
   fSelShowerPandrizzleDCA           = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kDCA);
   fSelShowerPandrizzleWideness      = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kWideness);
   fSelShowerPandrizzleEnergyDensity = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kEnergyDensity);
+
   fSelShowerPandrizzlePathwayLengthMin = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kPathwayLengthMin);
-  fSelShowerPandrizzlePathwayMaxScatteringAngle = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kPathwayMaxScatteringAngle);
   fSelShowerPandrizzleMaxShowerStartPathwayScatteringAngle2D = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxShowerStartPathwayScatteringAngle2D);
-  fSelShowerPandrizzlePathwayMaxEnergySigma = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kPathwayMaxEnergySigma);
   fSelShowerPandrizzleMaxNPostShowerStartHits = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxNPostShowerStartHits);
   fSelShowerPandrizzleMaxPostShowerStartScatterAngle = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxPostShowerStartScatterAngle);
   fSelShowerPandrizzleMaxPostShowerStartNuVertexEnergyAsymmetry = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxPostShowerStartNuVertexEnergyAsymmetry);
@@ -3035,10 +3008,13 @@ void FDSelection::CCNuSelection::RunShowerSelection(art::Event const & evt)
   fSelShowerPandrizzleMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance = 
       pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxPostShowerStartNuVertexEnergyWeightedMeanRadialDistance);
   fSelShowerPandrizzleMinPostShowerStartShowerStartMoliereRadius = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMinPostShowerStartShowerStartMoliereRadius);
-  fSelShowerPandrizzleMaxOpeningAngleW = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxOpeningAngleW);
-  fSelShowerPandrizzleInitialRegionDistanceToNuVertex = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kInitialRegionDistanceToNuVertex);
+  fSelShowerPandrizzleMaxPostShowerStartOpeningAngle = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxPostShowerStartOpeningAngle);
+  fSelShowerPandrizzleMaxFoundHitRatio = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxFoundHitRatio);
+  fSelShowerPandrizzleMaxInitialGapSize = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMaxInitialGapSize);
+  fSelShowerPandrizzleMinLargestProjectedGapSize = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kMinLargestProjectedGapSize);
   fSelShowerPandrizzleNViewsWithAmbiguousHits = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kNViewsWithAmbiguousHits);
   fSelShowerPandrizzleAmbiguousHitMaxUnaccountedEnergy = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kAmbiguousHitMaxUnaccountedEnergy);
+
   fSelShowerPandrizzleBDTMethod = pandrizzleRecord.GetVar(FDSelection::PandrizzleAlg::kBDTMethod);
   float pandrizzleScore(pandrizzleRecord.GetMVAScore());
   fSelShowerPandrizzleMVAScore = (std::fabs(fSelShowerPandrizzleBDTMethod - 1.0) < std::numeric_limits<float>::epsilon()) ? pandrizzleScore : -9999.f;
