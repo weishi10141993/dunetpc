@@ -337,7 +337,6 @@ namespace dunemva {
     art::Handle<std::vector<cnn::RegCNNResult>> regcnnin;
     evt.getByLabel(fRegCNNLabel, "regcnnresult", regcnnin);
 
-
     art::Handle<dune::EnergyRecoOutput> ereconuein;
     evt.getByLabel(fEnergyRecoNueLabel, ereconuein);
 
@@ -352,12 +351,18 @@ namespace dunemva {
 
     if( !pidin.failedToGet() ) {
       fMVAResult = pidin->pid;
+    }
 
-      //Fill MVA reco stuff
+    if (!ereconuein.failedToGet())
+    {
       fErecoNue          = ereconuein->fNuLorentzVector.E();
       fRecoLepEnNue      = ereconuein->fLepLorentzVector.E();
       fRecoHadEnNue      = ereconuein->fHadLorentzVector.E();
       fRecoMethodNue     = ereconuein->recoMethodUsed;
+    }
+
+    if (!ereconumuin.failedToGet())
+    {
       fErecoNumu         = ereconumuin->fNuLorentzVector.E();
       fRecoLepEnNumu     = ereconumuin->fLepLorentzVector.E();
       fRecoHadEnNumu     = ereconumuin->fHadLorentzVector.E();

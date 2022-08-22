@@ -39,6 +39,8 @@
 #include "TMVA/Reader.h"
 #include "TTree.h"
 
+#include "larpandoracontent/LArObjects/LArTwoDSlidingFitResult.h"
+
 namespace FDSelection
 {
     class PandrizzleAlg 
@@ -69,6 +71,9 @@ namespace FDSelection
                 kMinLargestProjectedGapSize,
                 kNViewsWithAmbiguousHits,
                 kAmbiguousHitMaxUnaccountedEnergy,
+                kModularShowerPathwayLengthMin,
+                kModularShowerMaxNShowerHits,
+                kModularShowerMaxNuVertexChargeWeightedMeanRadialDistance,
                 kBDTMethod,
                 kTerminatingValue //terminates the enum and not an actual variable
             };
@@ -100,6 +105,26 @@ namespace FDSelection
         private:
             Float_t* GetVarPtr(const FDSelection::PandrizzleAlg::Vars var);
             void SetVar(const FDSelection::PandrizzleAlg::Vars var, const Float_t value);
+
+            void GetPathwayVariables(art::Ptr<recob::Track> &trackStub, float &modularShowerPathwayLengthMin, float &modularShowerPathwayKink3D);
+            float GetLargest3DPathwayKink(art::Ptr<recob::Track> &trackStub);
+            void SetInitialRegionVariables(TVector3 &nuVertexPosition, art::Ptr<recob::Track> &trackStub);
+            double YZtoU(double y, double z);
+            double YZtoV(double y, double z);
+            double YZtoW(double y, double z);
+            const geo::Vector_t GetPandoraHitPosition(art::Ptr<recob::Hit> pHit, const art::Event& evt);
+            const geo::View_t GetPandoraHitView(art::Ptr<recob::Hit> pHit);
+            void GetShowerRegionVariables(const TVector3 &nuVertex, const art::Ptr<recob::PFParticle> &pfp, art::Ptr<recob::Track> &trackStub, float &modularShowerMaxNShowerHits,
+                float &modularShowerMaxFoundHitRatio, float &modularShowerMaxOpeningAngle, float &modularShowerMaxScatterAngle, float &modularShowerMaxNuVertexChargeAsymmetry,
+                float &modularShowerMaxShowerStartChargeAsymmetry, float &modularShowerMaxNuVertexChargeWeightedMeanRadialDistance, float &modularShowerMinShowerStartMoliereRadius, 
+                const art::Event& evt);
+
+            float GetShowerOpeningAngle(const geo::Vector_t &showerStart, const pandora::CartesianVector &fittedShowerDirection,
+                pandora::CartesianPointVector &cartesianPointVector);
+            void GetShowerChargeDistributionVariables(const pandora::CartesianVector nuVertexPosition, const pandora::CartesianVector connectionPathwayDirection,
+                const pandora::CartesianVector &fittedShowerStart, const pandora::CartesianVector &fittedShowerDirection, std::vector<art::Ptr<recob::Hit>> &showerHits, float &nuVertexChargeAsymmetry,
+                float &showerStartChargeAsymmetry, float &nuVertexChargeWeightedMeanRadialDistance, float &showerStartMoliereRadius, const art::Event& evt);
+
 
             void InitialiseTrees();
             void BookTreeInt(TTree *tree, std::string branch_name);
@@ -137,9 +162,13 @@ namespace FDSelection
             bool fMakeTree;
             TTree *fSignalShowerTree;
             TTree *fBackgroundShowerTree;
-
+            bool fUseConcentration;
+            bool fUseDisplacement;
             bool fUseDCA;
             bool fUseBDTVariables;
+            bool fUseModularShowerVariables;
+            int fEnhancedPandrizzleHitCut;
+            int fModularShowerPandrizzleHitCut;
 
              //This thing holds all variables to be handed to the trees
             struct VarHolder

@@ -7,7 +7,7 @@ dune_pandora:
     module_type:                                                    "StandardPandora"
     GeantModuleLabel:                                               "largeant"
     HitFinderModuleLabel:                                           "linecluster"
-    EnableMCParticles:                                              false
+    EnableMCParticles:                                              true
     EnableProduction:                                               true
     EnableLineGaps:                                                 true
     UseGlobalCoordinates:                                           true

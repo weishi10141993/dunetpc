@@ -13,7 +13,6 @@ CCNuSelection:
    LargeantModuleLabel:         "largeant"
    WireModuleLabel:             "caldata"
    TrackModuleLabel:            "pandoraTrack"
-#ShowerModuleLabel:           "pandoraShower"
    ShowerModuleLabel:           "pandoraShower"
    PFParticleModuleLabel:       "pandora"
    VertexModuleLabel:           "pandora"
