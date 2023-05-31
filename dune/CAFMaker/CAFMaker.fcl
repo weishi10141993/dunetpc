@@ -26,12 +26,6 @@ dunefd_cafmaker:
     MakeAnaTree:             false    # Tree for general use
     MakeWeightTree:          false    # Tree for TMVAClassification input, makes weight file
     MakeSystHist:            false
-    #HitsModuleLabel:         "lineclusterdc"
-    #TrackModuleLabel:        "pmtrackdc"
-    #ClusterModuleLabel:      "lineclusterdc"
-    #VertexModuleLabel:       "pmtrackdc"
-    #ShowerModuleLabel:       "emshowerdc"
-    #CalorimetryModuleLabel:  "pmtrackcalodc"
     RawDigitModuleLabel:     "daq"
     WireModuleLabel:         "caldata"
     HitsModuleLabel:         "linecluster"
@@ -48,6 +42,22 @@ dunefd_cafmaker:
     NuECut:                  0.8
     NuMuCut:                 0.8
     generated_systematic_provider_configuration: @local::generated_systematic_provider_configuration
+
+    # Copied from FDSensOpt / energyreco.fcl
+    # Used to extract "energy deposit" variables for fake data studies
+    # Should find a better solution at some point
+    RecombFactor:            0.63
+
+
+    NuePandrizzleCut: 0.418
+    NueJamPandrizzleCut: 1.0
+    NuePandizzleCut: 0.712
+    NumuPandizzleCut: 0.34
+    AnuePandrizzleCut: 1.0
+    AnueJamPandrizzleCut: 1.0
+    AnuePandizzleCut: 1.0
+    AnumuPandizzleCut: 1.0
+    UseFHCCut: true
 }
 
 END_PROLOG

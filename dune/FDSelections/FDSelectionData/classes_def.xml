@@ -1,5 +1,7 @@
 <lcgdict>
-  <class name="pandselect::PandSelectParams" ClassVersion="10" >
+  <class name="pandselect::PandSelectParams" ClassVersion="12" >
+   <version ClassVersion="12" checksum="3725459704"/>
+   <version ClassVersion="11" checksum="1377908932"/>
    <version ClassVersion="10" checksum="3450341997"/>
   </class>
 

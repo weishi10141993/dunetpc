@@ -1,0 +1,44 @@
+#include "ctphelper.fcl"
+#include "showeralgorithms.fcl"
+#include "neutrinoenergyrecoalg_dune.fcl"
+
+BEGIN_PROLOG
+
+pandselect:
+{
+    module_type:      "PandSelect"
+
+    ModuleLabels: 
+    {
+      PFParticleModuleLabel:       "pandoraSel"
+      ShowerModuleLabel:           "pandoraShowerSel"
+      TrackModuleLabel:            "pandoraTrackSel"
+      SpacePointModuleLabel:       "pandoraSel"
+      ClusterModuleLabel:          "pandoraSel"
+      PIDModuleLabel:              "warwickPIDSel"
+      ParticleIDModuleLabel:       "pandoraPIDSel"
+      HitsModuleLabel:             "linecluster"
+      WireModuleLabel:             "caldata"
+    }
+
+   ShowerEnergyAlg:                @local::dune10kt_showerenergy        #pandrizzle
+   MichelCandidateDistance:        4                                    #pandizzle
+
+   ctpHelper:                      @local::standard_ctphelper
+
+   PandizzleWeightFileName:       "Pandizzle_TMVAClassification_BDTG.weights.xml"
+   PandrizzleWeightFileName:      "Pandrizzle_TMVAClassification_BDTG.weights.xml"
+
+   NeutrinoEnergyRecoAlg:         @local::dune10kt_neutrinoenergyrecoalg
+}
+
+
+pandselect.RecoTrackSelectorTool.tool_type: "LongestRecoVertexTrackSelector"
+pandselect.RecoTrackSelectorTool.ctpHelper: @local::pandselect.ctpHelper
+pandselect.RecoTrackSelectorTool.ModuleLabels: @local::pandselect.ModuleLabels
+
+pandselect.RecoShowerSelectorTool.tool_type: "HighestEnergyRecoVertexShowerSelector"
+pandselect.RecoShowerSelectorTool.ModuleLabels: @local::pandselect.ModuleLabels
+pandselect.RecoShowerSelectorTool.ShowerEnergyAlg: @local::pandselect.ShowerEnergyAlg
+
+END_PROLOG
