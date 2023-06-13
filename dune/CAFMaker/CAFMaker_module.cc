@@ -16,12 +16,12 @@
 
 // Framework includes
 #include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Core/EDAnalyzer.h" 
-#include "art/Framework/Principal/Event.h" 
+#include "art/Framework/Core/EDAnalyzer.h"
+#include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/SubRun.h"
-#include "fhiclcpp/ParameterSet.h" 
-#include "messagefacility/MessageLogger/MessageLogger.h" 
-#include "art/Framework/Services/Optional/TFileService.h" 
+#include "fhiclcpp/ParameterSet.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 
 //#include "Utils/AppInit.h"
 #include "nusimdata/SimulationBase/GTruth.h"
@@ -75,6 +75,7 @@ namespace dunemva {
       explicit CAFMaker(fhicl::ParameterSet const& pset);
       virtual ~CAFMaker();
       void beginJob() override;
+      void endJob() override;
       void beginSubRun(const art::SubRun& sr) override;
       void endSubRun(const art::SubRun& sr) override;
       void reconfigure(fhicl::ParameterSet const& pset) /*override*/;
@@ -87,7 +88,7 @@ namespace dunemva {
       std::string fMVASelectLabel;
       std::string fMVASelectNueLabel;
       std::string fMVASelectNumuLabel;
-      std::string fPandSelectParamsLabel;
+      //std::string fPandSelectParamsLabel;
 
       std::string fCVNLabel;
       std::string fRegCVNLabel;
@@ -100,8 +101,9 @@ namespace dunemva {
 
       float fOscPro;
       double fWeight;
-      TTree* fTree;  
-      TTree* fPOT;  
+      TTree* fTree;
+      TTree* fMetaTree;
+      //TTree* fPOT;
 
       int runPOTTreeVariable, subrunPOTTreeVariable;
       double potPOTTreeVariable;
@@ -118,13 +120,14 @@ namespace dunemva {
       // event accounting
       int fRun, fSubrun, fEvent;
       // Truth information
-      int fIsCC, fNuPDG, fNuPDGunosc, fMode, fLepPDG; 
+      int fIsCC, fNuPDG, fNuPDGunosc, fMode, fLepPDG;
       double fEv, fQ2, fW, fX, fY, fNuMomX, fNuMomY, fNuMomZ, fLepMomX, fLepMomY, fLepMomZ, fLepE, fLepNuAngle;
       // True particle counts
       int nP, nN, nPip, nPim, nPi0, nKp, nKm, nK0, nEM, nOtherHad, nNucleus, nUNKNOWN;
       double eP, eN, ePip, ePim, ePi0, eOther;
       double eRecoP, eRecoN, eRecoPip, eRecoPim, eRecoPi0, eRecoOther;
       double eDepP, eDepN, eDepPip, eDepPim, eDepPi0, eDepOther;
+      double vtx_x, vtx_y, vtx_z;
 
       // Reco information
       double fErecoNue;
@@ -132,7 +135,7 @@ namespace dunemva {
       double fRecoHadEnNue;
       int fRecoMethodNue; // 1 = longest reco track + hadronic, 2 = reco shower with highest charge + hadronic, 3 = all hit charges, -1 = not set
       double fRecoLepAngNue;
-      double fErecoNumu; 
+      double fErecoNumu;
       double fRecoLepEnNumu;
       double fRecoHadEnNumu;
       int fRecoMethodNumu; // 1 = longest reco track + hadronic, 2 = reco shower with highest charge + hadronic, 3 = all hit charges, -1 = not set
@@ -144,7 +147,7 @@ namespace dunemva {
       double fMVAResultNue;
       double fMVAResultNumu;
 
-      double fSelTrackPandizzleScore;
+      /*double fSelTrackPandizzleScore;
       double fSelShowerPandrizzleScore;
       double fSelShowerJamPandrizzleScore;
 
@@ -156,17 +159,13 @@ namespace dunemva {
       double fAnuePandrizzleCut;
       double fAnueJamPandrizzleCut;
       double fAnuePandizzleCut;
-      double fAnumuPandizzleCut;
+      double fAnumuPandizzleCut;*/
 
       bool fUseFHCCut;
 
-      double fNuVtxX;
-      double fNuVtxY;
-      double fNuVtxZ;
-
-      double fRecoNuVtxX;
-      double fRecoNuVtxY;
-      double fRecoNuVtxZ;
+      //double fRecoNuVtxX;
+      //double fRecoNuVtxY;
+      //double fRecoNuVtxZ;
 
       // CVN outputs
       double fCVNResultIsAntineutrino;
@@ -178,8 +177,8 @@ namespace dunemva {
 
       double fRegCVNNueE;
 
-    //int meta_run, meta_subrun;
       double meta_pot;
+      int meta_run, meta_subrun, meta_version;
 
       systtools::provider_list_t fSystProviders;
 
@@ -253,16 +252,16 @@ namespace dunemva {
     eDepPim= -999;
     eDepPi0= -999;
     eDepOther = -999;
-    fNuVtxX = -999;
-    fNuVtxY = -999;
-    fNuVtxZ = -999;
+    vtx_x = -999;
+    vtx_y = -999;
+    vtx_z = -999;
 
     fErecoNue= -999;
     fRecoLepEnNue= -999;
     fRecoHadEnNue = -999;
     fRecoMethodNue = -999;
     fRecoLepAngNue = -999;
-    fErecoNumu = -999; 
+    fErecoNumu = -999;
     fRecoLepEnNumu= -999;
     fRecoHadEnNumu = -999;
     fRecoMethodNumu = -999;
@@ -295,13 +294,13 @@ namespace dunemva {
     fCVNResultNNeutrons = -999;
     fRegCVNNueE = -999;
 
-    fRecoNuVtxX = -999;
+    /*fRecoNuVtxX = -999;
     fRecoNuVtxY = -999;
     fRecoNuVtxZ = -999;
 
     fSelTrackPandizzleScore = -999;
     fSelShowerPandrizzleScore = -999;
-    fSelShowerJamPandrizzleScore = -999;
+    fSelShowerJamPandrizzleScore = -999;*/
 
     // Reweight variables
     for( int k_it = 0; k_it < knShifts; ++k_it ) {
@@ -314,14 +313,14 @@ namespace dunemva {
   }
 
   //------------------------------------------------------------------------------
-  void CAFMaker::reconfigure(fhicl::ParameterSet const& pset) 
+  void CAFMaker::reconfigure(fhicl::ParameterSet const& pset)
   {
     fMVASelectLabel = pset.get<std::string>("MVASelectLabel");
     fMVASelectNueLabel = pset.get<std::string>("MVASelectNueLabel");
     fMVASelectNumuLabel = pset.get<std::string>("MVASelectNumuLabel");
     fCVNLabel = pset.get<std::string>("CVNLabel");
     fRegCVNLabel = pset.get<std::string>("RegCVNLabel");
-    fPandSelectParamsLabel = pset.get<std::string>("PandSelectParamsLabel");
+    //fPandSelectParamsLabel = pset.get<std::string>("PandSelectParamsLabel");
     fEnergyRecoNueLabel = pset.get<std::string>("EnergyRecoNueLabel");
     fEnergyRecoNumuLabel = pset.get<std::string>("EnergyRecoNumuLabel");
 
@@ -341,7 +340,7 @@ namespace dunemva {
     fSystProviders = systtools::ConfigureISystProvidersFromParameterHeaders(syst_provider_config);
 
     fRecombFactor = pset.get<double>("RecombFactor");
-
+/*
     fNuePandrizzleCut = pset.get<double>("NuePandrizzleCut");
     fNueJamPandrizzleCut = pset.get<double>("NueJamPandrizzleCut");
     fNuePandizzleCut = pset.get<double>("NuePandizzleCut");
@@ -350,7 +349,7 @@ namespace dunemva {
     fAnueJamPandrizzleCut = pset.get<double>("AnueJamPandrizzleCut");
     fAnuePandizzleCut = pset.get<double>("AnuePandizzleCut");
     fAnumuPandizzleCut = pset.get<double>("AnumuPandizzleCut");
-    fUseFHCCut = pset.get<bool>("UseFHCCut");
+    fUseFHCCut = pset.get<bool>("UseFHCCut");*/
   }
 
 
@@ -360,11 +359,12 @@ namespace dunemva {
 
     art::ServiceHandle<art::TFileService> tfs;
     fTree =tfs->make<TTree>("caf", "caf");
-
+    fMetaTree = tfs->make<TTree>("meta", "meta");
+/*
     fPOT = tfs->make<TTree>("pottree","pot tree");
     fPOT->Branch("pot", &potPOTTreeVariable,"pot/D");
     fPOT->Branch("run", &runPOTTreeVariable,"run/I");
-    fPOT->Branch("subrun",&subrunPOTTreeVariable,"subrun/I");
+    fPOT->Branch("subrun",&subrunPOTTreeVariable,"subrun/I");*/
 
     // book-keeping
     fTree->Branch("run",         &fRun,        "run/I");
@@ -425,7 +425,15 @@ namespace dunemva {
     fTree->Branch("eDepPi0",      &eDepPi0,       "eDepPi0/D");
     fTree->Branch("eDepOther",    &eDepOther,     "eDepOther/D");
 
+    // vertex position
+    fTree->Branch("vtx_x",   &vtx_x,    "vtx_x/D");
+    fTree->Branch("vtx_y",   &vtx_y,    "vtx_y/D");
+    fTree->Branch("vtx_z",   &vtx_z,    "vtx_z/D");
+
     // Reco variables
+    fTree->Branch("mvaresult",   &fMVAResult,  "mvaresult/D");
+    fTree->Branch("mvanue",      &fMVAResultNue,  "mvanue/D");
+    fTree->Branch("mvanumu",     &fMVAResultNumu, "mvanumu/D");
 
     fTree->Branch("cvnisantineutrino", &fCVNResultIsAntineutrino, "cvnisantineutrino/D");
     fTree->Branch("cvnnue",            &fCVNResultNue,            "cvnnue/D");
@@ -466,7 +474,7 @@ namespace dunemva {
     fTree->Branch("LongestTrackContNumu",  &fLongestTrackContNumu, "LongestTrackContNumu/I");
     fTree->Branch("TrackMomMethodNumu",    &fTrackMomMethodNumu,   "TrackMomMethodNumu/I");
 
-    fTree->Branch("SelTrackPandizzleScore",    &fSelTrackPandizzleScore,   "SelTrackPandizzleScore/D");
+    /*fTree->Branch("SelTrackPandizzleScore",    &fSelTrackPandizzleScore,   "SelTrackPandizzleScore/D");
     fTree->Branch("SelShowerPandrizzleScore",    &fSelShowerPandrizzleScore,   "SelShowerPandrizzleScore/D");
     fTree->Branch("SelShowerJamPandrizzleScore",    &fSelShowerJamPandrizzleScore,   "SelShowerJamPandrizzleScore/D");
 
@@ -480,21 +488,20 @@ namespace dunemva {
     fTree->Branch("AnuePandizzleCut", &fAnuePandizzleCut, "AnuePandizzleCut/D");
     fTree->Branch("AnumuPandizzleCut", &fAnumuPandizzleCut, "AnumuPandizzleCut/D");
 
-    fTree->Branch("vtx_x", &fNuVtxX);
-    fTree->Branch("vtx_y", &fNuVtxY);
-    fTree->Branch("vtx_z", &fNuVtxZ);
-
     fTree->Branch("RecoVertex_x", &fRecoNuVtxX);
     fTree->Branch("RecoVertex_y", &fRecoNuVtxY);
-    fTree->Branch("RecoVertex_z", &fRecoNuVtxZ);
+    fTree->Branch("RecoVertex_z", &fRecoNuVtxZ);*/
 
-    fTree->Branch("totpot",       &meta_pot,       "totpot/D");
+    fMetaTree->Branch("pot", &meta_pot, "pot/D");
+    fMetaTree->Branch("run", &meta_run, "run/I");
+    fMetaTree->Branch("subrun", &meta_subrun, "subrun/I");
+    fMetaTree->Branch("version", &meta_version, "version/I");
 
     std::fill_n(fisWgtSyst, knShifts, true);
     // make DUNErw variables
     for( auto &sp : fSystProviders ) {
       systtools::SystMetaData metaData = sp->GetSystMetaData();
-      for( systtools::SystMetaData::iterator itMeta = metaData.begin(); itMeta != metaData.end(); ++itMeta ) {      
+      for( systtools::SystMetaData::iterator itMeta = metaData.begin(); itMeta != metaData.end(); ++itMeta ) {
         systtools::SystParamHeader head = *itMeta;
         std::string name = head.prettyName;
         unsigned int parId = head.systParamId;
@@ -515,13 +522,16 @@ namespace dunemva {
         fWgts[i][j] = fisWgtSyst[i] ? 1. : 0;
       }
     }
+
+    meta_pot = 0.;
+    meta_version = 3;
   }
 
   //------------------------------------------------------------------------------
   void CAFMaker::beginSubRun(const art::SubRun& sr)
   {
     art::Handle< sumdata::POTSummary > pots;
-    if( sr.getByLabel("generator",pots) ) meta_pot = pots->totpot;
+    if( sr.getByLabel("generator",pots) ) meta_pot += pots->totpot;
     else meta_pot = -1.;
   }
 
@@ -530,21 +540,69 @@ namespace dunemva {
   {
     CAFMaker::resetCAFvars();
 
+    art::Handle<dunemva::MVASelectPID> pidin;
+    evt.getByLabel(fMVASelectLabel, pidin);
+
+    art::Handle<dunemva::MVASelectPID> pidinnue;
+    evt.getByLabel(fMVASelectNueLabel, pidinnue);
+
+    art::Handle<dunemva::MVASelectPID> pidinnumu;
+    evt.getByLabel(fMVASelectNumuLabel, pidinnumu);
+
     art::Handle<std::vector<cvn::Result>> cvnin;
-    evt.getByLabel(fCVNLabel, "cvnresultSel", cvnin);
+    evt.getByLabel(fCVNLabel, "cvnresult", cvnin);
 
     art::Handle<std::vector<cvn::RegCVNResult>> regcvnin;
     evt.getByLabel(fRegCVNLabel, "regcvnresult", regcvnin);
 
-    art::Handle<pandselect::PandSelectParams> pandSelectParams;;
-    evt.getByLabel(fPandSelectParamsLabel, pandSelectParams);
+    art::Handle<dune::EnergyRecoOutput> ereconuein;
+    evt.getByLabel(fEnergyRecoNueLabel, ereconuein);
+
+    art::Handle<dune::EnergyRecoOutput> ereconumuin;
+    evt.getByLabel(fEnergyRecoNumuLabel, ereconumuin);
+
+    //art::Handle<pandselect::PandSelectParams> pandSelectParams;;
+    //evt.getByLabel(fPandSelectParamsLabel, pandSelectParams);
 
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
 
     fRun = evt.id().run();
     fSubrun = evt.id().subRun();
     fEvent = evt.id().event();
+    meta_run = fRun;
+    meta_subrun = fSubrun;
 
+    if( !pidin.failedToGet() ) {
+      fMVAResult = pidin->pid;
+    }
+
+    if( !ereconuein.failedToGet() ) {
+      //Fill energy reconstruction
+      TVector3 pe( ereconuein->fLepLorentzVector.Px(), ereconuein->fLepLorentzVector.Py(), ereconuein->fLepLorentzVector.Pz() );
+      fErecoNue          = ereconuein->fNuLorentzVector.E();
+      fRecoLepEnNue      = ereconuein->fLepLorentzVector.E();
+      fRecoHadEnNue      = ereconuein->fHadLorentzVector.E();
+      fRecoMethodNue     = ereconuein->recoMethodUsed;
+      fRecoLepAngNue     = acos( pe.z() / pe.Mag() );
+      TVector3 pmu( ereconumuin->fLepLorentzVector.Px(), ereconumuin->fLepLorentzVector.Py(), ereconumuin->fLepLorentzVector.Pz() );
+      fErecoNumu         = ereconumuin->fNuLorentzVector.E();
+      fRecoLepEnNumu     = ereconumuin->fLepLorentzVector.E();
+      fRecoHadEnNumu     = ereconumuin->fHadLorentzVector.E();
+      fRecoMethodNumu    = ereconumuin->recoMethodUsed;
+      fRecoLepAngNumu    = acos( pmu.z() / pmu.Mag() );
+      fLongestTrackContNumu  = ereconumuin->longestTrackContained;
+      fTrackMomMethodNumu    = ereconumuin->trackMomMethod;
+    }
+
+    if( !pidinnue.failedToGet() ) {
+      fMVAResultNue = pidinnue->pid;
+    }
+
+    if( !pidinnumu.failedToGet() ) {
+      fMVAResultNumu = pidinnumu->pid;
+    }
+
+    /*
     if ( !pandSelectParams.failedToGet() )
     {
       TVector3 pe( pandSelectParams->energyRecoNue.fLepLorentzVector.Px(), pandSelectParams->energyRecoNue.fLepLorentzVector.Py(), pandSelectParams->energyRecoNue.fLepLorentzVector.Pz() );
@@ -575,9 +633,13 @@ namespace dunemva {
       std::cout << "fSelShowerJamPandrizzleScore: " << fSelShowerJamPandrizzleScore << std::endl;
       std::cout << "fErecoNumu: " << fErecoNumu << std::endl;
       std::cout << "fSelTrackPandizzleScore: " << fSelTrackPandizzleScore << std::endl;
-    }
+    }*/
+
+
+    std::cout << "cvnin.failedToGet(): " << cvnin.failedToGet() << std::endl;
 
     if( !cvnin.failedToGet() ) {
+      std::cout << "Success get cvnin " << std::endl;
       //using i = cvn::Interaction;
       //if(cvnin->empty() || (*cvnin)[0].fOutput.size() <= i::kNutauOther){
       if(cvnin->empty()){
@@ -586,6 +648,14 @@ namespace dunemva {
         fCVNResult0Pions = fCVNResult1Pions = fCVNResult2Pions = fCVNResultNPions = \
         fCVNResult0Pizeros = fCVNResult1Pizeros = fCVNResult2Pizeros = fCVNResultNPizeros = \
         fCVNResult0Neutrons = fCVNResult1Neutrons = fCVNResult2Neutrons = fCVNResultNNeutrons = -3;
+      }
+      else if( std::isnan((*cvnin)[0].GetNueProbability()) ) {
+        std::cout << "CVN outputs are not numbers. They really should be numbers" << std::endl;
+        fCVNResultIsAntineutrino = fCVNResultNue = fCVNResultNumu = fCVNResultNutau = fCVNResultNC = \
+        fCVNResult0Protons = fCVNResult1Protons = fCVNResult2Protons = fCVNResultNProtons = \
+        fCVNResult0Pions = fCVNResult1Pions = fCVNResult2Pions = fCVNResultNPions = \
+        fCVNResult0Pizeros = fCVNResult1Pizeros = fCVNResult2Pizeros = fCVNResultNPizeros = \
+        fCVNResult0Neutrons = fCVNResult1Neutrons = fCVNResult2Neutrons = fCVNResultNNeutrons = -4;
       }
       else{
         //const std::vector<float>& v = (*cvnin)[0].fOutput;
@@ -634,7 +704,7 @@ namespace dunemva {
         fRegCVNNueE = v[0];
       }
     }
-  
+
     art::Handle< std::vector<simb::MCTruth> > mct;
     std::vector< art::Ptr<simb::MCTruth> > truth;
     if( evt.getByLabel("generator", mct) )
@@ -683,9 +753,9 @@ namespace dunemva {
       fNuMomY   = truth[i]->GetNeutrino().Nu().Momentum().Y();
       fNuMomZ   = truth[i]->GetNeutrino().Nu().Momentum().Z();
 
-      fNuVtxX     = truth[i]->GetNeutrino().Nu().Vx();
-      fNuVtxY     = truth[i]->GetNeutrino().Nu().Vy();
-      fNuVtxZ     = truth[i]->GetNeutrino().Nu().Vz();
+      vtx_x     = truth[i]->GetNeutrino().Nu().Vx();
+      vtx_y     = truth[i]->GetNeutrino().Nu().Vy();
+      vtx_z     = truth[i]->GetNeutrino().Nu().Vz();
 
       //Lepton stuff
       fLepPDG     = truth[i]->GetNeutrino().Lepton().PdgCode();
@@ -764,32 +834,10 @@ namespace dunemva {
         }
       }
 
-      /* OLD CAFMAKER
-      for( int p = 0; p < truth[i]->NParticles(); p++ ) {
-        if( truth[i]->GetParticle(p).StatusCode() == genie::kIStHadronInTheNucleus ) {
-
-          int pdg = truth[i]->GetParticle(p).PdgCode();
-          if     ( pdg == genie::kPdgProton ) nP++;
-          else if( pdg == genie::kPdgNeutron ) nN++;
-          else if( pdg == genie::kPdgPiP ) nPip++;
-          else if( pdg == genie::kPdgPiM ) nPim++;
-          else if( pdg == genie::kPdgPi0 ) nPi0++;
-          else if( pdg == genie::kPdgKP ) nKp++;
-          else if( pdg == genie::kPdgKM ) nKm++;
-          else if( pdg == genie::kPdgK0 || pdg == genie::kPdgAntiK0 || pdg == genie::kPdgK0L || pdg == genie::kPdgK0S ) nK0++;
-          else if( pdg == genie::kPdgGamma ) nEM++;
-          else if( genie::pdg::IsHadron(pdg) ) nOtherHad++; // charm mesons, strange and charm baryons, antibaryons, etc.
-          else if( genie::pdg::IsIon(pdg) ) nNucleus++;
-          else nUNKNOWN++;
-
-        }
-      }
-      */
-
       // Reweighting variables
       //systtools::ScrubUnityEventResponses(er);
 
-      // struct ParamResponses { 
+      // struct ParamResponses {
       //   paramId_t pid;
       //   std::vector<double> responses;
       // }
@@ -852,7 +900,7 @@ namespace dunemva {
     eDepPim = 0.;
     eDepPi0 = 0.;
     eDepOther = 0.;
-    
+
     // Need t0 for electron lifetime correction
     auto const *detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double t0 = detprop->TriggerOffset();
@@ -860,7 +908,7 @@ namespace dunemva {
     std::map<int,double> tid_charge;
     std::map<int,double> tid_eDep;
     double total_charge = 0.;
-    for( size_t i = 0; i < hitlist.size(); ++i ) 
+    for( size_t i = 0; i < hitlist.size(); ++i )
     {
     	art::Ptr<recob::Hit> hit = hitlist[i];
         double charge = hit->Integral();
@@ -876,7 +924,7 @@ namespace dunemva {
       for(size_t e = 0; e < TrackIDs.size(); ++e) {
         int primpdg = primary_pdg[TrackIDs[e].trackID];
 
-        if( abs(primpdg) != 11 && abs(primpdg) != 13 && abs(primpdg) != 15 ) 
+        if( abs(primpdg) != 11 && abs(primpdg) != 13 && abs(primpdg) != 15 )
         {
           tid_charge[TrackIDs[e].trackID] += charge*TrackIDs[e].energy/tote;
           tid_eDep[TrackIDs[e].trackID] += deposited_energy*TrackIDs[e].energy/tote;
@@ -887,15 +935,16 @@ namespace dunemva {
 
     // choose the hadronic energy for the best reco
 
-    double nuePandrizzleCut = (fUseFHCCut ? fNuePandrizzleCut : fAnuePandrizzleCut);
-    double nueJamPandrizzleCut = (fUseFHCCut ? fNueJamPandrizzleCut : fAnueJamPandrizzleCut);
-    double nuePandizzleCut = (fUseFHCCut ? fNuePandizzleCut : fAnuePandizzleCut);
+    //double nuePandrizzleCut = (fUseFHCCut ? fNuePandrizzleCut : fAnuePandrizzleCut);
+    //double nueJamPandrizzleCut = (fUseFHCCut ? fNueJamPandrizzleCut : fAnueJamPandrizzleCut);
+    //double nuePandizzleCut = (fUseFHCCut ? fNuePandizzleCut : fAnuePandizzleCut);
     //double numuPandizzleCut = (fUseFHCCut ? fNumuPandizzleCut : fAnumuPandizzleCut);
 
-    const bool passNueSelection(((fSelShowerJamPandrizzleScore > nueJamPandrizzleCut) || (fSelShowerPandrizzleScore > nuePandrizzleCut)) && (fSelTrackPandizzleScore < nuePandizzleCut));
+    //const bool passNueSelection(((fSelShowerJamPandrizzleScore > nueJamPandrizzleCut) || (fSelShowerPandrizzleScore > nuePandrizzleCut)) && (fSelTrackPandizzleScore < nuePandizzleCut));
     //const bool passNumuSelection(passNueSelection > false : (fSelTrackPandizzleScore > numuPandizzleCut));
 
-    double ehad = ( passNueSelection ? fRecoHadEnNue : fRecoHadEnNumu );
+    //double ehad = ( passNueSelection ? fRecoHadEnNue : fRecoHadEnNumu );
+    double ehad = ( fCVNResultNue > fCVNResultNumu ? fRecoHadEnNue : fRecoHadEnNumu );
     for( std::map<int,double>::iterator itTid = tid_charge.begin(); itTid != tid_charge.end(); ++itTid ) {
       int tid = (*itTid).first;
       double energy = (*itTid).second * (ehad/total_charge);
@@ -924,9 +973,10 @@ namespace dunemva {
       else if( primpdg == genie::kPdgPiP )     eDepPip += energy_deposited;
       else if( primpdg == genie::kPdgPiM )     eDepPim += energy_deposited;
       else if( primpdg == genie::kPdgPi0 )     eDepPi0 += energy_deposited;
-      else eRecoOther += energy_deposited;
+      else eDepOther += energy_deposited;
     }
 
+    /*
     // Reco stuff
     art::Handle< std::vector<recob::PFParticle> > pfparticleListHandle;
     if (evt.getByLabel("pandoraSel", pfparticleListHandle)){
@@ -958,7 +1008,7 @@ namespace dunemva {
                  fRecoNuVtxZ = matched_vertex->position().Z();
              }
          }
-    }
+    }*/
 
     fTree->Fill();
     return;
@@ -969,6 +1019,7 @@ namespace dunemva {
   //------------------------------------------------------------------------------
   void CAFMaker::endSubRun(const art::SubRun& sr)
   {
+    /*
     runPOTTreeVariable = fRun;
     subrunPOTTreeVariable = fSubrun;
 
@@ -984,7 +1035,12 @@ namespace dunemva {
         potPOTTreeVariable = 0.;
     }
 
-    if (fPOT) fPOT->Fill();
+    if (fPOT) fPOT->Fill();*/
+  }
+
+  void CAFMaker::endJob()
+  {
+    fMetaTree->Fill();
   }
 
   DEFINE_ART_MODULE(CAFMaker)

@@ -13,7 +13,7 @@ dunefd_cafmaker:
     MVASelectNueLabel:  "mvaselectnue"
     MVASelectNumuLabel: "mvaselectnumu"
 
-    PandSelectLabel:    "pandoraselect"
+    # PandSelectLabel:    "pandoraselect"
 
     CVNLabel:           "cvneval"
     RegCVNLabel:        "regcvneval"
@@ -49,15 +49,15 @@ dunefd_cafmaker:
     RecombFactor:            0.63
 
 
-    NuePandrizzleCut: 0.418
-    NueJamPandrizzleCut: 1.0
-    NuePandizzleCut: 0.712
-    NumuPandizzleCut: 0.34
-    AnuePandrizzleCut: 1.0
-    AnueJamPandrizzleCut: 1.0
-    AnuePandizzleCut: 1.0
-    AnumuPandizzleCut: 1.0
-    UseFHCCut: true
+    #NuePandrizzleCut: 0.418
+    #NueJamPandrizzleCut: 1.0
+    #NuePandizzleCut: 0.712
+    #NumuPandizzleCut: 0.34
+    #AnuePandrizzleCut: 1.0
+    #AnueJamPandrizzleCut: 1.0
+    #AnuePandizzleCut: 1.0
+    #AnumuPandizzleCut: 1.0
+    #UseFHCCut: true
 }
 
 END_PROLOG
