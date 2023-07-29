@@ -33,7 +33,7 @@ namespace cvn
     fProtoDUNE(false)
   {
 
-    fGeometry = &*(art::ServiceHandle<geo::Geometry>());  
+    fGeometry = &*(art::ServiceHandle<geo::Geometry>());
     fDetProp = lar::providerFrom<detinfo::DetectorPropertiesService>();
   }
 
@@ -156,7 +156,7 @@ namespace cvn
     double tsum_2 = std::accumulate(time_2.begin(), time_2.end(), 0.0);
     double tmean_2 = tsum_2 / time_2.size();
 
-    std::cout << "Boundary wire vector sizes: " << wire_0.size() << ", " << wire_1.size() << ", " << wire_2.size() << std::endl;
+    //std::cout << "Boundary wire vector sizes: " << wire_0.size() << ", " << wire_1.size() << ", " << wire_2.size() << std::endl;
 
     auto minwireelement_0= std::min_element(wire_0.begin(), wire_0.end());
     //std::cout<<"minwire 0: "<<*minwireelement_0<<std::endl;
@@ -231,7 +231,7 @@ namespace cvn
   }
 
   // Based on Robert's code in adcutils
-  void PixelMapProducer::GetDUNEGlobalWireTDC(unsigned int localWire, double localTDC, unsigned int plane, unsigned int tpc, 
+  void PixelMapProducer::GetDUNEGlobalWireTDC(unsigned int localWire, double localTDC, unsigned int plane, unsigned int tpc,
                                              unsigned int& globalWire, unsigned int& globalPlane, double& globalTDC) const
   {
 
@@ -240,7 +240,7 @@ namespace cvn
     double driftLen = fGeometry->TPC(tpc,0).DriftDistance();
     double apaLen = fGeometry->TPC(tpc,0).Width() - fGeometry->TPC(tpc,0).ActiveWidth();
     double driftVel = fDetProp->DriftVelocity();
-    unsigned int drift_size = (driftLen / driftVel) * 2; // Time in ticks to cross a TPC 
+    unsigned int drift_size = (driftLen / driftVel) * 2; // Time in ticks to cross a TPC
     unsigned int apa_size   = 4*(apaLen / driftVel) * 2; // Width of the whole APA in TDC
 
 //    std::cout << "MEASUREMENTS: " << drift_size << ", " << apa_size << std::endl;
@@ -301,30 +301,30 @@ namespace cvn
   // Special case for ProtoDUNE where we want to extract single particles to mimic CCQE interactions. The output pixel maps should be the same as the workspace
   // but we need different treatment of the wire numbering
   void PixelMapProducer::GetProtoDUNEGlobalWire(unsigned int localWire, unsigned int plane, unsigned int tpc, unsigned int& globalWire, unsigned int& globalPlane) const
-  { 
+  {
     unsigned int nWiresTPC = 400;
-    
+
     globalWire = localWire;
     globalPlane = 0;
-    
+
     // Collection plane has more wires
     if(plane == 2){
       nWiresTPC=480;
       globalPlane = 2;
     }
-    
+
     // ProtoDUNE has a central CPA so times are fine
     // It (annoyingly) has two dummy TPCs on the sides
-    //                  
+    //
     //      y ^       |-|-----|-----|-|   /
     //        | -| z  | |     |     | |  /
     //        | /     |3|  2  |  1  |0| /
     //  x <---|/      |-|-----|-----|-|/
     //
-    
+
     int tpcMod4 = tpc%4;
     // tpcMod4: 1 for -ve drift, 2 for +ve drift
-    
+
     // Induction views depend on the drift direction
     if(plane < 2){
       // For drift in negative x direction keep U and V as defined.
@@ -337,14 +337,14 @@ namespace cvn
         else globalPlane = 0;
       }
     }
-    
+
     if(globalPlane != 1){
       globalWire += (tpc/4)*nWiresTPC;
     }
     else{
       globalWire += ((12-tpc)/4)*nWiresTPC;
     }
-  
+
   }
 
 }

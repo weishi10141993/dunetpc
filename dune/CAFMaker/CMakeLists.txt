@@ -74,6 +74,15 @@ cet_find_library( GREINSEHGAL NAMES ${GRSSPELLING} PATHS ENV GENIE_LIB NO_DEFAUL
 # nusystematics
 cet_find_library( SYSTTOOLS NAMES systematicstools_interface systematicstools_interpreters systematicstools_utility PATHS ENV SYSTEMATICSTOOLS_LIB NO_DEFAULT_PATH )
 
+# geoEff module for DUNE-PRISM geometric efficiency correction
+find_package(PythonLibs REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
+
+find_package(Eigen3 REQUIRED)
+
+add_library(geoEff SHARED IMPORTED)
+set_target_properties(geoEff PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/DUNE_ND_GeoEff/lib/libgeoEff.so)
+
 SET(SYSTTOOLS_LIBS
   systematicstools_interface
   systematicstools_interpreters
@@ -83,25 +92,28 @@ simple_plugin(CAFMaker   "module"
                         nutools_NuReweight
                         nutools_NuReweight_art
                         nutools_EventGeneratorBase_GENIE
-			nusimdata_SimulationBase
+                        nusimdata_SimulationBase
                         ${SYSTTOOLS_LIBS}
-			${GENIE_EV_LIBS}
-			${ART_FRAMEWORK_CORE}
+                        ${GENIE_EV_LIBS}
+                        ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL}
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
                         art_Persistency_Common canvas
                         art_Persistency_Provenance canvas
-                        art_Utilities 
+                        art_Utilities
                         canvas
                         ${MF_MESSAGELOGGER}
                         ${MF_UTILITIES}
                         cetlib cetlib_except
                         ${ROOT_BASIC_LIB_LIST}
+                        ${PYTHON_LIBRARIES}
+                        Eigen3::Eigen
+                        geoEff
                         CVNFunc
-			larreco_Calorimetry
-              BASENAME_ONLY
+                        larreco_Calorimetry
+                        BASENAME_ONLY
 )
 
 install_headers()

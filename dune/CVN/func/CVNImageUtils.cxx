@@ -91,7 +91,7 @@ void cvn::CVNImageUtils::ConvertChargeVectorsToPixelArray(std::vector<float> &v0
   cvn::ViewVector view0;
   cvn::ViewVector view1;
   cvn::ViewVector view2;
-  ConvertChargeVectorsToViewVectors(v0pe, v1pe, v2pe, view0, view1, view2); 
+  ConvertChargeVectorsToViewVectors(v0pe, v1pe, v2pe, view0, view1, view2);
 
   // Actually write the values to the pixel array
   for (unsigned int view = 0; view < fNViews; ++view){
@@ -107,7 +107,7 @@ void cvn::CVNImageUtils::ConvertChargeVectorsToPixelArray(std::vector<float> &v0
         // Get the index for the final image
         unsigned int i = time + fNTDCs * (wire + fNWires * view);
         pix[i] = val;
-  
+
       }
     }
   }
@@ -274,10 +274,10 @@ void cvn::CVNImageUtils::ConvertPixelArrayToImageVectorF(const std::vector<unsig
 
   // The pixel arrays is built with indices i = tdc + nTDCs(wire + nWires*view)
 
-  cvn::ViewVectorF view0; 
-  cvn::ViewVectorF view1; 
+  cvn::ViewVectorF view0;
+  cvn::ViewVectorF view1;
   cvn::ViewVectorF view2;
- 
+
   for(unsigned int v = 0; v < fNViews; ++v){
     for(unsigned int w = 0; w < fNWires; ++w){
       std::vector<float> wireVec;
@@ -327,16 +327,16 @@ void cvn::CVNImageUtils::GetMinMaxWires(std::vector<float> &wireCharges, unsigne
     float windowCharge = 0.;
     for(unsigned int nextwire = wire; nextwire < wire + fNWires; ++nextwire){
       windowCharge += wireCharges[nextwire];
-    } 
+    }
     if(windowCharge > maxCharge){
       maxCharge = windowCharge;
       firstWire = wire;
     }
-  } 
+  }
   minWire = firstWire;
   maxWire = firstWire + fNWires - 1;
 
-  std::cout << "Used alternate method to get min and max wires due to vertex determination failure: " << minWire << ", " << maxWire << std::endl;
+  //std::cout << "Used alternate method to get min and max wires due to vertex determination failure: " << minWire << ", " << maxWire << std::endl;
 
 }
 
@@ -350,18 +350,18 @@ void cvn::CVNImageUtils::GetMinMaxTDCs(std::vector<float> &tdcCharges, unsigned 
     // If we have got to fNWires from the end, the start needs to be this wire
     if(tdcCharges.size() - tdc == fNTDCs){
       break;
-    } 
+    }
 
     // For a given tdc, look to see if the next 20 tdcs are empty. If not, this can be out start tdc.
     int nEmpty = 0;
     for(unsigned int nextTDC = tdc + 1; nextTDC <= tdc + 20; ++nextTDC){
       if(tdcCharges[nextTDC] == 0.0) ++nEmpty;
-    } 
+    }
     if(nEmpty < 5){
       minTDC = tdc;
       maxTDC = tdc + fNTDCs - 1;
       return;
-    } 
+    }
   }
 
   // If we don't find a region where we have fewer than 5 empty tdcs then we just want to select the fNTDCs tdcs containing
@@ -381,14 +381,14 @@ void cvn::CVNImageUtils::GetMinMaxTDCs(std::vector<float> &tdcCharges, unsigned 
   minTDC = firstTDC;
   maxTDC = firstTDC + fNTDCs - 1;
 
-  std::cout << "Used alternate method to get min and max tdcs due to vertex determination failure: " << minTDC << ", " << maxTDC << std::endl;
+  //std::cout << "Used alternate method to get min and max tdcs due to vertex determination failure: " << minTDC << ", " << maxTDC << std::endl;
 
 
 }
 
 void cvn::CVNImageUtils::ReverseView(std::vector<float> &peVec){
 
-  std::vector<float> vecCopy(peVec.size(),0.); 
+  std::vector<float> vecCopy(peVec.size(),0.);
 
   for (unsigned int w = 0; w < fPixelMapWires; ++w)
   {
@@ -412,7 +412,7 @@ void cvn::CVNImageUtils::ReverseView(std::vector<float> &peVec){
 
 cvn::ViewVectorF cvn::CVNImageUtils::ConvertViewVecToViewVecF(cvn::ViewVector view){
 
-  cvn::ViewVectorF newVec; 
+  cvn::ViewVectorF newVec;
   for(size_t w = 0; w < view.size(); ++w){
     std::vector<float> thisWire;
     for(size_t t = 0; t < view[w].size(); ++t){
@@ -426,7 +426,7 @@ cvn::ViewVectorF cvn::CVNImageUtils::ConvertViewVecToViewVecF(cvn::ViewVector vi
 
 cvn::ImageVectorF cvn::CVNImageUtils::ConvertImageVecToImageVecF(cvn::ImageVector image){
 
-  cvn::ImageVectorF newImage; 
+  cvn::ImageVectorF newImage;
   for(size_t w = 0; w < image.size(); ++w){
     cvn::ViewVectorF thisWire;
     for(size_t t = 0; t < image[w].size(); ++t){
@@ -457,7 +457,7 @@ cvn::ImageVector cvn::CVNImageUtils::BuildImageVector(cvn::ViewVector v0, cvn::V
     } // Loop over tdcs
     image.push_back(wireVec);
   } // Loop over wires
-  
+
   return image;
 
 }
@@ -477,10 +477,8 @@ cvn::ImageVectorF cvn::CVNImageUtils::BuildImageVectorF(cvn::ViewVectorF v0, cvn
     } // Loop over tdcs
     image.push_back(wireVec);
   } // Loop over wires
-  
-  
+
+
 
   return image;
 }
-
-

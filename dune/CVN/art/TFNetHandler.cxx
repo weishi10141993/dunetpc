@@ -40,14 +40,14 @@ namespace cvn
     }
 
   }
- 
+
   // Check the network outputs
   bool check(const std::vector< std::vector< float > > & outputs)
   {
     if (outputs.size() == 1) return true;
     size_t aux = 0;
     for (size_t o = 0; o < outputs.size(); ++o)
-    {   
+    {
         size_t aux2 = 0;
 
         for (size_t i = 0; i < outputs[o].size(); ++i)
@@ -55,7 +55,7 @@ namespace cvn
                 aux2++;
         if (aux2 == outputs[o].size()) aux++;
     }
-    return aux == outputs.size() ? false : true;        
+    return aux == outputs.size() ? false : true;
   }
 
   // Fill outputs with value -3
@@ -71,10 +71,10 @@ namespace cvn
 
   std::vector< std::vector<float> > TFNetHandler::Predict(const PixelMap& pm)
   {
-   
+
     CVNImageUtils imageUtils;
 
-    // Configure the image utility  
+    // Configure the image utility
     imageUtils.SetViewReversal(fReverseViews);
     imageUtils.SetImageSize(fImageWires,fImageTDCs,3);
     imageUtils.SetLogScale(fUseLogChargeScale);
@@ -104,8 +104,8 @@ namespace cvn
         }
     }while(status == false);
 
-    std::cout << "Classifier summary: ";
-    std::cout << std::endl;
+    /*std::cout << "Classifier summary: ";
+    //std::cout << std::endl;
     int output_index = 0;
     for(auto const & output : cvnResults[0])
     {
@@ -114,7 +114,7 @@ namespace cvn
           std::cout << v << ", ";
       std::cout << std::endl;
     }
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
     // Leigh - test the new framework for easier access to multiple output architectures
 //    std::vector<std::vector<std::vector<float>>> newCVNResult = fTFGraph->runMultiOutput(vecForTF);
@@ -128,8 +128,8 @@ namespace cvn
     return cvnResults[0];
   }
 
-  /* 
-  // The standard output has 13 elements, this function sums the convenient ones 
+  /*
+  // The standard output has 13 elements, this function sums the convenient ones
   std::vector<float> TFNetHandler::PredictFlavour(const PixelMap& pm){
 
     std::vector<float> fullResults = this->Predict(pm);
@@ -155,4 +155,3 @@ namespace cvn
   */
 
 }
-
