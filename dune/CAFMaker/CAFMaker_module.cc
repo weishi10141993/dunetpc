@@ -1436,6 +1436,9 @@ namespace dunemva {
     } // end loop over ND_LAr_dtctr_pos_vec
 
     fThrowResultsFDTree->Fill();
+    ND_OffAxis_Unrotated_Sim_lep_start_v_LAr.clear(); // clear for next event
+    ND_OffAxis_Sim_lep_start_p_LAr.clear();
+    hadron_throw_result_LAr.clear();
 
     // =====================================================
     // Here ends DUNE-PRISM geometric efficiency correction
