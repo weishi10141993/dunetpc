@@ -615,7 +615,6 @@ namespace dunemva {
     fTree->Branch("RecoVertex_y", &fRecoNuVtxY);
     fTree->Branch("RecoVertex_z", &fRecoNuVtxZ);*/
 
-    //fThrowsFDTree = new TTree("geoEffThrows", "geoEffThrows");
     fThrowsFDTree->Branch("throwVtxY", &throwVtxY);
     fThrowsFDTree->Branch("throwVtxZ", &throwVtxZ);
     fThrowsFDTree->Branch("throwRot",  &throwRot);
@@ -623,10 +622,11 @@ namespace dunemva {
     // A separate tree to store throwresult and lepton stuff for NN
 
     // Generate new dictionary for nested vectors to write to TTree
+    gSystem->Exec("rm -f AutoDict*vector*vector*vector*double*"); // Remove old dictionary if exists
+    gSystem->Exec("rm -f AutoDict*vector*vector*vector*vector*vector*uint64_t*");
     gInterpreter->GenerateDictionary("vector<vector<vector<double> > >", "vector");
     gInterpreter->GenerateDictionary("vector<vector<vector<vector<vector<uint64_t> > > > >", "vector");
 
-    //fThrowResultsFDTree = new TTree("throwResults", "throwResults");
     fThrowResultsFDTree->Branch("FD_Sim_lep_start_vx",                  &Sim_lep_start_vx,               "FD_Sim_lep_start_vx/D"); // for FD fiducial volume cut
     fThrowResultsFDTree->Branch("FD_Sim_lep_start_vy",                  &Sim_lep_start_vy,               "FD_Sim_lep_start_vy/D");
     fThrowResultsFDTree->Branch("FD_Sim_lep_start_vz",                  &Sim_lep_start_vz,               "FD_Sim_lep_start_vz/D");
